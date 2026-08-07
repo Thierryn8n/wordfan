@@ -11,23 +11,27 @@ export default async function AuthErrorPage({
 }) {
   const params = await searchParams
   return (
-    <main className="flex min-h-dvh items-center justify-center px-6">
-      <div className="glass w-full max-w-sm rounded-2xl p-8 text-center">
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-6">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-24 left-1/2 size-96 -translate-x-1/2 rounded-full bg-destructive/10 blur-[120px]"
+      />
+      <div className="relative w-full max-w-sm rounded-[32px] border border-white/8 bg-card p-8 text-center">
         <Logo href="/" className="text-2xl" />
-        <div className="mx-auto mt-6 flex size-14 items-center justify-center rounded-full bg-destructive/15">
+        <div className="mx-auto mt-7 flex size-16 items-center justify-center rounded-full bg-destructive/15">
           <TriangleAlert className="size-7 text-destructive" aria-hidden="true" />
         </div>
-        <h1 className="mt-5 font-serif text-xl font-bold">Algo deu errado</h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground text-pretty">
+        <h1 className="mt-6 font-serif text-xl font-black tracking-tight">ALGO DEU ERRADO</h1>
+        <p className="mt-3 text-xs font-bold leading-relaxed text-muted-foreground text-pretty">
           {params?.error
             ? `Erro: ${params.error}`
             : 'Não foi possível completar a autenticação. Tente novamente.'}
         </p>
         <Link
           href="/auth/login"
-          className="gradient-brand mt-6 inline-block rounded-full px-6 py-2.5 text-sm font-semibold text-black"
+          className="gradient-brand mt-7 inline-block rounded-full px-7 py-3 text-[10px] font-black tracking-[0.2em] text-white"
         >
-          Tentar de novo
+          TENTAR DE NOVO
         </Link>
       </div>
     </main>

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/wordfan/logo'
 
@@ -47,18 +48,32 @@ export function LoginForm() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-6">
-      <div className="w-full max-w-sm">
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-6">
+      {/* Decoração de fundo */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-24 left-1/2 size-96 -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]"
+      />
+      <div className="relative w-full max-w-sm">
         <div className="text-center">
           <Logo href="/" className="text-3xl" />
-          <h1 className="mt-6 font-serif text-2xl font-bold">Bem-vindo de volta</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Entre para acessar seus fan clubs</p>
+          <p className="mt-3 text-[9px] font-black tracking-[0.35em] text-muted-foreground">
+            ÁREA DE ACESSO
+          </p>
+          <h1 className="mt-5 font-serif text-3xl font-black tracking-tight">BEM-VINDO
+DE VOLTA</h1>
+          <p className="mt-2 text-xs font-bold text-muted-foreground">
+            Entre para acessar seus fan clubs
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} className="glass mt-8 flex flex-col gap-4 rounded-2xl p-6">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-sm font-medium">
-              E-mail
+        <form
+          onSubmit={handleLogin}
+          className="mt-8 flex flex-col gap-5 rounded-[32px] border border-white/8 bg-card p-7"
+        >
+          <div className="flex flex-col gap-2">
+            <label htmlFor="email" className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">
+              E-MAIL
             </label>
             <input
               id="email"
@@ -68,12 +83,15 @@ export function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="voce@email.com"
-              className="rounded-xl border border-input bg-secondary/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary"
+              className="rounded-2xl border border-white/8 bg-background px-4 py-3.5 text-xs font-bold outline-none transition-colors placeholder:text-zinc-600 focus:border-primary"
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="password" className="text-sm font-medium">
-              Senha
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="password"
+              className="text-[9px] font-black tracking-[0.2em] text-muted-foreground"
+            >
+              SENHA
             </label>
             <input
               id="password"
@@ -83,12 +101,12 @@ export function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Sua senha"
-              className="rounded-xl border border-input bg-secondary/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary"
+              className="rounded-2xl border border-white/8 bg-background px-4 py-3.5 text-xs font-bold outline-none transition-colors placeholder:text-zinc-600 focus:border-primary"
             />
           </div>
 
           {error && (
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="text-xs font-bold text-destructive">
               {error}
             </p>
           )}
@@ -96,16 +114,17 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="gradient-brand mt-2 rounded-full py-3 font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="gradient-brand mt-1 flex items-center justify-center gap-2 rounded-full py-4 text-[10px] font-black tracking-[0.25em] text-white transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            {isLoading ? 'Entrando...' : 'Entrar'}
+            {isLoading ? 'ENTRANDO...' : 'ENTRAR'}
+            {!isLoading && <ArrowRight className="size-3.5" aria-hidden="true" />}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
+        <p className="mt-6 text-center text-xs font-bold text-muted-foreground">
           Ainda não tem conta?{' '}
-          <Link href="/auth/sign-up" className="font-medium text-primary hover:underline">
-            Criar conta
+          <Link href="/auth/sign-up" className="font-black text-primary hover:underline">
+            CRIAR CONTA
           </Link>
         </p>
       </div>

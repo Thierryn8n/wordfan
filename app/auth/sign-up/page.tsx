@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/wordfan/logo'
 
@@ -56,19 +57,35 @@ export default function SignUpPage() {
     }
   }
 
+  const inputClass =
+    'rounded-2xl border border-white/8 bg-background px-4 py-3.5 text-xs font-bold outline-none transition-colors placeholder:text-zinc-600 focus:border-primary'
+  const labelClass = 'text-[9px] font-black tracking-[0.2em] text-muted-foreground'
+
   return (
-    <main className="flex min-h-dvh items-center justify-center px-6">
-      <div className="w-full max-w-sm">
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-6 py-10">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-24 left-1/2 size-96 -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]"
+      />
+      <div className="relative w-full max-w-sm">
         <div className="text-center">
           <Logo href="/" className="text-3xl" />
-          <h1 className="mt-6 font-serif text-2xl font-bold">Crie sua conta</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Entre para o clube dos verdadeiros fãs</p>
+          <p className="mt-3 text-[9px] font-black tracking-[0.35em] text-muted-foreground">
+            JUNTE-SE AO CLUBE
+          </p>
+          <h1 className="mt-5 font-serif text-3xl font-black tracking-tight">CRIE SUA CONTA</h1>
+          <p className="mt-2 text-xs font-bold text-muted-foreground">
+            Entre para o clube dos verdadeiros fãs
+          </p>
         </div>
 
-        <form onSubmit={handleSignUp} className="glass mt-8 flex flex-col gap-4 rounded-2xl p-6">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="displayName" className="text-sm font-medium">
-              Nome
+        <form
+          onSubmit={handleSignUp}
+          className="mt-8 flex flex-col gap-5 rounded-[32px] border border-white/8 bg-card p-7"
+        >
+          <div className="flex flex-col gap-2">
+            <label htmlFor="displayName" className={labelClass}>
+              NOME
             </label>
             <input
               id="displayName"
@@ -78,12 +95,12 @@ export default function SignUpPage() {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Como quer ser chamado"
-              className="rounded-xl border border-input bg-secondary/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary"
+              className={inputClass}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-sm font-medium">
-              E-mail
+          <div className="flex flex-col gap-2">
+            <label htmlFor="email" className={labelClass}>
+              E-MAIL
             </label>
             <input
               id="email"
@@ -93,12 +110,12 @@ export default function SignUpPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="voce@email.com"
-              className="rounded-xl border border-input bg-secondary/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary"
+              className={inputClass}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="password" className="text-sm font-medium">
-              Senha
+          <div className="flex flex-col gap-2">
+            <label htmlFor="password" className={labelClass}>
+              SENHA
             </label>
             <input
               id="password"
@@ -109,12 +126,12 @@ export default function SignUpPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Mínimo 6 caracteres"
-              className="rounded-xl border border-input bg-secondary/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary"
+              className={inputClass}
             />
           </div>
 
           {error && (
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="text-xs font-bold text-destructive">
               {error}
             </p>
           )}
@@ -122,16 +139,17 @@ export default function SignUpPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="gradient-brand mt-2 rounded-full py-3 font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="gradient-brand mt-1 flex items-center justify-center gap-2 rounded-full py-4 text-[10px] font-black tracking-[0.25em] text-white transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            {isLoading ? 'Criando conta...' : 'Criar conta'}
+            {isLoading ? 'CRIANDO CONTA...' : 'CRIAR CONTA'}
+            {!isLoading && <ArrowRight className="size-3.5" aria-hidden="true" />}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
+        <p className="mt-6 text-center text-xs font-bold text-muted-foreground">
           Já tem conta?{' '}
-          <Link href="/auth/login" className="font-medium text-primary hover:underline">
-            Entrar
+          <Link href="/auth/login" className="font-black text-primary hover:underline">
+            ENTRAR
           </Link>
         </p>
       </div>

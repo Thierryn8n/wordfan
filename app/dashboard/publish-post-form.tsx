@@ -35,10 +35,13 @@ export function PublishPostForm({ artistId, slug }: { artistId: string; slug: st
   }
 
   return (
-    <form onSubmit={handleSubmit} className="glass mt-3 flex flex-col gap-4 rounded-2xl p-5">
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="post-title" className="text-sm font-medium">
-          Título
+    <form
+      onSubmit={handleSubmit}
+      className="mt-3 flex flex-col gap-5 rounded-3xl border border-white/8 bg-card p-5"
+    >
+      <div className="flex flex-col gap-2">
+        <label htmlFor="post-title" className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">
+          TÍTULO
         </label>
         <input
           id="post-title"
@@ -47,12 +50,15 @@ export function PublishPostForm({ artistId, slug }: { artistId: string; slug: st
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Título da publicação"
-          className="rounded-xl border border-input bg-secondary/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary"
+          className="rounded-2xl border border-white/8 bg-background px-4 py-3 text-xs font-bold outline-none transition-colors placeholder:text-zinc-600 focus:border-primary"
         />
       </div>
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="post-content" className="text-sm font-medium">
-          Conteúdo
+      <div className="flex flex-col gap-2">
+        <label
+          htmlFor="post-content"
+          className="text-[9px] font-black tracking-[0.2em] text-muted-foreground"
+        >
+          CONTEÚDO
         </label>
         <textarea
           id="post-content"
@@ -61,22 +67,26 @@ export function PublishPostForm({ artistId, slug }: { artistId: string; slug: st
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="O que você quer contar pros seus fãs?"
-          className="resize-none rounded-xl border border-input bg-secondary/50 px-4 py-2.5 text-sm leading-relaxed outline-none transition-colors focus:border-primary"
+          className="resize-none rounded-2xl border border-white/8 bg-background px-4 py-3 text-xs font-bold leading-relaxed outline-none transition-colors placeholder:text-zinc-600 focus:border-primary"
         />
       </div>
 
       <fieldset>
-        <legend className="text-sm font-medium">Visibilidade</legend>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <legend className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">
+          VISIBILIDADE
+        </legend>
+        <div className="mt-2.5 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setMinTier(null)}
             className={cn(
-              'rounded-full px-4 py-1.5 text-xs font-medium transition-colors',
-              minTier === null ? 'gradient-brand text-black' : 'bg-secondary text-muted-foreground',
+              'rounded-full px-4 py-2 text-[9px] font-black tracking-[0.15em] transition-colors',
+              minTier === null
+                ? 'gradient-brand text-white'
+                : 'border border-white/8 bg-background text-muted-foreground',
             )}
           >
-            Público
+            PÚBLICO
           </button>
           {TIER_ORDER.map((tier) => (
             <button
@@ -84,11 +94,13 @@ export function PublishPostForm({ artistId, slug }: { artistId: string; slug: st
               type="button"
               onClick={() => setMinTier(tier)}
               className={cn(
-                'rounded-full px-4 py-1.5 text-xs font-medium transition-colors',
-                minTier === tier ? 'gradient-brand text-black' : 'bg-secondary text-muted-foreground',
+                'rounded-full px-4 py-2 text-[9px] font-black tracking-[0.15em] transition-colors',
+                minTier === tier
+                  ? 'gradient-brand text-white'
+                  : 'border border-white/8 bg-background text-muted-foreground',
               )}
             >
-              {TIER_LABELS[tier]}+
+              {TIER_LABELS[tier].toUpperCase()}+
             </button>
           ))}
         </div>
@@ -97,7 +109,10 @@ export function PublishPostForm({ artistId, slug }: { artistId: string; slug: st
       {feedback && (
         <p
           role="alert"
-          className={cn('text-sm', feedback.type === 'error' ? 'text-destructive' : 'text-primary')}
+          className={cn(
+            'text-xs font-bold',
+            feedback.type === 'error' ? 'text-destructive' : 'text-primary',
+          )}
         >
           {feedback.text}
         </p>
@@ -106,9 +121,9 @@ export function PublishPostForm({ artistId, slug }: { artistId: string; slug: st
       <button
         type="submit"
         disabled={isPending}
-        className="gradient-brand rounded-full py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="gradient-brand rounded-full py-3.5 text-[10px] font-black tracking-[0.25em] text-white transition-opacity hover:opacity-90 disabled:opacity-60"
       >
-        {isPending ? 'Publicando...' : 'Publicar'}
+        {isPending ? 'PUBLICANDO...' : 'PUBLICAR'}
       </button>
     </form>
   )
