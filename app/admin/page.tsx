@@ -12,6 +12,7 @@ import {
   BarChart3,
   Settings,
   ShieldCheck,
+  Building2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Logo } from '@/components/wordfan/logo'
@@ -22,6 +23,7 @@ export const metadata = { title: 'Painel administrativo — WordFan' }
 const NAV_ITEMS = [
   { label: 'DASHBOARD', icon: LayoutDashboard, active: true, href: null as string | null },
   { label: 'ARTISTAS', icon: Mic2, active: false, href: '/admin/artists' },
+  { label: 'ENTERPRISE', icon: Building2, active: false, href: '/admin/enterprise' },
   { label: 'USUÁRIOS', icon: Users, active: false, href: null as string | null },
   { label: 'ASSINATURAS', icon: CreditCard, active: false, href: null as string | null },
   { label: 'STUDIO DO ARTISTA', icon: Palette, active: false, href: '/admin/artists' },

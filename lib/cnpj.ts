@@ -4,6 +4,11 @@ export function onlyDigits(v: string) {
   return (v || '').replace(/\D/g, '')
 }
 
+/** Alias: apenas os 14 dígitos, sem máscara. */
+export function normalizeCnpj(v: string) {
+  return onlyDigits(v).slice(0, 14)
+}
+
 export function formatCNPJ(v: string) {
   const d = onlyDigits(v).slice(0, 14)
   return d
