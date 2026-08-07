@@ -49,7 +49,17 @@ export function SetPasswordForm() {
         data: { must_set_password: false },
       })
       if (error) throw error
-      router.push('/dashboard')
+      // Direciona para o painel certo conforme o papel
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      let dest = '/dashboard'
+      if (user) {
+        const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+        if (prof?.role === 'empresario') dest = '/manager'
+        else if (prof?.role === 'admin') dest = '/admin'
+      }
+      router.push(dest)
       router.refresh()
     } catch {
       setError('Não foi possível salvar a senha. O link pode ter expirado — peça um novo convite.')

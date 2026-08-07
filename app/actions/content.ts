@@ -11,15 +11,17 @@ async function requireManager(artistId: string) {
   } = await supabase.auth.getUser()
   if (!user) return { supabase, error: 'Você precisa estar logado.' }
 
-  const [{ data: profile }, { data: artist }] = await Promise.all([
+  const [{ data: profile }, { data: artist }, { data: manager }] = await Promise.all([
     supabase.from('profiles').select('role').eq('id', user.id).single(),
     supabase.from('artists').select('id, slug, owner_id').eq('id', artistId).single(),
+    supabase.from('managers').select('id').eq('user_id', user.id).eq('artist_id', artistId).maybeSingle(),
   ])
 
   if (!artist) return { supabase, error: 'Artista não encontrado.' }
   const isAdmin = profile?.role === 'admin'
   const isOwner = artist.owner_id === user.id
-  if (!isAdmin && !isOwner) return { supabase, error: 'Sem permissão para gerenciar este artista.' }
+  const isManager = Boolean(manager)
+  if (!isAdmin && !isOwner && !isManager) return { supabase, error: 'Sem permissão para gerenciar este artista.' }
 
   return { supabase, error: null as string | null, slug: artist.slug as string }
 }

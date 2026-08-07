@@ -9,13 +9,47 @@ export const TIER_LABELS: Record<Tier, string> = {
 
 export const TIER_ORDER: Tier[] = ['bronze', 'silver', 'gold', 'platinum']
 
+export type Role = 'fan' | 'artist' | 'admin' | 'empresario'
+
 export interface Profile {
   id: string
   display_name: string | null
   avatar_url: string | null
-  role: 'fan' | 'artist' | 'admin'
+  role: Role
   xp: number
   created_at: string
+}
+
+export interface EnterprisePlan {
+  id: number
+  name: string
+  tagline: string
+  price_cents: number
+  benefits: string[]
+  active: boolean
+}
+
+export type EnterpriseLeadStatus = 'pending_payment' | 'waitlist' | 'approved' | 'rejected'
+
+export interface EnterpriseLead {
+  id: string
+  user_id: string
+  artist_id: string | null
+  company_name: string
+  cnpj: string
+  contact_name: string
+  contact_email: string
+  contact_phone: string
+  segment: string | null
+  budget_cents: number | null
+  message: string | null
+  status: EnterpriseLeadStatus
+  paid: boolean
+  paid_at: string | null
+  reviewed_at: string | null
+  review_note: string | null
+  created_at: string
+  artist?: Artist | null
 }
 
 export interface Artist {
