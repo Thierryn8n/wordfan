@@ -4,106 +4,88 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Search, Star, Calendar, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useLayoutEffect, useRef, useState } from 'react'
 
-const items = [
-  { href: '/home', label: 'Home', icon: Home },
-  { href: '/search', label: 'Discover', icon: Search },
-  { href: '/club', label: 'Fan Club', icon: Star, center: true },
-  { href: '/notifications', label: 'Events', icon: Calendar },
-  { href: '/profile', label: 'Profile', icon: User },
+const left = [
+  { href: '/home', label: 'HOME', icon: Home },
+  { href: '/search', label: 'DISCOVER', icon: Search },
+]
+const right = [
+  { href: '/notifications', label: 'EVENTS', icon: Calendar },
+  { href: '/profile', label: 'PROFILE', icon: User },
 ]
 
 export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
   const pathname = usePathname()
+  const clubActive = pathname.startsWith('/artist') || pathname === '/club'
 
-  function isActive(href: string) {
-    if (href === '/club') return pathname.startsWith('/artist') || pathname === '/club'
-    return pathname === href || pathname.startsWith(href + '/')
+  function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof Home }) {
+    const active = pathname === href || pathname.startsWith(href + '/')
+    return (
+      <Link
+        href={href}
+        aria-current={active ? 'page' : undefined}
+        className={cn(
+          'flex flex-1 flex-col items-center gap-1.5 py-1 text-[8px] font-extrabold tracking-[0.08em] transition-colors',
+          active
+            ? accent === 'club'
+              ? 'text-club'
+              : 'text-brand'
+            : 'text-muted-foreground hover:text-foreground',
+        )}
+      >
+        <Icon className="size-5" aria-hidden="true" />
+        <span>{label}</span>
+      </Link>
+    )
   }
-
-  const activeIndex = Math.max(
-    0,
-    items.findIndex((it) => isActive(it.href)),
-  )
-
-  const listRef = useRef<HTMLUListElement>(null)
-  const itemRefs = useRef<Array<HTMLLIElement | null>>([])
-  const [blob, setBlob] = useState<{ left: number; width: number } | null>(null)
-
-  useLayoutEffect(() => {
-    const el = itemRefs.current[activeIndex]
-    const list = listRef.current
-    if (!el || !list) return
-    const update = () => {
-      const elRect = el.getBoundingClientRect()
-      const listRect = list.getBoundingClientRect()
-      setBlob({ left: elRect.left - listRect.left, width: elRect.width })
-    }
-    update()
-    window.addEventListener('resize', update)
-    return () => window.removeEventListener('resize', update)
-  }, [activeIndex])
-
-  const accentColor = accent === 'club' ? 'var(--club)' : 'var(--brand)'
 
   return (
     <nav
       aria-label="Navegação principal"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-md justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+      className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-md"
     >
-      <div
-        className="liquid-glass pointer-events-auto w-full rounded-[28px] px-2 py-2"
-        style={{ ['--liquid-accent' as string]: accentColor }}
-      >
-        <ul ref={listRef} className="relative flex items-center">
-          {/* Blob líquido deslizante atrás do item ativo */}
-          {blob && (
-            <li
-              aria-hidden="true"
-              className="liquid-blob absolute top-1/2 -z-0 h-12 rounded-2xl"
-              style={{
-                left: blob.left,
-                width: blob.width,
-                transform: 'translateY(-50%)',
-              }}
-            />
-          )}
+      <div className="relative rounded-t-[32px] border border-b-0 border-white/8 bg-black/90 px-4 pb-5 pt-4 backdrop-blur-xl">
+        <div className="flex items-end">
+          {left.map((item) => (
+            <NavItem key={item.href} {...item} />
+          ))}
 
-          {items.map((item, i) => {
-            const active = i === activeIndex
-            const Icon = item.icon
-            return (
-              <li
-                key={item.href}
-                ref={(node) => {
-                  itemRefs.current[i] = node
-                }}
-                className="relative z-10 flex-1"
-              >
-                <Link
-                  href={item.href}
-                  aria-current={active ? 'page' : undefined}
-                  aria-label={item.label}
-                  className={cn(
-                    'flex flex-col items-center gap-1 rounded-2xl py-2 transition-colors duration-300',
-                    active ? 'text-white' : 'text-white/55 hover:text-white/80',
-                  )}
-                >
-                  <Icon
-                    className={cn(
-                      'size-[22px] transition-transform duration-500',
-                      active && 'scale-110',
-                      item.center && active && 'fill-white/90',
-                    )}
-                    aria-hidden="true"
-                  />
-                  <span className="text-[9px] font-semibold tracking-wide">{item.label}</span>
-                </Link>
-              </li>
-            )
-          })}
-        </ul>
+          {/* Botão central elevado FAN CLUB */}
+          <Link
+            href="/home"
+            aria-label="Fan Club"
+            className="relative -mt-10 flex flex-1 flex-col items-center gap-1.5"
+          >
+            <span
+              className={cn(
+                'flex size-14 items-center justify-center rounded-2xl text-white shadow-lg',
+                accent === 'club'
+                  ? 'gradient-club shadow-club/40'
+                  : 'gradient-brand shadow-brand/40',
+              )}
+            >
+              <Star className="size-6 fill-white" aria-hidden="true" />
+            </span>
+            <span
+              className={cn(
+                'whitespace-nowrap text-[8px] font-extrabold tracking-[0.08em]',
+                clubActive
+                  ? accent === 'club'
+                    ? 'text-club'
+                    : 'text-brand'
+                  : accent === 'club'
+                    ? 'text-club'
+                    : 'text-brand',
+              )}
+            >
+              FAN CLUB
+            </span>
+          </Link>
+
+          {right.map((item) => (
+            <NavItem key={item.href} {...item} />
+          ))}
+        </div>
       </div>
     </nav>
   )
