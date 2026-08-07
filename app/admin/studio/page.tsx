@@ -22,18 +22,20 @@ export default async function StudioPage({
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') redirect('/home')
 
-  const { data: artistsData } = await supabase.from('artists').select('*').order('name')
-  const artists = (artistsData ?? []) as Artist[]
+  // Sem artista selecionado → vai para a lista de artistas
+  if (!selectedSlug) redirect('/admin/artists')
 
-  const selected = artists.find((a) => a.slug === selectedSlug) ?? artists[0] ?? null
+  const { data: artistData } = await supabase.from('artists').select('*').eq('slug', selectedSlug).single()
+  const selected = (artistData as Artist | null) ?? null
+  if (!selected) redirect('/admin/artists')
 
   return (
     <div className="min-h-dvh bg-background pb-16">
       <header className="border-b border-white/8 bg-card/50 px-6 py-6 md:px-10">
         <div className="mx-auto flex max-w-6xl items-center gap-4">
           <Link
-            href="/admin"
-            aria-label="Voltar para o painel admin"
+            href="/admin/artists"
+            aria-label="Voltar para a lista de artistas"
             className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/8 bg-card"
           >
             <ArrowLeft className="size-5" aria-hidden="true" />
@@ -51,29 +53,19 @@ export default async function StudioPage({
       </header>
 
       <main className="mx-auto max-w-6xl px-6 pt-8 md:px-10">
-        {/* Seletor de artista */}
-        <nav aria-label="Selecionar artista" className="scrollbar-none -mx-6 flex gap-3 overflow-x-auto px-6 md:mx-0 md:px-0">
-          {artists.map((a) => (
-            <Link
-              key={a.id}
-              href={`/admin/studio?artist=${a.slug}`}
-              aria-current={selected?.id === a.id ? 'page' : undefined}
-              className={
-                selected?.id === a.id
-                  ? 'gradient-brand shrink-0 rounded-full px-6 py-3 text-[10px] font-black tracking-[0.15em] text-white'
-                  : 'shrink-0 rounded-full border border-white/8 bg-card px-6 py-3 text-[10px] font-black tracking-[0.15em] text-muted-foreground'
-              }
-            >
-              {a.name.toUpperCase()}
-            </Link>
-          ))}
-        </nav>
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-sm font-bold">
+            Editando: <span className="font-serif font-black text-primary">{selected.name}</span>
+          </p>
+          <Link
+            href="/admin/artists"
+            className="shrink-0 rounded-full border border-white/8 bg-card px-5 py-2.5 text-[9px] font-black tracking-[0.15em] text-muted-foreground transition-colors hover:text-foreground"
+          >
+            TROCAR ARTISTA
+          </Link>
+        </div>
 
-        {selected ? (
-          <StudioEditor key={selected.id} artist={selected} />
-        ) : (
-          <p className="mt-10 text-sm text-muted-foreground">Nenhum artista cadastrado.</p>
-        )}
+        <StudioEditor key={selected.id} artist={selected} />
       </main>
     </div>
   )

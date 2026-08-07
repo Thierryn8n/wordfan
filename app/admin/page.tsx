@@ -21,10 +21,10 @@ export const metadata = { title: 'Painel administrativo — WordFan' }
 
 const NAV_ITEMS = [
   { label: 'DASHBOARD', icon: LayoutDashboard, active: true, href: null as string | null },
-  { label: 'ARTISTAS', icon: Mic2, active: false, href: null as string | null },
+  { label: 'ARTISTAS', icon: Mic2, active: false, href: '/admin/artists' },
   { label: 'USUÁRIOS', icon: Users, active: false, href: null as string | null },
   { label: 'ASSINATURAS', icon: CreditCard, active: false, href: null as string | null },
-  { label: 'STUDIO DO ARTISTA', icon: Palette, active: false, href: '/admin/studio' },
+  { label: 'STUDIO DO ARTISTA', icon: Palette, active: false, href: '/admin/artists' },
   { label: 'RELATÓRIOS', icon: BarChart3, active: false, href: null as string | null },
   { label: 'CONFIGURAÇÕES', icon: Settings, active: false, href: null as string | null },
 ]
