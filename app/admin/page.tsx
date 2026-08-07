@@ -20,13 +20,13 @@ import { formatPrice, TIER_LABELS, type Artist, type Plan, type Subscription } f
 export const metadata = { title: 'Painel administrativo — WordFan' }
 
 const NAV_ITEMS = [
-  { label: 'DASHBOARD', icon: LayoutDashboard, active: true },
-  { label: 'ARTISTAS', icon: Mic2, active: false },
-  { label: 'USUÁRIOS', icon: Users, active: false },
-  { label: 'ASSINATURAS', icon: CreditCard, active: false },
-  { label: 'PERSONALIZAÇÃO', icon: Palette, active: false },
-  { label: 'RELATÓRIOS', icon: BarChart3, active: false },
-  { label: 'CONFIGURAÇÕES', icon: Settings, active: false },
+  { label: 'DASHBOARD', icon: LayoutDashboard, active: true, href: null as string | null },
+  { label: 'ARTISTAS', icon: Mic2, active: false, href: null as string | null },
+  { label: 'USUÁRIOS', icon: Users, active: false, href: null as string | null },
+  { label: 'ASSINATURAS', icon: CreditCard, active: false, href: null as string | null },
+  { label: 'STUDIO DO ARTISTA', icon: Palette, active: false, href: '/admin/studio' },
+  { label: 'RELATÓRIOS', icon: BarChart3, active: false, href: null as string | null },
+  { label: 'CONFIGURAÇÕES', icon: Settings, active: false, href: null as string | null },
 ]
 
 export default async function AdminPage() {
@@ -77,19 +77,22 @@ export default async function AdminPage() {
           ADMIN SAAS
         </p>
         <nav className="mt-8 flex flex-col gap-1" aria-label="Menu do admin">
-          {NAV_ITEMS.map(({ label, icon: Icon, active }) => (
-            <span
-              key={label}
-              className={
-                active
-                  ? 'flex items-center gap-3 rounded-2xl bg-gold/15 px-4 py-3 text-[10px] font-black tracking-[0.15em] text-gold'
-                  : 'flex items-center gap-3 rounded-2xl px-4 py-3 text-[10px] font-black tracking-[0.15em] text-muted-foreground'
-              }
-            >
-              <Icon className="size-4" aria-hidden="true" />
-              {label}
-            </span>
-          ))}
+          {NAV_ITEMS.map(({ label, icon: Icon, active, href }) => {
+            const className = active
+              ? 'flex items-center gap-3 rounded-2xl bg-gold/15 px-4 py-3 text-[10px] font-black tracking-[0.15em] text-gold'
+              : 'flex items-center gap-3 rounded-2xl px-4 py-3 text-[10px] font-black tracking-[0.15em] text-muted-foreground transition-colors hover:text-foreground'
+            return href ? (
+              <Link key={label} href={href} className={className}>
+                <Icon className="size-4" aria-hidden="true" />
+                {label}
+              </Link>
+            ) : (
+              <span key={label} className={className}>
+                <Icon className="size-4" aria-hidden="true" />
+                {label}
+              </span>
+            )
+          })}
         </nav>
       </aside>
 
@@ -163,12 +166,20 @@ export default async function AdminPage() {
                     <p className="font-numeric text-sm font-bold">{formatPrice(info.revenue)}/mês</p>
                     <p className="text-[9px] font-bold text-zinc-500">{info.count} ASSINANTES</p>
                   </div>
-                  <Link
-                    href={`/artist/${a.slug}`}
-                    className="rounded-full border border-white/8 bg-white/5 px-4 py-2 text-[9px] font-black tracking-[0.15em] transition-colors hover:bg-secondary"
-                  >
-                    VER PERFIL
-                  </Link>
+                  <div className="flex shrink-0 gap-2">
+                    <Link
+                      href={`/admin/studio?artist=${a.slug}`}
+                      className="rounded-full bg-gold/15 px-4 py-2 text-[9px] font-black tracking-[0.15em] text-gold transition-colors hover:bg-gold/25"
+                    >
+                      STUDIO
+                    </Link>
+                    <Link
+                      href={`/artist/${a.slug}`}
+                      className="rounded-full border border-white/8 bg-white/5 px-4 py-2 text-[9px] font-black tracking-[0.15em] transition-colors hover:bg-secondary"
+                    >
+                      VER PERFIL
+                    </Link>
+                  </div>
                 </div>
               )
             })}

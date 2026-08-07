@@ -205,21 +205,21 @@ export default async function DashboardPage() {
           aria-label="Seu plano WordFan"
           className="mt-6 flex flex-wrap items-center gap-4 rounded-3xl border border-primary/25 bg-primary/5 p-5"
         >
-          <span className="gradient-brand flex size-11 items-center justify-center rounded-2xl">
+          <span className="gradient-brand flex size-11 shrink-0 items-center justify-center rounded-2xl">
             <Sparkles className="size-5 text-white" aria-hidden="true" />
           </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">
+          <div className="shrink-0">
+            <p className="whitespace-nowrap text-[9px] font-black tracking-[0.2em] text-muted-foreground">
               SEU PLANO WORDFAN
             </p>
-            <p className="mt-0.5 font-serif text-lg font-black text-primary">
+            <p className="mt-0.5 whitespace-nowrap font-serif text-lg font-black text-primary">
               {toolInfo.label.toUpperCase()}{' '}
               <span className="font-numeric text-xs font-bold text-muted-foreground">
                 • {toolInfo.price}
               </span>
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap justify-end gap-2">
             {toolInfo.features.map((f) => (
               <span
                 key={f}
