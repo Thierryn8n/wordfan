@@ -16,9 +16,12 @@ import {
   ImageIcon,
   FileText,
   PlaySquare,
+  Circle,
+  Star,
+  Check,
 } from 'lucide-react'
-import type { GalleryItem, Post, Show, Video } from '@/lib/types'
-import { TIER_LABELS, VIDEO_CATEGORY_LABELS } from '@/lib/types'
+import type { GalleryItem, Plan, Post, Show, Story, Video, Tier } from '@/lib/types'
+import { TIER_LABELS, TIER_ORDER, VIDEO_CATEGORY_LABELS, formatPrice } from '@/lib/types'
 import {
   savePost,
   deletePost,
@@ -28,16 +31,22 @@ import {
   deleteGalleryItem,
   saveVideo,
   deleteVideo,
+  saveStory,
+  deleteStory,
+  savePlan,
+  deletePlan,
   uploadContentImage,
 } from '@/app/actions/content'
 
-type Section = 'feed' | 'agenda' | 'galeria' | 'videos'
+type Section = 'feed' | 'stories' | 'agenda' | 'galeria' | 'videos' | 'fanclub'
 
 const SECTIONS: { key: Section; label: string; icon: typeof FileText }[] = [
   { key: 'feed', label: 'FEED', icon: FileText },
+  { key: 'stories', label: 'STORIES', icon: Circle },
   { key: 'agenda', label: 'AGENDA', icon: CalendarDays },
   { key: 'galeria', label: 'GALERIA', icon: ImageIcon },
   { key: 'videos', label: 'VÍDEOS', icon: PlaySquare },
+  { key: 'fanclub', label: 'FAN CLUB', icon: Star },
 ]
 
 const inputCls =
@@ -175,12 +184,16 @@ export function ContentManager({
   shows,
   gallery,
   videos,
+  stories = [],
+  plans = [],
 }: {
   artistId: string
   posts: Post[]
   shows: Show[]
   gallery: GalleryItem[]
   videos: Video[]
+  stories?: Story[]
+  plans?: Plan[]
 }) {
   const router = useRouter()
   const [section, setSection] = useState<Section>('feed')
@@ -214,12 +227,21 @@ export function ContentManager({
     isExclusive: false,
     minTier: 'bronze',
   })
+  const [storyForm, setStoryForm] = useState({ mediaUrl: '', caption: '' })
+  const [planForm, setPlanForm] = useState({
+    tier: 'bronze' as Tier,
+    name: '',
+    priceReais: '',
+    benefits: [''],
+  })
 
   function resetForms() {
     setPostForm({ type: 'text', title: '', content: '', mediaUrl: '', isExclusive: false, minTier: 'bronze' })
     setShowForm({ title: '', venue: '', city: '', state: '', startsAt: '', status: 'scheduled' })
     setGalleryForm({ url: '', album: '' })
     setVideoForm({ title: '', category: 'clipe', thumbnailUrl: '', duration: '', isExclusive: false, minTier: 'bronze' })
+    setStoryForm({ mediaUrl: '', caption: '' })
+    setPlanForm({ tier: 'bronze', name: '', priceReais: '', benefits: [''] })
     setEditing(null)
     setStatus({})
   }
@@ -849,6 +871,315 @@ export function ContentManager({
             {videos.length === 0 && (
               <li className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-[10px] font-bold text-muted-foreground">
                 Nenhum vídeo cadastrado.
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+
+      {/* ============ STORIES ============ */}
+      {section === 'stories' && (
+        <div className="mt-5">
+          {editing === null && (
+            <button type="button" onClick={() => setEditing('new')} className={btnPrimary}>
+              <Plus className="size-3.5" aria-hidden="true" />
+              NOVO STORY
+            </button>
+          )}
+
+          {editing !== null && (
+            <form
+              className="flex flex-col gap-4 rounded-3xl border border-white/8 bg-background/50 p-5"
+              onSubmit={(e) => {
+                e.preventDefault()
+                run(
+                  () =>
+                    saveStory({
+                      id: editing === 'new' ? undefined : editing,
+                      artistId,
+                      ...storyForm,
+                    }),
+                  editing === 'new' ? 'Story publicado!' : 'Story atualizado!',
+                )
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-[9px] font-black tracking-[0.2em] text-primary">
+                  {editing === 'new' ? 'NOVO STORY' : 'EDITAR STORY'}
+                </p>
+                <button type="button" onClick={resetForms} aria-label="Fechar formulário">
+                  <X className="size-4 text-muted-foreground" aria-hidden="true" />
+                </button>
+              </div>
+              <div>
+                <span className={labelCls}>MÍDIA DO STORY *</span>
+                <div className="mt-1.5">
+                  <MediaUpload
+                    artistId={artistId}
+                    kind="story"
+                    value={storyForm.mediaUrl}
+                    onChange={(url) => setStoryForm((f) => ({ ...f, mediaUrl: url }))}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="cm-story-caption">LEGENDA</label>
+                <input
+                  id="cm-story-caption"
+                  className={`mt-1.5 ${inputCls}`}
+                  value={storyForm.caption}
+                  onChange={(e) => setStoryForm((f) => ({ ...f, caption: e.target.value }))}
+                  placeholder="Escreva algo (opcional)"
+                  maxLength={140}
+                />
+              </div>
+              <button type="submit" disabled={isPending || !storyForm.mediaUrl} className={btnPrimary}>
+                {isPending && <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />}
+                {editing === 'new' ? 'PUBLICAR STORY' : 'SALVAR ALTERAÇÕES'}
+              </button>
+            </form>
+          )}
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            {stories.map((s) => (
+              <div key={s.id} className="group relative">
+                <span className="gradient-brand block rounded-full p-[3px]">
+                  <span className="block rounded-full border-2 border-card">
+                    <Image
+                      src={s.media_url || '/placeholder.svg'}
+                      alt={s.caption ?? 'Story'}
+                      width={72}
+                      height={72}
+                      className="size-16 rounded-full object-cover"
+                    />
+                  </span>
+                </span>
+                <div className="absolute inset-0 flex items-center justify-center gap-1 rounded-full bg-black/60 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                  <button
+                    type="button"
+                    aria-label="Editar story"
+                    className="flex size-7 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm"
+                    onClick={() => {
+                      setEditing(s.id)
+                      setStoryForm({ mediaUrl: s.media_url, caption: s.caption ?? '' })
+                    }}
+                  >
+                    <Pencil className="size-3.5" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Excluir story"
+                    disabled={isPending}
+                    className="flex size-7 items-center justify-center rounded-full bg-red-500/80 text-white backdrop-blur-sm"
+                    onClick={() => confirmDelete(() => deleteStory(s.id, artistId))}
+                  >
+                    <Trash2 className="size-3.5" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            {stories.length === 0 && (
+              <p className="w-full rounded-2xl border border-dashed border-white/10 p-6 text-center text-[10px] font-bold text-muted-foreground">
+                Nenhum story ativo. Publique o primeiro!
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ============ FAN CLUB (planos) ============ */}
+      {section === 'fanclub' && (
+        <div className="mt-5">
+          {editing === null && (
+            <button type="button" onClick={() => setEditing('new')} className={btnPrimary}>
+              <Plus className="size-3.5" aria-hidden="true" />
+              NOVO PLANO
+            </button>
+          )}
+
+          {editing !== null && (
+            <form
+              className="flex flex-col gap-4 rounded-3xl border border-white/8 bg-background/50 p-5"
+              onSubmit={(e) => {
+                e.preventDefault()
+                run(
+                  () =>
+                    savePlan({
+                      id: editing === 'new' ? undefined : editing,
+                      artistId,
+                      tier: planForm.tier,
+                      name: planForm.name,
+                      priceReais: planForm.priceReais,
+                      benefits: planForm.benefits,
+                    }),
+                  editing === 'new' ? 'Plano criado!' : 'Plano atualizado!',
+                )
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-[9px] font-black tracking-[0.2em] text-primary">
+                  {editing === 'new' ? 'NOVO PLANO' : 'EDITAR PLANO'}
+                </p>
+                <button type="button" onClick={resetForms} aria-label="Fechar formulário">
+                  <X className="size-4 text-muted-foreground" aria-hidden="true" />
+                </button>
+              </div>
+              <div>
+                <span className={labelCls}>NÍVEL (TIER)</span>
+                <div className="mt-1.5 flex flex-wrap gap-2">
+                  {TIER_ORDER.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setPlanForm((f) => ({ ...f, tier: t }))}
+                      className={
+                        planForm.tier === t
+                          ? 'rounded-full bg-primary/15 px-4 py-2 text-[8px] font-black tracking-[0.15em] text-primary'
+                          : 'rounded-full border border-white/8 px-4 py-2 text-[8px] font-black tracking-[0.15em] text-muted-foreground'
+                      }
+                    >
+                      {TIER_LABELS[t].toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls} htmlFor="cm-plan-name">NOME DO PLANO *</label>
+                  <input
+                    id="cm-plan-name"
+                    className={`mt-1.5 ${inputCls}`}
+                    value={planForm.name}
+                    onChange={(e) => setPlanForm((f) => ({ ...f, name: e.target.value }))}
+                    required
+                    maxLength={60}
+                    placeholder="ex: Clube Ouro"
+                  />
+                </div>
+                <div>
+                  <label className={labelCls} htmlFor="cm-plan-price">PREÇO/MÊS (R$) *</label>
+                  <input
+                    id="cm-plan-price"
+                    className={`mt-1.5 ${inputCls} font-numeric`}
+                    value={planForm.priceReais}
+                    onChange={(e) => setPlanForm((f) => ({ ...f, priceReais: e.target.value }))}
+                    inputMode="decimal"
+                    required
+                    placeholder="29,90"
+                  />
+                </div>
+              </div>
+              <div>
+                <span className={labelCls}>BENEFÍCIOS</span>
+                <div className="mt-1.5 flex flex-col gap-2">
+                  {planForm.benefits.map((b, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input
+                        className={inputCls}
+                        value={b}
+                        onChange={(e) =>
+                          setPlanForm((f) => {
+                            const benefits = [...f.benefits]
+                            benefits[i] = e.target.value
+                            return { ...f, benefits }
+                          })
+                        }
+                        placeholder={`Benefício ${i + 1}`}
+                        maxLength={120}
+                      />
+                      <button
+                        type="button"
+                        aria-label="Remover benefício"
+                        className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/8 text-muted-foreground"
+                        onClick={() =>
+                          setPlanForm((f) => ({
+                            ...f,
+                            benefits: f.benefits.length > 1 ? f.benefits.filter((_, j) => j !== i) : [''],
+                          }))
+                        }
+                      >
+                        <X className="size-3.5" aria-hidden="true" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setPlanForm((f) => ({ ...f, benefits: [...f.benefits, ''] }))}
+                    className="flex w-fit items-center gap-2 rounded-full border border-white/8 bg-background px-4 py-2 text-[8px] font-black tracking-[0.15em] text-muted-foreground"
+                  >
+                    <Plus className="size-3" aria-hidden="true" />
+                    ADICIONAR BENEFÍCIO
+                  </button>
+                </div>
+              </div>
+              <button type="submit" disabled={isPending} className={btnPrimary}>
+                {isPending && <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />}
+                {editing === 'new' ? 'CRIAR PLANO' : 'SALVAR ALTERAÇÕES'}
+              </button>
+            </form>
+          )}
+
+          <ul className="mt-4 flex flex-col gap-2">
+            {[...plans]
+              .sort((a, b) => a.price_cents - b.price_cents)
+              .map((p) => (
+                <li key={p.id} className="rounded-2xl border border-white/8 bg-background/40 p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <Star className="size-4" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[11px] font-extrabold">
+                        {p.name}{' '}
+                        <span className="text-[8px] font-black tracking-[0.1em] text-muted-foreground">
+                          · {TIER_LABELS[p.tier].toUpperCase()}
+                        </span>
+                      </p>
+                      <p className="mt-0.5 font-numeric text-[10px] font-bold text-primary">
+                        {formatPrice(p.price_cents)}/mês
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label={`Editar ${p.name}`}
+                      className="flex size-8 items-center justify-center rounded-full border border-white/8 text-muted-foreground transition-colors hover:text-foreground"
+                      onClick={() => {
+                        setEditing(p.id)
+                        setPlanForm({
+                          tier: p.tier,
+                          name: p.name,
+                          priceReais: (p.price_cents / 100).toFixed(2).replace('.', ','),
+                          benefits: p.benefits && p.benefits.length > 0 ? [...p.benefits] : [''],
+                        })
+                      }}
+                    >
+                      <Pencil className="size-3.5" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Excluir ${p.name}`}
+                      disabled={isPending}
+                      className="flex size-8 items-center justify-center rounded-full border border-red-500/20 text-red-400 transition-colors hover:bg-red-500/10"
+                      onClick={() => confirmDelete(() => deletePlan(p.id, artistId))}
+                    >
+                      <Trash2 className="size-3.5" aria-hidden="true" />
+                    </button>
+                  </div>
+                  {p.benefits && p.benefits.length > 0 && (
+                    <ul className="mt-3 flex flex-col gap-1.5 pl-1">
+                      {p.benefits.map((b, i) => (
+                        <li key={i} className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
+                          <Check className="size-3 shrink-0 text-primary" aria-hidden="true" />
+                          {b}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            {plans.length === 0 && (
+              <li className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-[10px] font-bold text-muted-foreground">
+                Nenhum plano criado. Adicione planos para monetizar seu Fan Club.
               </li>
             )}
           </ul>

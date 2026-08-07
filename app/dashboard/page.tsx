@@ -25,14 +25,17 @@ import {
   formatPrice,
   TIER_LABELS,
   type Artist,
+  type GalleryItem,
   type Plan,
   type Post,
+  type Show,
+  type Story,
   type Subscription,
   type Tier,
   type Transaction,
+  type Video,
 } from '@/lib/types'
-import { PublishPostForm } from './publish-post-form'
-import { PlanEditor } from './plan-editor'
+import { ContentManager } from '@/components/wordfan/content-manager'
 
 export const metadata = { title: 'Dashboard do artista — WordFan' }
 
@@ -79,7 +82,16 @@ export default async function DashboardPage() {
     )
   }
 
-  const [{ data: subsData }, { data: postsData }, { data: txData }] = await Promise.all([
+  const [
+    { data: subsData },
+    { data: postsData },
+    { data: txData },
+    { data: showsData },
+    { data: galleryData },
+    { data: videosData },
+    { data: storiesData },
+    { data: plansData },
+  ] = await Promise.all([
     supabase
       .from('subscriptions')
       .select('*, plan:plans(*)')
@@ -91,17 +103,20 @@ export default async function DashboardPage() {
       .select('*')
       .eq('artist_id', artist.id)
       .order('created_at', { ascending: false }),
+    supabase.from('shows').select('*').eq('artist_id', artist.id).order('starts_at', { ascending: true }),
+    supabase.from('gallery_items').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
+    supabase.from('videos').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
+    supabase.from('stories').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
+    supabase.from('plans').select('*').eq('artist_id', artist.id).order('price_cents', { ascending: true }),
   ])
 
   const subs = (subsData ?? []) as (Subscription & { plan: Plan })[]
   const posts = (postsData ?? []) as Post[]
   const txs = (txData ?? []) as Transaction[]
-
-  const { data: plansData } = await supabase
-    .from('plans')
-    .select('*')
-    .eq('artist_id', artist.id)
-    .order('price_cents', { ascending: true })
+  const shows = (showsData ?? []) as Show[]
+  const gallery = (galleryData ?? []) as GalleryItem[]
+  const videos = (videosData ?? []) as Video[]
+  const stories = (storiesData ?? []) as Story[]
   const plans = (plansData ?? []) as Plan[]
 
   const gross = txs.reduce((acc, t) => acc + t.amount_cents, 0)
@@ -278,29 +293,31 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        {/* Meus planos de assinatura */}
-        <section aria-labelledby="my-plans-heading" className="mt-8">
-          <h2
-            id="my-plans-heading"
-            className="text-[10px] font-black tracking-[0.25em] text-muted-foreground"
-          >
-            MEUS PLANOS DE ASSINATURA — DEFINA SEUS PREÇOS
-          </h2>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {plans.map((p) => (
-              <PlanEditor key={p.id} plan={p} slug={artist.slug} />
-            ))}
-          </div>
-        </section>
-
         <div className="mt-8 grid gap-6 lg:grid-cols-5">
-          <section aria-labelledby="publish-heading" className="lg:col-span-2">
-            <h2 id="publish-heading" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
-              NOVA PUBLICAÇÃO
+          {/* Gerenciar conteúdo (CRUD completo) */}
+          <section aria-labelledby="manage-heading" className="lg:col-span-3">
+            <h2 id="manage-heading" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
+              GERENCIAR CONTEÚDO
             </h2>
-            <PublishPostForm artistId={artist.id} slug={artist.slug} />
+            <p className="mt-1 text-[10px] font-bold text-muted-foreground/70">
+              Feed, Stories, Agenda, Galeria, Vídeos e Fan Club — tudo que aparece no seu perfil público.
+            </p>
+            <div className="mt-3">
+              <ContentManager
+                artistId={artist.id}
+                posts={posts}
+                shows={shows}
+                gallery={gallery}
+                videos={videos}
+                stories={stories}
+                plans={plans}
+              />
+            </div>
+          </section>
 
-            <h2 className="mt-8 text-[10px] font-black tracking-[0.25em] text-muted-foreground">
+          {/* Resumo de assinantes */}
+          <section aria-labelledby="subs-heading" className="lg:col-span-2">
+            <h2 id="subs-heading" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
               ASSINANTES POR PLANO
             </h2>
             <div className="mt-3 flex flex-col gap-4 rounded-3xl border border-white/8 bg-card p-5">
@@ -327,17 +344,12 @@ export default async function DashboardPage() {
                 )
               })}
             </div>
-          </section>
 
-          <section aria-labelledby="posts-list-heading" className="lg:col-span-3">
-            <h2
-              id="posts-list-heading"
-              className="text-[10px] font-black tracking-[0.25em] text-muted-foreground"
-            >
+            <h2 className="mt-8 text-[10px] font-black tracking-[0.25em] text-muted-foreground">
               PUBLICAÇÕES RECENTES
             </h2>
             <ul className="mt-3 flex flex-col gap-2.5">
-              {posts.map((p) => (
+              {posts.slice(0, 6).map((p) => (
                 <li
                   key={p.id}
                   className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-4"
@@ -360,6 +372,11 @@ export default async function DashboardPage() {
                   )}
                 </li>
               ))}
+              {posts.length === 0 && (
+                <li className="rounded-3xl border border-dashed border-white/10 p-6 text-center text-[10px] font-bold text-muted-foreground">
+                  Nenhuma publicação ainda.
+                </li>
+              )}
             </ul>
           </section>
         </div>

@@ -123,7 +123,10 @@ DE VOLTA</h1>
 
         <p className="mt-6 text-center text-xs font-bold text-muted-foreground">
           Ainda não tem conta?{' '}
-          <Link href="/auth/sign-up" className="font-black text-primary hover:underline">
+          <Link
+            href={next && next !== '/home' ? `/auth/sign-up?next=${encodeURIComponent(next)}` : '/auth/sign-up'}
+            className="font-black text-primary hover:underline"
+          >
             CRIAR CONTA
           </Link>
         </p>
