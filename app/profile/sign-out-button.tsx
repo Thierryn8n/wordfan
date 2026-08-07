@@ -18,9 +18,9 @@ export function SignOutButton() {
     <button
       type="button"
       onClick={handleSignOut}
-      className="ios-card flex w-full items-center justify-center gap-2 py-3.5 text-[17px] font-normal text-destructive active:bg-[color:var(--ios-fill-2)]"
+      className="glass flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-destructive"
     >
-      <LogOut className="size-[18px]" aria-hidden="true" />
+      <LogOut className="size-4" aria-hidden="true" />
       Sair da conta
     </button>
   )

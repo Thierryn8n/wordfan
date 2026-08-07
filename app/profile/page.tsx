@@ -44,118 +44,131 @@ export default async function ProfilePage() {
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-32">
-      <main className="px-4 pt-16">
-        <h1 className="ios-large-title">Perfil</h1>
+      <main className="px-6 pt-8">
+        <p className="text-[10px] font-black tracking-[0.3em] text-primary">SUA CONTA</p>
+        <h1 className="mt-1 font-serif text-3xl font-black tracking-tight">PERFIL</h1>
 
         {/* Card do usuário */}
-        <div className="ios-card mt-4 flex items-center gap-4 p-4">
-          <div className="relative shrink-0">
-            <span className="flex size-16 items-center justify-center rounded-full bg-[color:var(--ios-fill)] text-[22px] font-semibold">
-              {initials}
-            </span>
-            {isEnterprise && (
-              <HolographicCrown3D
-                size={60}
-                className="pointer-events-none absolute -right-6 -top-9"
-              />
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-2 truncate text-[20px] font-semibold">
+        <div className="mt-6 overflow-hidden rounded-[32px] border border-white/8 bg-card">
+          <div className="gradient-brand h-20" />
+          <div className="-mt-9 px-6 pb-6">
+            <div className="relative w-fit">
+              <span className="flex size-18 items-center justify-center rounded-3xl border-4 border-card bg-background font-serif text-xl font-black">
+                {initials}
+              </span>
+              {isEnterprise && (
+                <HolographicCrown3D
+                  size={72}
+                  className="pointer-events-none absolute -right-8 -top-12"
+                />
+              )}
+            </div>
+            <p className="mt-3 flex items-center gap-2 truncate font-serif text-xl font-extrabold">
               {displayName}
               {isEnterprise && (
-                <span className="holo-text text-[11px] font-bold">Enterprise</span>
+                <span className="holo-text text-[9px] font-black tracking-[0.2em]">ENTERPRISE</span>
               )}
             </p>
-            <p className="truncate text-[15px] text-[color:var(--label-secondary)]">{user.email}</p>
-            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-2.5 py-1 text-[13px] font-medium text-gold">
-              <Zap className="size-3.5" aria-hidden="true" />
+            <p className="truncate text-xs font-medium text-muted-foreground">{user.email}</p>
+            <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1.5 font-numeric text-[10px] font-bold text-gold">
+              <Zap className="size-3" aria-hidden="true" />
               {(profile?.xp ?? 0).toLocaleString('pt-BR')} XP
             </p>
           </div>
         </div>
 
-        {/* Atalhos por papel (lista agrupada iOS) */}
-        {(profile?.role === 'artist' ||
-          profile?.role === 'admin' ||
-          profile?.role === 'empresario' ||
-          hasAnyLead) && (
-          <div className="ios-list mt-6">
-            {(profile?.role === 'artist' || profile?.role === 'admin') && (
-              <Link href="/dashboard" className="ios-row ios-row-inset active:bg-[color:var(--ios-fill-2)]">
-                <LayoutDashboard className="size-[22px] text-primary" aria-hidden="true" />
-                <span className="flex-1 text-[17px]">Dashboard do artista</span>
-                <ChevronRight className="size-4 text-[color:var(--label-tertiary)]" aria-hidden="true" />
-              </Link>
-            )}
-            {profile?.role === 'admin' && (
-              <Link href="/admin" className="ios-row ios-row-inset active:bg-[color:var(--ios-fill-2)]">
-                <ShieldCheck className="size-[22px] text-gold" aria-hidden="true" />
-                <span className="flex-1 text-[17px]">Painel administrativo</span>
-                <ChevronRight className="size-4 text-[color:var(--label-tertiary)]" aria-hidden="true" />
-              </Link>
-            )}
-            {profile?.role === 'empresario' && (
-              <Link href="/manager" className="ios-row ios-row-inset active:bg-[color:var(--ios-fill-2)]">
-                <Briefcase className="size-[22px] text-primary" aria-hidden="true" />
-                <span className="flex-1 text-[17px]">Painel do empresário</span>
-                <ChevronRight className="size-4 text-[color:var(--label-tertiary)]" aria-hidden="true" />
-              </Link>
-            )}
-            {hasAnyLead && (
-              <Link href="/enterprise/status" className="ios-row ios-row-inset active:bg-[color:var(--ios-fill-2)]">
-                <Building2 className="size-[22px] text-primary" aria-hidden="true" />
-                <span className="flex-1 text-[17px]">Minhas contratações</span>
-                {isEnterprise && <HoloCrown size={20} />}
-                <ChevronRight className="size-4 text-[color:var(--label-tertiary)]" aria-hidden="true" />
+        {(profile?.role === 'artist' || profile?.role === 'admin') && (
+          <div className="mt-4 flex flex-col gap-2.5">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-5 transition-colors hover:bg-secondary"
+            >
+              <LayoutDashboard className="size-5 text-primary" aria-hidden="true" />
+              <span className="flex-1 text-xs font-extrabold tracking-[0.05em]">DASHBOARD DO ARTISTA</span>
+              <ChevronRight className="size-4 text-zinc-600" aria-hidden="true" />
+            </Link>
+            {profile.role === 'admin' && (
+              <Link
+                href="/admin"
+                className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-5 transition-colors hover:bg-secondary"
+              >
+                <ShieldCheck className="size-5 text-gold" aria-hidden="true" />
+                <span className="flex-1 text-xs font-extrabold tracking-[0.05em]">PAINEL ADMINISTRATIVO</span>
+                <ChevronRight className="size-4 text-zinc-600" aria-hidden="true" />
               </Link>
             )}
           </div>
         )}
 
+        {profile?.role === 'empresario' && (
+          <div className="mt-4">
+            <Link
+              href="/manager"
+              className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-5 transition-colors hover:bg-secondary"
+            >
+              <Briefcase className="size-5 text-primary" aria-hidden="true" />
+              <span className="flex-1 text-xs font-extrabold tracking-[0.05em]">PAINEL DO EMPRESÁRIO</span>
+              <ChevronRight className="size-4 text-zinc-600" aria-hidden="true" />
+            </Link>
+          </div>
+        )}
+
+        {hasAnyLead && (
+          <div className="mt-4">
+            <Link
+              href="/enterprise/status"
+              className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-5 transition-colors hover:bg-secondary"
+            >
+              <Building2 className="size-5 text-primary" aria-hidden="true" />
+              <span className="flex-1 text-xs font-extrabold tracking-[0.05em]">MINHAS CONTRATAÇÕES</span>
+              {isEnterprise && <HoloCrown size={20} />}
+              <ChevronRight className="size-4 text-zinc-600" aria-hidden="true" />
+            </Link>
+          </div>
+        )}
+
         {/* Assinaturas */}
-        <section aria-labelledby="subs-heading" className="mt-7">
-          <h2 id="subs-heading" className="px-1 text-[13px] font-normal uppercase text-[color:var(--label-secondary)]">
-            Minhas assinaturas
+        <section aria-labelledby="subs-heading" className="mt-8">
+          <h2 id="subs-heading" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
+            MINHAS ASSINATURAS
           </h2>
           {subscriptions.length === 0 ? (
-            <div className="ios-card mt-2 flex flex-col items-center gap-3 p-8 text-center">
-              <Sparkles className="size-7 text-[color:var(--label-secondary)]" aria-hidden="true" />
-              <p className="text-[15px] text-[color:var(--label-secondary)] text-pretty">
+            <div className="mt-3 flex flex-col items-center gap-4 rounded-[32px] border border-white/8 bg-card p-8 text-center">
+              <Sparkles className="size-6 text-muted-foreground" aria-hidden="true" />
+              <p className="text-xs font-bold text-muted-foreground text-pretty">
                 Você ainda não assina nenhum fan club.
               </p>
               <Link
                 href="/home"
-                className="rounded-full bg-primary px-6 py-2.5 text-[15px] font-semibold text-primary-foreground active:opacity-70"
+                className="gradient-brand rounded-full px-6 py-3 text-[10px] font-black tracking-[0.2em] text-white"
               >
-                Descobrir artistas
+                DESCOBRIR ARTISTAS
               </Link>
             </div>
           ) : (
-            <ul className="ios-list mt-2">
+            <ul className="mt-3 flex flex-col gap-2.5">
               {subscriptions.map((s) => (
                 <li key={s.id}>
                   <Link
                     href={`/artist/${s.artist.slug}/club`}
-                    className="ios-row ios-row-inset active:bg-[color:var(--ios-fill-2)]"
+                    className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-4 transition-colors hover:bg-secondary"
                   >
                     <Image
-                      src={s.artist.avatar_url || '/placeholder.svg?height=44&width=44'}
+                      src={s.artist.avatar_url || '/placeholder.svg?height=48&width=48'}
                       alt=""
-                      width={44}
-                      height={44}
-                      className="size-11 rounded-full object-cover"
+                      width={48}
+                      height={48}
+                      className="size-12 rounded-2xl object-cover"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[17px] font-semibold">{s.artist.name}</p>
-                      <p className="mt-0.5 text-[13px] text-[color:var(--label-secondary)]">
-                        Desde {new Date(s.started_at).toLocaleDateString('pt-BR')}
+                      <p className="truncate text-xs font-extrabold">{s.artist.name}</p>
+                      <p className="mt-0.5 font-numeric text-[9px] font-bold tracking-[0.1em] text-zinc-500">
+                        DESDE {new Date(s.started_at).toLocaleDateString('pt-BR')}
                       </p>
                     </div>
-                    <span className="shrink-0 rounded-full bg-club/12 px-2.5 py-1 text-[12px] font-medium text-club">
-                      {TIER_LABELS[s.plan.tier]}
+                    <span className="shrink-0 rounded-full bg-club/10 px-3 py-1.5 text-[8px] font-black tracking-[0.15em] text-club">
+                      {TIER_LABELS[s.plan.tier].toUpperCase()}
                     </span>
-                    <ChevronRight className="size-4 text-[color:var(--label-tertiary)]" aria-hidden="true" />
                   </Link>
                 </li>
               ))}
@@ -163,7 +176,7 @@ export default async function ProfilePage() {
           )}
         </section>
 
-        <div className="mt-7">
+        <div className="mt-8">
           <SignOutButton />
         </div>
       </main>

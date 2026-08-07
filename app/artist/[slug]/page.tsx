@@ -115,27 +115,27 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           aria-hidden="true"
         />
 
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4 pt-safe">
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-5 pt-8">
           <Link
             href="/home"
             aria-label="Voltar"
-            className="flex size-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-md active:opacity-60"
+            className="flex size-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md"
           >
             <ArrowLeft className="size-5" aria-hidden="true" />
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {liveNow && (
               <Link
                 href={`/artist/${artist.slug}/live`}
-                className="flex items-center gap-1.5 rounded-full bg-destructive px-3 py-1.5 text-[13px] font-semibold text-white"
+                className="flex items-center gap-2 rounded-full bg-red-600 px-4 py-2.5 text-[9px] font-black tracking-[0.2em] text-white"
               >
-                <span className="size-1.5 animate-pulse rounded-full bg-white" aria-hidden="true" />
-                Ao vivo
+                <span className="size-2 animate-pulse rounded-full bg-white" aria-hidden="true" />
+                AO VIVO AGORA
               </Link>
             )}
             <button
               aria-label="Compartilhar"
-              className="flex size-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-md active:opacity-60"
+              className="flex size-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md"
             >
               <Share2 className="size-5" aria-hidden="true" />
             </button>
@@ -143,45 +143,50 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         </div>
 
         {/* Identidade */}
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-6">
+        <div className="absolute inset-x-0 bottom-0 px-6 pb-6">
           <div className="relative inline-block">
             <Image
               src={artist.avatar_url || '/placeholder.svg?height=96&width=96'}
               alt={`Foto de ${artist.name}`}
               width={96}
               height={96}
-              className="size-24 rounded-full border-[3px] border-club object-cover"
+              className="size-24 rounded-full border-4 border-club object-cover"
             />
             <span
-              className="absolute bottom-0 right-0 flex size-7 items-center justify-center rounded-full border-2 border-background bg-club"
+              className="absolute -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full bg-club"
               aria-hidden="true"
             >
-              <Check className="size-3.5 text-white" />
+              <Check className="size-4 text-white" />
             </span>
           </div>
-          <h1 className="mt-3 flex items-center gap-2 text-[32px] font-bold leading-tight tracking-[-0.021em]">
-            {artist.name}
-            <BadgeCheck className="size-6 text-club" aria-hidden="true" />
+          <h1 className="mt-4 flex items-center gap-2 font-serif text-[40px] font-extrabold leading-none tracking-tight">
+            {artist.name.toUpperCase()}
+            <BadgeCheck className="size-7 text-club" aria-hidden="true" />
           </h1>
           {artist.bio && (
-            <p className="mt-1.5 max-w-xs text-[15px] leading-relaxed text-white/85">{artist.bio}</p>
+            <p className="mt-2 max-w-xs text-sm leading-relaxed text-foreground/80">{artist.bio}</p>
           )}
-          <p className="mt-2 text-[15px] text-white/70">
-            {artist.city}/{artist.state} · {artist.genre} ·{' '}
-            <span className="font-semibold text-club">{formatFans(artist.followers_count)} fãs</span>
+          <p className="mt-2 text-sm">
+            <span className="text-muted-foreground">
+              {artist.city}/{artist.state} • {artist.genre}
+            </span>
+            <span className="mx-2 text-muted-foreground">•</span>
+            <span className="font-extrabold tracking-[0.15em] text-club">
+              {formatFans(artist.followers_count)} FÃS
+            </span>
           </p>
 
-          <div className="mt-5 flex gap-2.5">
+          <div className="mt-5 flex gap-3">
             <Link
               href={subscription ? `/artist/${artist.slug}/club` : `/artist/${artist.slug}/plans`}
-              className="gradient-club flex h-12 flex-1 items-center justify-center gap-2 rounded-xl text-[17px] font-semibold text-white active:opacity-80"
+              className="gradient-club flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl text-[11px] font-extrabold tracking-[0.2em] text-white"
             >
-              <Star className="size-[18px] fill-white" aria-hidden="true" />
-              {subscription ? 'Acessar fan club' : 'Entrar no fan club'}
+              <Star className="size-4 fill-white" aria-hidden="true" />
+              {subscription ? 'ACESSAR FAN CLUB' : 'ENTRAR NO FAN CLUB'}
             </Link>
-            <button className="flex h-12 items-center gap-2 rounded-xl bg-black/30 px-5 text-[17px] font-semibold text-white backdrop-blur-md active:opacity-70">
-              <UserPlus className="size-[18px]" aria-hidden="true" />
-              Seguir
+            <button className="flex h-14 items-center gap-2 rounded-2xl border border-white/8 bg-card px-5 text-[11px] font-extrabold tracking-[0.2em]">
+              <UserPlus className="size-4" aria-hidden="true" />
+              SEGUIR
             </button>
           </div>
         </div>
@@ -194,15 +199,15 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
       {!liveNow && nextLive && (
         <Link
           href={`/artist/${artist.slug}/live`}
-          className="mx-4 mt-6 flex items-center gap-3 rounded-2xl bg-club/12 p-3.5 active:opacity-80"
+          className="mx-6 mt-6 flex items-center gap-4 rounded-3xl border border-club/40 bg-club/10 p-4"
         >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-club/20 text-club">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-club/20 text-club">
             <CalendarClock className="size-5" aria-hidden="true" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-medium text-club">Próxima live</p>
-            <p className="mt-0.5 truncate text-[15px] font-semibold">{nextLive.title}</p>
-            <p className="mt-0.5 text-[13px] text-[color:var(--label-secondary)]">
+            <p className="text-[9px] font-black tracking-[0.2em] text-club">PRÓXIMA LIVE</p>
+            <p className="mt-0.5 truncate text-sm font-extrabold">{nextLive.title}</p>
+            <p className="mt-0.5 text-[10px] font-bold text-muted-foreground">
               {new Date(nextLive.scheduled_at).toLocaleDateString('pt-BR', {
                 day: '2-digit',
                 month: 'short',

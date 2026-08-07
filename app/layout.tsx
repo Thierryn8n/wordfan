@@ -19,10 +19,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   colorScheme: 'dark',
-  themeColor: '#000000',
-  viewportFit: 'cover',
-  width: 'device-width',
-  initialScale: 1,
+  themeColor: '#0e0e0e',
 }
 
 export default async function RootLayout({
@@ -30,15 +27,9 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  // Contratante Enterprise aprovado => tema holográfico em todo o app.
-  // Nunca deixa a checagem derrubar o layout (ex.: Supabase indisponível).
-  let enterpriseTheme = ''
-  try {
-    const enterprise = await getMyEnterpriseStatus()
-    enterpriseTheme = enterprise?.status === 'approved' ? 'enterprise-theme' : ''
-  } catch {
-    enterpriseTheme = ''
-  }
+  // Contratante Enterprise aprovado => tema holográfico em todo o app
+  const enterprise = await getMyEnterpriseStatus()
+  const enterpriseTheme = enterprise?.status === 'approved' ? 'enterprise-theme' : ''
 
   return (
     <html

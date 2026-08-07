@@ -14,7 +14,7 @@ export function ArtistCard({ artist, size = 'md' }: { artist: Artist; size?: 'md
     <Link
       href={`/artist/${artist.slug}`}
       className={cn(
-        'group relative block overflow-hidden rounded-[20px] active:opacity-90',
+        'group relative block overflow-hidden rounded-2xl',
         size === 'lg' ? 'aspect-[4/5]' : 'aspect-square',
       )}
     >
