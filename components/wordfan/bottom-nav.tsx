@@ -25,7 +25,7 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
         href={href}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          'flex flex-1 flex-col items-center gap-1.5 py-1 text-[9px] font-extrabold tracking-[0.15em] transition-colors',
+          'flex flex-1 flex-col items-center gap-1.5 py-1 text-[8px] font-extrabold tracking-[0.08em] transition-colors',
           active
             ? accent === 'club'
               ? 'text-club'
@@ -68,7 +68,7 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
             </span>
             <span
               className={cn(
-                'text-[9px] font-extrabold tracking-[0.15em]',
+                'whitespace-nowrap text-[8px] font-extrabold tracking-[0.08em]',
                 clubActive
                   ? accent === 'club'
                     ? 'text-club'
