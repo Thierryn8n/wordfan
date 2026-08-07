@@ -5,6 +5,7 @@ import { LayoutDashboard, ShieldCheck, Sparkles, ChevronRight, Zap, Briefcase, B
 import { createClient } from '@/lib/supabase/server'
 import { BottomNav } from '@/components/wordfan/bottom-nav'
 import { HoloCrown } from '@/components/wordfan/holo-crown'
+import { HolographicCrown3D } from '@/components/wordfan/holo-crown-3d'
 import { SignOutButton } from './sign-out-button'
 import { TIER_LABELS } from '@/lib/types'
 import type { Profile, Subscription, Plan, Artist } from '@/lib/types'
@@ -56,9 +57,10 @@ export default async function ProfilePage() {
                 {initials}
               </span>
               {isEnterprise && (
-                <span className="absolute -right-3 -top-3">
-                  <HoloCrown size={30} />
-                </span>
+                <HolographicCrown3D
+                  size={72}
+                  className="pointer-events-none absolute -right-8 -top-12"
+                />
               )}
             </div>
             <p className="mt-3 flex items-center gap-2 truncate font-serif text-xl font-extrabold">

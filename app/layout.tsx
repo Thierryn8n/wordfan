@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Inter, Sora, Space_Grotesk, Playfair_Display, Bebas_Neue } from 'next/font/google'
+import { getMyEnterpriseStatus } from '@/lib/enterprise'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-body' })
@@ -21,15 +22,19 @@ export const viewport: Viewport = {
   themeColor: '#0e0e0e',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // Contratante Enterprise aprovado => tema holográfico em todo o app
+  const enterprise = await getMyEnterpriseStatus()
+  const enterpriseTheme = enterprise?.status === 'approved' ? 'enterprise-theme' : ''
+
   return (
     <html
       lang="pt-BR"
-      className={`dark bg-background ${inter.variable} ${sora.variable} ${spaceGrotesk.variable} ${playfair.variable} ${bebas.variable}`}
+      className={`dark bg-background ${enterpriseTheme} ${inter.variable} ${sora.variable} ${spaceGrotesk.variable} ${playfair.variable} ${bebas.variable}`}
     >
       <body className="antialiased font-sans">
         {children}

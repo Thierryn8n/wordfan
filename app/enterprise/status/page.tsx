@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Clock, Check, X, CreditCard } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { HoloCrown } from '@/components/wordfan/holo-crown'
+import { HolographicCrown3D } from '@/components/wordfan/holo-crown-3d'
 import type { EnterpriseLead } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -51,6 +51,7 @@ export default async function EnterpriseStatusPage() {
     .order('created_at', { ascending: false })
 
   const list = (leads ?? []) as (EnterpriseLead & { artist?: { name: string; slug: string } | null })[]
+  const hasApproved = list.some((l) => l.status === 'approved')
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-24 pt-6">
@@ -66,6 +67,13 @@ export default async function EnterpriseStatusPage() {
           <h1 className="holo-text font-serif text-2xl font-black">MINHAS CONTRATAÇÕES</h1>
         </div>
       </header>
+
+      {hasApproved && (
+        <div className="mt-6 flex flex-col items-center">
+          <HolographicCrown3D size={180} label="Selo Enterprise ativo" />
+          <p className="holo-text mt-1 text-[11px] font-black tracking-[0.3em]">SELO ENTERPRISE ATIVO</p>
+        </div>
+      )}
 
       {list.length === 0 ? (
         <div className="mt-10 rounded-3xl border border-white/8 bg-card p-8 text-center">
@@ -89,7 +97,7 @@ export default async function EnterpriseStatusPage() {
                       </p>
                     )}
                   </div>
-                  {lead.status === 'approved' && <HoloCrown size={28} />}
+                  {lead.status === 'approved' && <HolographicCrown3D size={56} />}
                 </div>
 
                 <div className={`mt-4 flex items-center gap-2 ${meta.tone}`}>
