@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Artist, Live, Plan, Post, Show, Subscription, GalleryItem, Tier, Video } from '@/lib/types'
+import type { AdBanner, AdPlacement, Artist, Live, Plan, Post, Show, Story, Subscription, GalleryItem, Tier, Video } from '@/lib/types'
 import { TIER_ORDER } from '@/lib/types'
 
 export async function getArtists() {
@@ -85,6 +85,70 @@ export async function getArtistLives(artistId: string) {
     .in('status', ['scheduled', 'live'])
     .order('scheduled_at', { ascending: true })
   return (data ?? []) as Live[]
+}
+
+export async function getUpcomingShows(limit = 6) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('shows')
+    .select('*, artist:artists(id, name, slug, avatar_url, genre)')
+    .eq('status', 'scheduled')
+    .gte('starts_at', new Date().toISOString())
+    .order('starts_at', { ascending: true })
+    .limit(limit)
+  return (data ?? []) as (Show & { artist: Pick<Artist, 'id' | 'name' | 'slug' | 'avatar_url' | 'genre'> | null })[]
+}
+
+export async function getUpcomingLives(limit = 6) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('lives')
+    .select('*, artist:artists(id, name, slug, avatar_url, genre)')
+    .in('status', ['scheduled', 'live'])
+    .order('scheduled_at', { ascending: true })
+    .limit(limit)
+  return (data ?? []) as (Live & { artist: Pick<Artist, 'id' | 'name' | 'slug' | 'avatar_url' | 'genre'> | null })[]
+}
+
+export async function getRecentStories(limit = 12) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('stories')
+    .select('*, artist:artists(id, name, slug, avatar_url)')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  return (data ?? []) as (Story & { artist: Pick<Artist, 'id' | 'name' | 'slug' | 'avatar_url'> | null })[]
+}
+
+export async function getActiveBanners(placement?: AdPlacement) {
+  const supabase = await createClient()
+  const nowIso = new Date().toISOString()
+  let query = supabase
+    .from('ad_banners')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: false })
+  if (placement) query = query.eq('placement', placement)
+  const { data } = await query
+  const banners = (data ?? []) as AdBanner[]
+  // Respeita janela de agendamento (starts_at / ends_at) quando definida
+  return banners.filter((b) => {
+    if (b.starts_at && b.starts_at > nowIso) return false
+    if (b.ends_at && b.ends_at < nowIso) return false
+    return true
+  })
+}
+
+export async function getAllBanners() {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('ad_banners')
+    .select('*')
+    .order('placement', { ascending: true })
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: false })
+  return (data ?? []) as AdBanner[]
 }
 
 export async function getCurrentUser() {

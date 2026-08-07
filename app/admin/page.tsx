@@ -12,6 +12,7 @@ import {
   BarChart3,
   Settings,
   ShieldCheck,
+  Megaphone,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Logo } from '@/components/wordfan/logo'
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { label: 'USUÁRIOS', icon: Users, active: false, href: null as string | null },
   { label: 'ASSINATURAS', icon: CreditCard, active: false, href: null as string | null },
   { label: 'STUDIO DO ARTISTA', icon: Palette, active: false, href: '/admin/artists' },
+  { label: 'ANÚNCIOS', icon: Megaphone, active: false, href: '/admin/ads' },
   { label: 'RELATÓRIOS', icon: BarChart3, active: false, href: null as string | null },
   { label: 'CONFIGURAÇÕES', icon: Settings, active: false, href: null as string | null },
 ]
@@ -112,7 +114,24 @@ export default async function AdminPage() {
           </div>
         </header>
 
-        <section aria-label="Métricas da plataforma" className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <section aria-label="Ações rápidas" className="mt-6 flex flex-wrap gap-2.5">
+          <Link
+            href="/admin/artists"
+            className="flex items-center gap-2 rounded-full border border-white/8 bg-card px-5 py-3 text-[10px] font-black tracking-[0.15em] transition-colors hover:bg-secondary"
+          >
+            <Mic2 className="size-3.5 text-gold" aria-hidden="true" />
+            GERENCIAR ARTISTAS
+          </Link>
+          <Link
+            href="/admin/ads"
+            className="flex items-center gap-2 rounded-full bg-gold/15 px-5 py-3 text-[10px] font-black tracking-[0.15em] text-gold transition-colors hover:bg-gold/25"
+          >
+            <Megaphone className="size-3.5" aria-hidden="true" />
+            BANNERS DE ANÚNCIO
+          </Link>
+        </section>
+
+        <section aria-label="Métricas da plataforma" className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {stats.map(({ label, value, icon: Icon }) => (
             <div key={label} className="rounded-3xl border border-white/8 bg-card p-5">
               <span className="flex size-9 items-center justify-center rounded-xl bg-gold/10">
