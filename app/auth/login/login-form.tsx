@@ -60,8 +60,7 @@ export function LoginForm() {
           <p className="mt-3 text-[9px] font-black tracking-[0.35em] text-muted-foreground">
             ÁREA DE ACESSO
           </p>
-          <h1 className="mt-5 font-serif text-3xl font-black tracking-tight">BEM-VINDO
-DE VOLTA</h1>
+          <h1 className="mt-5 font-serif text-3xl font-black tracking-tight">BEM-VINDO DE VOLTA</h1>
           <p className="mt-2 text-xs font-bold text-muted-foreground">
             Entre para acessar seus fan clubs
           </p>
