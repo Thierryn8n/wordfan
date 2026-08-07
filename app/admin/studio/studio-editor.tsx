@@ -61,7 +61,13 @@ function ColorInput({
   )
 }
 
-export function StudioEditor({ artist }: { artist: Artist }) {
+export function StudioEditor({
+  artist,
+  contentSlot,
+}: {
+  artist: Artist
+  contentSlot?: React.ReactNode
+}) {
   const [theme, setTheme] = useState<ArtistTheme>(() => resolveTheme(artist.theme))
   const [commission, setCommission] = useState(String(Number(artist.commission_pct ?? 20)))
   const [toolPlan, setToolPlan] = useState<ToolPlan>((artist.tool_plan ?? 'basic') as ToolPlan)
@@ -69,7 +75,7 @@ export function StudioEditor({ artist }: { artist: Artist }) {
   const [bannerUrl, setBannerUrl] = useState(artist.banner_url ?? '')
   const [status, setStatus] = useState<{ ok?: string; error?: string }>({})
   const [isPending, startTransition] = useTransition()
-  const [tab, setTab] = useState<'identity' | 'profile'>('identity')
+  const [tab, setTab] = useState<'identity' | 'profile' | 'content'>('identity')
 
   const vars = themeToCssVars(theme) as CSSProperties
 
@@ -127,6 +133,21 @@ export function StudioEditor({ artist }: { artist: Artist }) {
           >
             PERFIL COMPLETO
           </button>
+          {contentSlot && (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'content'}
+              onClick={() => setTab('content')}
+              className={
+                tab === 'content'
+                  ? 'gradient-brand flex-1 rounded-2xl py-3.5 text-[10px] font-black tracking-[0.2em] text-white'
+                  : 'flex-1 rounded-2xl border border-white/8 bg-card py-3.5 text-[10px] font-black tracking-[0.2em] text-muted-foreground'
+              }
+            >
+              CONTEÚDO
+            </button>
+          )}
         </div>
 
         {tab === 'profile' && (
@@ -138,6 +159,8 @@ export function StudioEditor({ artist }: { artist: Artist }) {
             onBannerChange={setBannerUrl}
           />
         )}
+
+        {tab === 'content' && contentSlot}
 
         <div className={tab === 'identity' ? 'flex flex-col gap-7' : 'hidden'}>
         <section aria-labelledby="colors-h">

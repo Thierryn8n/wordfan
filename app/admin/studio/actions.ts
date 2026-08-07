@@ -81,15 +81,24 @@ export async function saveArtistStudio({
   return { success: true }
 }
 
-async function requireAdmin() {
+// Admin OU dono do artista (para edição de perfil e uploads)
+async function requireManager(artistId?: string) {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { supabase, error: 'Você precisa estar logado.' }
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return { supabase, error: 'Apenas administradores.' }
-  return { supabase, error: null }
+  if (profile?.role === 'admin') return { supabase, error: null }
+  if (artistId) {
+    const { data: artist } = await supabase.from('artists').select('owner_id').eq('id', artistId).single()
+    if (artist?.owner_id === user.id) return { supabase, error: null }
+  } else {
+    // Sem artistId: permite se o usuário é dono de algum artista (para uploads)
+    const { data: owned } = await supabase.from('artists').select('id').eq('owner_id', user.id).limit(1)
+    if (owned && owned.length > 0) return { supabase, error: null }
+  }
+  return { supabase, error: 'Sem permissão para esta ação.' }
 }
 
 export async function saveArtistProfile({
@@ -118,7 +127,7 @@ export async function saveArtistProfile({
     awards: string[]
   }
 }) {
-  const { supabase, error: authError } = await requireAdmin()
+  const { supabase, error: authError } = await requireManager(artistId)
   if (authError) return { error: authError }
 
   const cleanName = name.trim()
@@ -171,7 +180,7 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
 
 export async function uploadArtistImage(formData: FormData) {
-  const { supabase, error: authError } = await requireAdmin()
+  const { supabase, error: authError } = await requireManager()
   if (authError) return { error: authError }
 
   const file = formData.get('file') as File | null

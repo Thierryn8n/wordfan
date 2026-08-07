@@ -2,7 +2,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ArrowLeft, Palette } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import type { Artist } from '@/lib/types'
+import type { Artist, GalleryItem, Plan, Post, Show, Video } from '@/lib/types'
+import { ContentManager } from '@/components/wordfan/content-manager'
+import { PlanEditor } from '@/app/dashboard/plan-editor'
 import { StudioEditor } from './studio-editor'
 
 export const metadata = { title: 'Studio do Artista — ADM WordFan' }
@@ -28,6 +30,16 @@ export default async function StudioPage({
   const { data: artistData } = await supabase.from('artists').select('*').eq('slug', selectedSlug).single()
   const selected = (artistData as Artist | null) ?? null
   if (!selected) redirect('/admin/artists')
+
+  // Conteúdo do artista para o CRUD
+  const [{ data: postsData }, { data: showsData }, { data: galleryData }, { data: videosData }, { data: plansData }] =
+    await Promise.all([
+      supabase.from('posts').select('*').eq('artist_id', selected.id).order('created_at', { ascending: false }),
+      supabase.from('shows').select('*').eq('artist_id', selected.id).order('starts_at', { ascending: true }),
+      supabase.from('gallery_items').select('*').eq('artist_id', selected.id).order('created_at', { ascending: false }),
+      supabase.from('videos').select('*').eq('artist_id', selected.id).order('created_at', { ascending: false }),
+      supabase.from('plans').select('*').eq('artist_id', selected.id).order('price_cents', { ascending: true }),
+    ])
 
   return (
     <div className="min-h-dvh bg-background pb-16">
