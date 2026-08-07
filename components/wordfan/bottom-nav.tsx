@@ -2,41 +2,90 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, Bell, User } from 'lucide-react'
+import { Home, Search, Star, Calendar, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const items = [
-  { href: '/home', label: 'Início', icon: Home },
-  { href: '/search', label: 'Pesquisar', icon: Search },
-  { href: '/notifications', label: 'Alertas', icon: Bell },
-  { href: '/profile', label: 'Perfil', icon: User },
+const left = [
+  { href: '/home', label: 'HOME', icon: Home },
+  { href: '/search', label: 'DISCOVER', icon: Search },
+]
+const right = [
+  { href: '/notifications', label: 'EVENTS', icon: Calendar },
+  { href: '/profile', label: 'PROFILE', icon: User },
 ]
 
-export function BottomNav() {
+export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
   const pathname = usePathname()
+  const clubActive = pathname.startsWith('/artist') || pathname === '/club'
+
+  function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof Home }) {
+    const active = pathname === href || pathname.startsWith(href + '/')
+    return (
+      <Link
+        href={href}
+        aria-current={active ? 'page' : undefined}
+        className={cn(
+          'flex flex-1 flex-col items-center gap-1.5 py-1 text-[9px] font-extrabold tracking-[0.15em] transition-colors',
+          active
+            ? accent === 'club'
+              ? 'text-club'
+              : 'text-brand'
+            : 'text-muted-foreground hover:text-foreground',
+        )}
+      >
+        <Icon className="size-5" aria-hidden="true" />
+        <span>{label}</span>
+      </Link>
+    )
+  }
+
   return (
     <nav
       aria-label="Navegação principal"
-      className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md px-4 pb-4 md:max-w-lg"
+      className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-md"
     >
-      <div className="glass flex items-center justify-around rounded-2xl px-2 py-2">
-        {items.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(href + '/')
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? 'page' : undefined}
+      <div className="relative rounded-t-[32px] border border-b-0 border-white/8 bg-black/90 px-4 pb-5 pt-4 backdrop-blur-xl">
+        <div className="flex items-end">
+          {left.map((item) => (
+            <NavItem key={item.href} {...item} />
+          ))}
+
+          {/* Botão central elevado FAN CLUB */}
+          <Link
+            href="/home"
+            aria-label="Fan Club"
+            className="relative -mt-10 flex flex-1 flex-col items-center gap-1.5"
+          >
+            <span
               className={cn(
-                'flex flex-col items-center gap-0.5 rounded-xl px-4 py-1.5 text-[11px] transition-colors',
-                active ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+                'flex size-14 items-center justify-center rounded-2xl text-white shadow-lg',
+                accent === 'club'
+                  ? 'gradient-club shadow-club/40'
+                  : 'gradient-brand shadow-brand/40',
               )}
             >
-              <Icon className="size-5" aria-hidden="true" />
-              <span>{label}</span>
-            </Link>
-          )
-        })}
+              <Star className="size-6 fill-white" aria-hidden="true" />
+            </span>
+            <span
+              className={cn(
+                'text-[9px] font-extrabold tracking-[0.15em]',
+                clubActive
+                  ? accent === 'club'
+                    ? 'text-club'
+                    : 'text-brand'
+                  : accent === 'club'
+                    ? 'text-club'
+                    : 'text-brand',
+              )}
+            >
+              FAN CLUB
+            </span>
+          </Link>
+
+          {right.map((item) => (
+            <NavItem key={item.href} {...item} />
+          ))}
+        </div>
       </div>
     </nav>
   )

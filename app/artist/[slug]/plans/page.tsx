@@ -1,19 +1,25 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Check } from 'lucide-react'
+import { ArrowLeft, Check, ShieldCheck } from 'lucide-react'
 import { getArtistBySlug, getArtistPlans, getUserSubscription } from '@/lib/data'
 import { formatPrice } from '@/lib/types'
 import { SubscribeButton } from './subscribe-button'
-import { cn } from '@/lib/utils'
 
 export const metadata = { title: 'Planos — WordFan' }
 
-const tierAccent: Record<string, string> = {
-  bronze: 'border-[#8c5a2b]/40',
-  silver: 'border-[#9aa4b2]/40',
-  gold: 'border-accent/50',
-  platinum: 'border-primary/60',
+const tierColor: Record<string, string> = {
+  bronze: 'text-[#cd7f32]',
+  silver: 'text-[#c0c0c8]',
+  gold: 'text-[#ffd700]',
+  platinum: 'text-white',
+}
+
+const tierTagline: Record<string, string> = {
+  bronze: 'O começo da jornada VIP',
+  silver: 'Para fãs de verdade',
+  gold: 'Experiência premium completa',
+  platinum: 'ACESSO TOTAL E IRRESTRITO',
 }
 
 export default async function PlansPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -26,83 +32,137 @@ export default async function PlansPage({ params }: { params: Promise<{ slug: st
     getUserSubscription(artist.id),
   ])
 
-  return (
-    <div className="mx-auto min-h-dvh max-w-md pb-12 md:max-w-lg">
-      <header className="relative flex items-center gap-4 px-5 pt-6">
-        <Link
-          href={`/artist/${slug}`}
-          aria-label="Voltar para o perfil do artista"
-          className="glass flex size-10 items-center justify-center rounded-full"
-        >
-          <ArrowLeft className="size-5" aria-hidden="true" />
-        </Link>
-        <div className="flex items-center gap-3">
-          <Image
-            src={artist.avatar_url || '/placeholder.svg?height=40&width=40'}
-            alt=""
-            width={40}
-            height={40}
-            className="size-10 rounded-full object-cover"
-          />
+  const platinum = plans.find((p) => p.tier === 'platinum')
+  const others = plans.filter((p) => p.tier !== 'platinum')
+  const [bronze, ...rest] = others
+
+  function CompactCard({ plan }: { plan: NonNullable<typeof bronze> }) {
+    const isCurrent = subscription?.plan_id === plan.id
+    return (
+      <div className="rounded-[32px] border border-white/8 bg-card p-6">
+        <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">Fan Club de</p>
-            <p className="font-serif font-semibold leading-tight">{artist.name}</p>
+            <h2 className={`font-serif text-xl font-extrabold ${tierColor[plan.tier]}`}>
+              {plan.name.toUpperCase()}
+            </h2>
+            <p className="mt-1 text-[10px] font-bold text-muted-foreground">
+              {tierTagline[plan.tier]}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="font-numeric text-xl font-bold">{formatPrice(plan.price_cents)}</p>
+            <p className="text-[8px] font-extrabold tracking-wide text-muted-foreground">POR MÊS</p>
           </div>
         </div>
-      </header>
+        <div className="mt-5 flex flex-wrap gap-2">
+          {plan.benefits.slice(0, 3).map((b) => (
+            <span
+              key={b}
+              className="rounded-full bg-white/5 px-3 py-1 text-[8px] font-extrabold tracking-[0.1em] text-muted-foreground uppercase"
+            >
+              {b}
+            </span>
+          ))}
+        </div>
+        <SubscribeButton slug={slug} planId={plan.id} isCurrent={isCurrent} variant="compact" />
+      </div>
+    )
+  }
 
-      <main className="px-5">
-        <h1 className="mt-8 font-serif text-2xl font-bold text-balance">Escolha seu nível de fã</h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground text-pretty">
-          Quanto maior o nível, mais perto você fica. Cancele quando quiser.
-        </p>
+  return (
+    <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-40">
+      {/* Header / Banner */}
+      <div className="relative flex h-72 items-center">
+        <Image
+          src={artist.banner_url || artist.avatar_url || '/placeholder.svg?height=288&width=375'}
+          alt=""
+          fill
+          priority
+          sizes="(max-width: 768px) 100vw, 448px"
+          className="object-cover opacity-50"
+        />
+        <div
+          className="absolute inset-0 bg-gradient-to-r from-background via-background/40 to-transparent"
+          aria-hidden="true"
+        />
+        <div className="relative z-10 flex w-full items-start justify-between px-6">
+          <div>
+            <h1 className="font-serif text-4xl font-black leading-none tracking-tight text-balance">
+              FAN CLUB
+              <br />
+              {artist.name.toUpperCase()}
+            </h1>
+            <p className="mt-3 text-[10px] font-black tracking-[0.2em] text-muted-foreground">
+              ESCOLHA SUA EXPERIÊNCIA DE ELITE
+            </p>
+          </div>
+          <Link
+            href={`/artist/${slug}`}
+            aria-label="Voltar para o perfil"
+            className="flex size-10 items-center justify-center rounded-full border border-white/8 bg-white/8 backdrop-blur-md"
+          >
+            <ArrowLeft className="size-5" aria-hidden="true" />
+          </Link>
+        </div>
+      </div>
 
-        <div className="mt-6 flex flex-col gap-4">
-          {plans.map((plan) => {
-            const isCurrent = subscription?.plan_id === plan.id
-            const isPopular = plan.tier === 'gold'
-            return (
+      <main className="flex flex-col gap-6 px-6 pt-8">
+        {bronze && <CompactCard plan={bronze} />}
+
+        {/* Platina em destaque */}
+        {platinum && (
+          <div className="relative">
+            <div className="relative overflow-hidden rounded-[40px] border-2 border-club bg-gradient-to-b from-[#2d1b4d] to-card p-8">
               <div
-                key={plan.id}
-                className={cn(
-                  'glass relative rounded-2xl border p-5',
-                  tierAccent[plan.tier],
-                  isPopular && 'ring-1 ring-accent/40',
-                )}
-              >
-                {isPopular && (
-                  <span className="gradient-brand absolute -top-2.5 right-4 rounded-full px-3 py-0.5 text-[11px] font-bold text-black">
-                    MAIS POPULAR
-                  </span>
-                )}
-                <div className="flex items-baseline justify-between">
-                  <h2 className="font-serif text-xl font-bold">{plan.name}</h2>
-                  <p>
-                    <span className="font-serif text-2xl font-bold">{formatPrice(plan.price_cents)}</span>
-                    <span className="text-xs text-muted-foreground">/mês</span>
+                aria-hidden
+                className="pointer-events-none absolute -top-10 right-0 size-40 rounded-full bg-club/20 blur-[80px]"
+              />
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="font-serif text-2xl font-black tracking-tight">
+                    {platinum.name.toUpperCase()}
+                  </h2>
+                  <p className="mt-1 max-w-[120px] text-[10px] font-bold tracking-[0.1em] text-muted-foreground">
+                    {tierTagline.platinum}
                   </p>
                 </div>
-                <ul className="mt-4 flex flex-col gap-2">
-                  {plan.benefits.map((b) => (
-                    <li key={b} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                      {b}
-                    </li>
-                  ))}
-                </ul>
-                <SubscribeButton
-                  slug={slug}
-                  planId={plan.id}
-                  isCurrent={isCurrent}
-                  isPopular={isPopular}
-                />
+                <div className="text-right">
+                  <p className="font-numeric text-2xl font-bold leading-tight">
+                    {formatPrice(platinum.price_cents)}
+                  </p>
+                  <p className="text-[8px] font-extrabold tracking-wide text-club">POR MÊS</p>
+                </div>
               </div>
-            )
-          })}
-        </div>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground text-pretty">
-          Pagamento simulado nesta versão de demonstração. Nenhuma cobrança será feita.
+              <ul className="mt-8 flex flex-col gap-4 pb-2">
+                {platinum.benefits.map((b) => (
+                  <li key={b} className="flex items-center gap-3 text-xs font-bold">
+                    <Check className="size-4 shrink-0 text-club" aria-hidden="true" />
+                    {b}
+                  </li>
+                ))}
+              </ul>
+
+              <SubscribeButton
+                slug={slug}
+                planId={platinum.id}
+                isCurrent={subscription?.plan_id === platinum.id}
+                variant="featured"
+              />
+            </div>
+            <span className="gradient-club absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-[8px] font-black tracking-[0.2em] text-white shadow-lg">
+              RECOMENDADO
+            </span>
+          </div>
+        )}
+
+        {rest.map((p) => (
+          <CompactCard key={p.id} plan={p} />
+        ))}
+
+        <p className="flex items-center justify-center gap-1 text-center text-[10px] font-bold tracking-[0.1em] text-zinc-600">
+          PAGAMENTO SEGURO VIA STRIPE
+          <ShieldCheck className="size-3" aria-hidden="true" />
         </p>
       </main>
     </div>

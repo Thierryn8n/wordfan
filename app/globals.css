@@ -46,29 +46,36 @@
   --radius-4xl: calc(var(--radius) * 2.6);
   --font-sans: var(--font-body), 'Inter', system-ui, sans-serif;
   --font-serif: var(--font-display), 'Sora', system-ui, sans-serif;
+  --font-mono: var(--font-numeric), 'Space Grotesk', monospace;
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-club: var(--club);
 }
 
 :root {
   color-scheme: dark;
-  --background: oklch(0.13 0 0); /* #070707-ish near black */
-  --foreground: oklch(0.97 0 0);
-  --card: oklch(0.19 0.005 60);
-  --card-foreground: oklch(0.97 0 0);
-  --popover: oklch(0.17 0.005 60);
-  --popover-foreground: oklch(0.97 0 0);
-  --primary: oklch(0.68 0.21 40); /* #FF5F1F laranja */
-  --primary-foreground: oklch(0.13 0 0);
-  --secondary: oklch(0.24 0.01 60);
-  --secondary-foreground: oklch(0.97 0 0);
-  --muted: oklch(0.22 0.005 60);
-  --muted-foreground: oklch(0.65 0.01 60);
-  --accent: oklch(0.85 0.13 85); /* #FFC857 dourado */
-  --accent-foreground: oklch(0.13 0 0);
-  --gold: oklch(0.85 0.13 85);
+  --background: #070707; /* fundo exato do Figma */
+  --foreground: #ffffff;
+  --card: #151515; /* superfície de card do Figma */
+  --card-foreground: #ffffff;
+  --popover: #151515;
+  --popover-foreground: #ffffff;
+  --primary: #ff6b00; /* laranja exato do Figma */
+  --primary-foreground: #ffffff;
+  --secondary: #27272a;
+  --secondary-foreground: #ffffff;
+  --muted: #151515;
+  --muted-foreground: #a1a1aa;
+  --accent: #ff8a00;
+  --accent-foreground: #070707;
+  --gold: #ffc857;
+  --brand: #ff6b00;
+  --brand-light: #ff8a00;
+  --club: #ff00a2; /* rosa do fan club no Figma */
   --destructive: oklch(0.6 0.22 25);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.68 0.21 40);
+  --border: rgba(255, 255, 255, 0.08); /* borda exata do Figma */
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #ff6b00;
   --chart-1: oklch(0.68 0.21 40);
   --chart-2: oklch(0.85 0.13 85);
   --chart-3: oklch(0.6 0.01 60);
@@ -102,12 +109,25 @@
     border: 1px solid oklch(1 0 0 / 10%);
   }
   .gradient-brand {
-    background-image: linear-gradient(135deg, #ff5f1f 0%, #ffc857 100%);
+    background-image: linear-gradient(135deg, #ff8a00 0%, #ff6a00 100%);
   }
   .text-gradient-brand {
-    background-image: linear-gradient(135deg, #ff5f1f 0%, #ffc857 100%);
+    background-image: linear-gradient(135deg, #ff8a00 0%, #ffc857 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+  .gradient-club {
+    background-image: linear-gradient(135deg, #ff00a2 0%, #ff4db8 50%, #ff80d5 100%);
+  }
+  .font-numeric {
+    font-family: var(--font-numeric), 'Space Grotesk', monospace;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 }
