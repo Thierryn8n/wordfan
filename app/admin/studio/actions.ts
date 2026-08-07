@@ -80,3 +80,124 @@ export async function saveArtistStudio({
   revalidatePath('/dashboard')
   return { success: true }
 }
+
+async function requireAdmin() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { supabase, error: 'Você precisa estar logado.' }
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') return { supabase, error: 'Apenas administradores.' }
+  return { supabase, error: null }
+}
+
+export async function saveArtistProfile({
+  artistId,
+  slug,
+  name,
+  bio,
+  genre,
+  city,
+  state,
+  socialLinks,
+  about,
+}: {
+  artistId: string
+  slug: string
+  name: string
+  bio: string
+  genre: string
+  city: string
+  state: string
+  socialLinks: Record<string, string>
+  about: {
+    history: string
+    influences: string[]
+    discography: { title: string; year: string }[]
+    awards: string[]
+  }
+}) {
+  const { supabase, error: authError } = await requireAdmin()
+  if (authError) return { error: authError }
+
+  const cleanName = name.trim()
+  if (!cleanName || cleanName.length > 80) return { error: 'Nome inválido (máx. 80 caracteres).' }
+  if (bio.length > 600) return { error: 'Bio muito longa (máx. 600 caracteres).' }
+  if (about.history.length > 3000) return { error: 'História muito longa (máx. 3000 caracteres).' }
+
+  const cleanSocials: Record<string, string> = {}
+  for (const key of ['instagram', 'tiktok', 'spotify', 'youtube', 'facebook', 'site']) {
+    const v = (socialLinks[key] ?? '').trim().slice(0, 200)
+    if (v) cleanSocials[key] = v
+  }
+
+  const cleanAbout = {
+    history: about.history.trim().slice(0, 3000),
+    influences: about.influences.map((i) => i.trim().slice(0, 80)).filter(Boolean).slice(0, 12),
+    discography: about.discography
+      .map((d) => ({ title: d.title.trim().slice(0, 120), year: d.year.trim().slice(0, 8) }))
+      .filter((d) => d.title)
+      .slice(0, 20),
+    awards: about.awards.map((a) => a.trim().slice(0, 160)).filter(Boolean).slice(0, 20),
+  }
+
+  const { error } = await supabase
+    .from('artists')
+    .update({
+      name: cleanName,
+      bio: bio.trim().slice(0, 600),
+      genre: genre.trim().slice(0, 60),
+      city: city.trim().slice(0, 60),
+      state: state.trim().slice(0, 2).toUpperCase(),
+      social_links: cleanSocials,
+      about: cleanAbout,
+    })
+    .eq('id', artistId)
+
+  if (error) {
+    console.log('[v0] profile save error:', error.message)
+    return { error: 'Não foi possível salvar o perfil.' }
+  }
+
+  revalidatePath('/admin/studio')
+  revalidatePath('/home')
+  revalidatePath('/search')
+  revalidatePath(`/artist/${slug}`)
+  return { success: true }
+}
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024
+const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+
+export async function uploadArtistImage(formData: FormData) {
+  const { supabase, error: authError } = await requireAdmin()
+  if (authError) return { error: authError }
+
+  const file = formData.get('file') as File | null
+  const artistSlug = String(formData.get('slug') ?? 'artist').slice(0, 60)
+  const kind = String(formData.get('kind') ?? 'image').slice(0, 20)
+
+  if (!file || file.size === 0) return { error: 'Nenhum arquivo enviado.' }
+  if (file.size > MAX_IMAGE_BYTES) return { error: 'Imagem muito grande (máx. 5MB).' }
+  if (!ALLOWED_TYPES.includes(file.type)) return { error: 'Formato inválido (use PNG, JPG, WebP ou GIF).' }
+
+  const ext = file.type.split('/')[1] === 'jpeg' ? 'jpg' : file.type.split('/')[1]
+  const path = `${artistSlug}/${kind}-${Date.now()}.${ext}`
+
+  const { error } = await supabase.storage.from('artist-media').upload(path, file, {
+    contentType: file.type,
+    upsert: false,
+  })
+
+  if (error) {
+    console.log('[v0] upload error:', error.message)
+    return { error: 'Falha no upload. Tente novamente.' }
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from('artist-media').getPublicUrl(path)
+
+  return { url: publicUrl }
+}

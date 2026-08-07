@@ -37,6 +37,34 @@ export interface Artist {
   theme: Record<string, unknown>
   commission_pct: number
   tool_plan: 'basic' | 'pro' | 'premium'
+  about: ArtistAbout
+}
+
+export interface ArtistAbout {
+  history?: string
+  influences?: string[]
+  discography?: { title: string; year: string }[]
+  awards?: string[]
+}
+
+export interface Video {
+  id: string
+  artist_id: string
+  title: string
+  category: 'clipe' | 'show' | 'entrevista' | 'bastidores'
+  thumbnail_url: string | null
+  duration: string | null
+  views_count: number
+  is_exclusive: boolean
+  min_tier: Tier | null
+  created_at: string
+}
+
+export const VIDEO_CATEGORY_LABELS: Record<Video['category'], string> = {
+  clipe: 'Clipes',
+  show: 'Shows',
+  entrevista: 'Entrevistas',
+  bastidores: 'Bastidores',
 }
 
 export interface Transaction {

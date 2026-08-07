@@ -18,6 +18,7 @@ import {
 } from '@/lib/artist-theme'
 import type { Artist } from '@/lib/types'
 import { saveArtistStudio } from './actions'
+import { ProfileEditor } from './profile-editor'
 
 const COLOR_FIELDS: { key: keyof Omit<ArtistTheme, 'gradient' | 'style' | 'font_display' | 'radius' | 'nav_style'>; label: string }[] = [
   { key: 'primary', label: 'Primária' },
@@ -68,6 +69,7 @@ export function StudioEditor({ artist }: { artist: Artist }) {
   const [bannerUrl, setBannerUrl] = useState(artist.banner_url ?? '')
   const [status, setStatus] = useState<{ ok?: string; error?: string }>({})
   const [isPending, startTransition] = useTransition()
+  const [tab, setTab] = useState<'identity' | 'profile'>('identity')
 
   const vars = themeToCssVars(theme) as CSSProperties
 
@@ -97,6 +99,47 @@ export function StudioEditor({ artist }: { artist: Artist }) {
     <div className="mt-8 grid gap-8 lg:grid-cols-2">
       {/* ===== Controles ===== */}
       <div className="flex flex-col gap-7">
+        {/* Abas do editor */}
+        <div className="flex gap-2" role="tablist" aria-label="Seções do editor">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'identity'}
+            onClick={() => setTab('identity')}
+            className={
+              tab === 'identity'
+                ? 'gradient-brand flex-1 rounded-2xl py-3.5 text-[10px] font-black tracking-[0.2em] text-white'
+                : 'flex-1 rounded-2xl border border-white/8 bg-card py-3.5 text-[10px] font-black tracking-[0.2em] text-muted-foreground'
+            }
+          >
+            IDENTIDADE VISUAL
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'profile'}
+            onClick={() => setTab('profile')}
+            className={
+              tab === 'profile'
+                ? 'gradient-brand flex-1 rounded-2xl py-3.5 text-[10px] font-black tracking-[0.2em] text-white'
+                : 'flex-1 rounded-2xl border border-white/8 bg-card py-3.5 text-[10px] font-black tracking-[0.2em] text-muted-foreground'
+            }
+          >
+            PERFIL COMPLETO
+          </button>
+        </div>
+
+        {tab === 'profile' && (
+          <ProfileEditor
+            artist={artist}
+            avatarUrl={avatarUrl}
+            bannerUrl={bannerUrl}
+            onAvatarChange={setAvatarUrl}
+            onBannerChange={setBannerUrl}
+          />
+        )}
+
+        <div className={tab === 'identity' ? 'flex flex-col gap-7' : 'hidden'}>
         <section aria-labelledby="colors-h">
           <h2 id="colors-h" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
             CORES DA IDENTIDADE
@@ -322,6 +365,7 @@ export function StudioEditor({ artist }: { artist: Artist }) {
               {status.ok}
             </p>
           )}
+        </div>
         </div>
       </div>
 
