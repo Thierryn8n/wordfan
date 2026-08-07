@@ -259,6 +259,9 @@ export function ContentManager({
   }
 
   function confirmDelete(fn: () => Promise<{ error?: string; success?: boolean }>) {
+    if (typeof window !== 'undefined' && !window.confirm('Tem certeza que deseja excluir? Esta ação não pode ser desfeita.')) {
+      return
+    }
     run(fn, 'Excluído com sucesso.')
   }
 
