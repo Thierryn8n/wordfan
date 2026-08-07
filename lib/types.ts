@@ -142,6 +142,14 @@ export interface GalleryItem {
   created_at: string
 }
 
+export interface Story {
+  id: string
+  artist_id: string
+  media_url: string
+  caption: string | null
+  created_at: string
+}
+
 export interface Notification {
   id: string
   user_id: string

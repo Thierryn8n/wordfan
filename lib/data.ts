@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Artist, Live, Plan, Post, Show, Subscription, GalleryItem, Tier, Video } from '@/lib/types'
+import type { Artist, Live, Plan, Post, Show, Subscription, GalleryItem, Story, Tier, Video } from '@/lib/types'
 import { TIER_ORDER } from '@/lib/types'
 
 export async function getArtists() {
@@ -64,6 +64,16 @@ export async function getArtistGallery(artistId: string) {
     .eq('artist_id', artistId)
     .order('created_at', { ascending: false })
   return (data ?? []) as GalleryItem[]
+}
+
+export async function getArtistStories(artistId: string) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('stories')
+    .select('*')
+    .eq('artist_id', artistId)
+    .order('created_at', { ascending: false })
+  return (data ?? []) as Story[]
 }
 
 export async function getArtistVideos(artistId: string) {

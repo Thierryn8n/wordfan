@@ -10,6 +10,7 @@ import {
   Gem,
   Heart,
   Lock,
+  LogIn,
   MapPin,
   MessageCircle,
   MoreHorizontal,
@@ -18,6 +19,7 @@ import {
   Ticket,
   Trophy,
   Disc3,
+  X,
 } from 'lucide-react'
 import type { Artist, GalleryItem, Post, Show, Video, ArtistAbout } from '@/lib/types'
 import { TIER_LABELS, VIDEO_CATEGORY_LABELS, formatPrice } from '@/lib/types'
