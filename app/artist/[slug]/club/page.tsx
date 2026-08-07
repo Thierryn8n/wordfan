@@ -12,12 +12,17 @@ import {
 } from '@/lib/data'
 import { PostCard } from '@/components/wordfan/post-card'
 import { BottomNav } from '@/components/wordfan/bottom-nav'
+import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
+import { hasEntitlement } from '@/lib/artist-theme'
 import { TIER_LABELS } from '@/lib/types'
 
 export default async function ClubPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const artist = await getArtistBySlug(slug)
   if (!artist) notFound()
+
+  // Entitlement: fan club requer plano de ferramenta Pro ou superior
+  if (!hasEntitlement(artist.tool_plan, 'club')) redirect(`/artist/${slug}`)
 
   const user = await getCurrentUser()
   if (!user) redirect(`/auth/login?next=/artist/${slug}/club`)
@@ -31,10 +36,13 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
     getArtistGallery(artist.id),
   ])
 
-  const liveNow = lives.find((l) => l.status === 'live')
-  const upcoming = lives.filter((l) => l.status === 'scheduled')
+  const canLives = hasEntitlement(artist.tool_plan, 'lives')
+  const canRanking = hasEntitlement(artist.tool_plan, 'ranking')
+  const liveNow = canLives ? lives.find((l) => l.status === 'live') : undefined
+  const upcoming = canLives ? lives.filter((l) => l.status === 'scheduled') : []
 
   return (
+    <ArtistThemeScope theme={artist.theme}>
     <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-32">
       {/* Hero do clube */}
       <header className="relative h-56 overflow-hidden">
@@ -158,6 +166,7 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
         )}
 
         {/* Ranking */}
+        {canRanking && (
         <section aria-labelledby="ranking-heading" className="mt-8">
           <h2
             id="ranking-heading"
@@ -193,6 +202,7 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
             </p>
           </div>
         </section>
+        )}
 
         {/* Galeria exclusiva */}
         {gallery.length > 0 && (
@@ -234,5 +244,6 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
 
       <BottomNav />
     </div>
+    </ArtistThemeScope>
   )
 }

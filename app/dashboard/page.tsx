@@ -12,9 +12,15 @@ import {
   CalendarDays,
   Star,
   ExternalLink,
+  Lock,
+  Wallet,
+  Landmark,
+  Sparkles,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Logo } from '@/components/wordfan/logo'
+import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
+import { TOOL_PLANS, hasEntitlement, type ToolPlan } from '@/lib/artist-theme'
 import {
   formatPrice,
   TIER_LABELS,
@@ -23,19 +29,12 @@ import {
   type Post,
   type Subscription,
   type Tier,
+  type Transaction,
 } from '@/lib/types'
 import { PublishPostForm } from './publish-post-form'
+import { PlanEditor } from './plan-editor'
 
 export const metadata = { title: 'Dashboard do artista — WordFan' }
-
-const NAV_ITEMS = [
-  { label: 'DASHBOARD', icon: LayoutDashboard, active: true },
-  { label: 'CONTEÚDO', icon: FileText, active: false },
-  { label: 'GALERIA', icon: ImageIcon, active: false },
-  { label: 'LIVES', icon: Radio, active: false },
-  { label: 'AGENDA', icon: CalendarDays, active: false },
-  { label: 'FAN CLUB', icon: Star, active: false },
-]
 
 const tierBar: Record<Tier, string> = {
   bronze: 'bg-[#cd7f32]',
@@ -80,33 +79,62 @@ export default async function DashboardPage() {
     )
   }
 
-  const [{ data: subsData }, { data: postsData }] = await Promise.all([
+  const [{ data: subsData }, { data: postsData }, { data: txData }] = await Promise.all([
     supabase
       .from('subscriptions')
       .select('*, plan:plans(*)')
       .eq('artist_id', artist.id)
       .eq('status', 'active'),
     supabase.from('posts').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
+    supabase
+      .from('transactions')
+      .select('*')
+      .eq('artist_id', artist.id)
+      .order('created_at', { ascending: false }),
   ])
 
   const subs = (subsData ?? []) as (Subscription & { plan: Plan })[]
   const posts = (postsData ?? []) as Post[]
+  const txs = (txData ?? []) as Transaction[]
 
-  const mrr = subs.reduce((acc, s) => acc + (s.plan?.price_cents ?? 0), 0)
+  const { data: plansData } = await supabase
+    .from('plans')
+    .select('*')
+    .eq('artist_id', artist.id)
+    .order('price_cents', { ascending: true })
+  const plans = (plansData ?? []) as Plan[]
+
+  const gross = txs.reduce((acc, t) => acc + t.amount_cents, 0)
+  const fees = txs.reduce((acc, t) => acc + t.platform_fee_cents, 0)
+  const net = txs.reduce((acc, t) => acc + t.artist_net_cents, 0)
+
   const tierCounts = subs.reduce<Record<string, number>>((acc, s) => {
     const t = s.plan?.tier
     if (t) acc[t] = (acc[t] ?? 0) + 1
     return acc
   }, {})
 
+  const toolPlan = (artist.tool_plan ?? 'basic') as ToolPlan
+  const toolInfo = TOOL_PLANS[toolPlan]
+
+  const NAV_ITEMS = [
+    { label: 'DASHBOARD', icon: LayoutDashboard, enabled: true, active: true },
+    { label: 'CONTEÚDO', icon: FileText, enabled: true, active: false },
+    { label: 'GALERIA', icon: ImageIcon, enabled: hasEntitlement(toolPlan, 'gallery'), active: false },
+    { label: 'LIVES', icon: Radio, enabled: hasEntitlement(toolPlan, 'lives'), active: false },
+    { label: 'AGENDA', icon: CalendarDays, enabled: true, active: false },
+    { label: 'FAN CLUB', icon: Star, enabled: hasEntitlement(toolPlan, 'club'), active: false },
+  ]
+
   const stats = [
     { label: 'ASSINANTES ATIVOS', value: subs.length.toLocaleString('pt-BR'), icon: Users },
-    { label: 'RECEITA MENSAL', value: formatPrice(mrr), icon: TrendingUp },
+    { label: 'RECEITA BRUTA', value: formatPrice(gross), icon: TrendingUp },
     { label: 'PUBLICAÇÕES', value: posts.length.toLocaleString('pt-BR'), icon: FileText },
     { label: 'SEGUIDORES', value: artist.followers_count.toLocaleString('pt-BR'), icon: Radio },
   ]
 
   return (
+    <ArtistThemeScope theme={artist.theme}>
     <div className="flex min-h-dvh bg-background">
       {/* Sidebar (desktop) */}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-white/8 bg-card px-5 py-7 lg:flex">
@@ -115,17 +143,20 @@ export default async function DashboardPage() {
           PAINEL DO ARTISTA
         </p>
         <nav className="mt-8 flex flex-col gap-1" aria-label="Menu do painel">
-          {NAV_ITEMS.map(({ label, icon: Icon, active }) => (
+          {NAV_ITEMS.map(({ label, icon: Icon, enabled, active }) => (
             <span
               key={label}
               className={
                 active
                   ? 'gradient-brand flex items-center gap-3 rounded-2xl px-4 py-3 text-[10px] font-black tracking-[0.15em] text-white'
-                  : 'flex items-center gap-3 rounded-2xl px-4 py-3 text-[10px] font-black tracking-[0.15em] text-muted-foreground'
+                  : enabled
+                    ? 'flex items-center gap-3 rounded-2xl px-4 py-3 text-[10px] font-black tracking-[0.15em] text-muted-foreground'
+                    : 'flex items-center gap-3 rounded-2xl px-4 py-3 text-[10px] font-black tracking-[0.15em] text-muted-foreground/40'
               }
             >
               <Icon className="size-4" aria-hidden="true" />
               {label}
+              {!enabled && <Lock className="ml-auto size-3" aria-hidden="true" />}
             </span>
           ))}
         </nav>
@@ -157,7 +188,7 @@ export default async function DashboardPage() {
           <div className="min-w-0 flex-1">
             <p className="text-[9px] font-black tracking-[0.3em] text-primary">VISÃO GERAL</p>
             <h1 className="mt-0.5 truncate font-serif text-2xl font-black tracking-tight">
-              DASHBOARD
+              DASHBOARD — {artist.name.toUpperCase()}
             </h1>
           </div>
           <Link
@@ -169,7 +200,38 @@ export default async function DashboardPage() {
           </Link>
         </header>
 
-        <section aria-label="Métricas" className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {/* Banner do plano de ferramenta */}
+        <section
+          aria-label="Seu plano WordFan"
+          className="mt-6 flex flex-wrap items-center gap-4 rounded-3xl border border-primary/25 bg-primary/5 p-5"
+        >
+          <span className="gradient-brand flex size-11 items-center justify-center rounded-2xl">
+            <Sparkles className="size-5 text-white" aria-hidden="true" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">
+              SEU PLANO WORDFAN
+            </p>
+            <p className="mt-0.5 font-serif text-lg font-black text-primary">
+              {toolInfo.label.toUpperCase()}{' '}
+              <span className="font-numeric text-xs font-bold text-muted-foreground">
+                • {toolInfo.price}
+              </span>
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {toolInfo.features.map((f) => (
+              <span
+                key={f}
+                className="rounded-full bg-white/5 px-3 py-1 text-[8px] font-black tracking-[0.1em] text-muted-foreground uppercase"
+              >
+                {f}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        <section aria-label="Métricas" className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {stats.map(({ label, value, icon: Icon }) => (
             <div key={label} className="rounded-3xl border border-white/8 bg-card p-5">
               <span className="flex size-9 items-center justify-center rounded-xl bg-primary/10">
@@ -179,6 +241,56 @@ export default async function DashboardPage() {
               <p className="mt-1 text-[8px] font-black tracking-[0.2em] text-muted-foreground">{label}</p>
             </div>
           ))}
+        </section>
+
+        {/* Receita com split */}
+        <section aria-labelledby="revenue-heading" className="mt-6">
+          <h2
+            id="revenue-heading"
+            className="text-[10px] font-black tracking-[0.25em] text-muted-foreground"
+          >
+            RECEITA E REPASSE
+          </h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-3xl border border-white/8 bg-card p-5">
+              <p className="flex items-center gap-2 text-[8px] font-black tracking-[0.2em] text-muted-foreground">
+                <TrendingUp className="size-3.5" aria-hidden="true" />
+                BRUTO (ASSINATURAS)
+              </p>
+              <p className="mt-3 font-numeric text-2xl font-bold">{formatPrice(gross)}</p>
+            </div>
+            <div className="rounded-3xl border border-white/8 bg-card p-5">
+              <p className="flex items-center gap-2 text-[8px] font-black tracking-[0.2em] text-muted-foreground">
+                <Landmark className="size-3.5" aria-hidden="true" />
+                TAXA WORDFAN ({Number(artist.commission_pct ?? 20)}%)
+              </p>
+              <p className="mt-3 font-numeric text-2xl font-bold text-muted-foreground">
+                −{formatPrice(fees)}
+              </p>
+            </div>
+            <div className="rounded-3xl border border-primary/30 bg-primary/5 p-5">
+              <p className="flex items-center gap-2 text-[8px] font-black tracking-[0.2em] text-primary">
+                <Wallet className="size-3.5" aria-hidden="true" />
+                SEU LÍQUIDO
+              </p>
+              <p className="mt-3 font-numeric text-2xl font-bold text-primary">{formatPrice(net)}</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Meus planos de assinatura */}
+        <section aria-labelledby="my-plans-heading" className="mt-8">
+          <h2
+            id="my-plans-heading"
+            className="text-[10px] font-black tracking-[0.25em] text-muted-foreground"
+          >
+            MEUS PLANOS DE ASSINATURA — DEFINA SEUS PREÇOS
+          </h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {plans.map((p) => (
+              <PlanEditor key={p.id} plan={p} slug={artist.slug} />
+            ))}
+          </div>
         </section>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-5">
@@ -253,5 +365,6 @@ export default async function DashboardPage() {
         </div>
       </div>
     </div>
+    </ArtistThemeScope>
   )
 }

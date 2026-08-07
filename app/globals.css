@@ -130,4 +130,93 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
+
+  /* ===== Tema por artista (CSS vars aplicadas pelo ArtistThemeProvider) ===== */
+  .artist-scope {
+    /* Redireciona os tokens do design system para a identidade do artista */
+    --club: var(--artist-primary);
+    --brand: var(--artist-primary);
+    --brand-light: var(--artist-secondary);
+    --primary: var(--artist-primary);
+    --accent: var(--artist-secondary);
+    --background: var(--artist-bg);
+    --card: var(--artist-surface);
+    --popover: var(--artist-surface);
+    --muted: var(--artist-surface);
+    --muted-foreground: var(--artist-muted);
+    --ring: var(--artist-primary);
+    --radius: var(--artist-radius);
+    background-color: var(--artist-bg);
+    color: var(--artist-text);
+  }
+  .artist-scope .font-serif {
+    font-family: var(--artist-font), system-ui, sans-serif;
+  }
+  .artist-scope .gradient-club,
+  .artist-scope .gradient-brand {
+    background-image: linear-gradient(
+      135deg,
+      var(--artist-grad-from) 0%,
+      var(--artist-grad-via) 50%,
+      var(--artist-grad-to) 100%
+    );
+  }
+  .artist-scope .text-gradient-brand {
+    background-image: linear-gradient(
+      135deg,
+      var(--artist-grad-from) 0%,
+      var(--artist-grad-via) 50%,
+      var(--artist-grad-to) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .artist-gradient {
+    background-image: linear-gradient(
+      135deg,
+      var(--artist-grad-from) 0%,
+      var(--artist-grad-via) 50%,
+      var(--artist-grad-to) 100%
+    );
+  }
+  .artist-text-gradient {
+    background-image: linear-gradient(
+      135deg,
+      var(--artist-grad-from) 0%,
+      var(--artist-grad-via) 50%,
+      var(--artist-grad-to) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .artist-surface {
+    background-color: var(--artist-surface);
+    border: 1px solid color-mix(in srgb, var(--artist-primary) 14%, transparent);
+    border-radius: var(--artist-radius);
+  }
+  .artist-card {
+    border-radius: var(--artist-radius);
+  }
+  .artist-primary {
+    color: var(--artist-primary);
+  }
+  .artist-bg-primary {
+    background-color: var(--artist-primary);
+  }
+  .artist-border {
+    border-color: color-mix(in srgb, var(--artist-primary) 30%, transparent);
+  }
+  .artist-glow {
+    box-shadow: 0 0 40px -8px color-mix(in srgb, var(--artist-primary) 55%, transparent);
+  }
+  .artist-font {
+    font-family: var(--artist-font), system-ui, sans-serif;
+  }
+  .artist-chip {
+    background-color: color-mix(in srgb, var(--artist-primary) 16%, transparent);
+    color: var(--artist-primary);
+    border: 1px solid color-mix(in srgb, var(--artist-primary) 30%, transparent);
+  }
 }

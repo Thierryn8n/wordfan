@@ -27,6 +27,7 @@ import {
   getUserSubscription,
 } from '@/lib/data'
 import { BottomNav } from '@/components/wordfan/bottom-nav'
+import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
 import { TIER_LABELS } from '@/lib/types'
 
 function formatFans(n: number) {
@@ -86,6 +87,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   const liveNow = lives.find((l) => l.status === 'live')
 
   return (
+    <ArtistThemeScope theme={artist.theme}>
     <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-44">
       {/* Hero banner */}
       <div className="relative h-[500px]">
@@ -449,5 +451,6 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
 
       <BottomNav accent="club" />
     </div>
+    </ArtistThemeScope>
   )
 }

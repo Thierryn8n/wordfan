@@ -46,3 +46,42 @@ export async function publishPost({
   revalidatePath(`/artist/${slug}/club`)
   return { success: true }
 }
+
+export async function updatePlan({
+  planId,
+  slug,
+  name,
+  priceCents,
+}: {
+  planId: string
+  slug: string
+  name: string
+  priceCents: number
+}) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: 'Você precisa estar logado.' }
+
+  const trimmed = name.trim()
+  if (!trimmed || trimmed.length > 60) return { error: 'Nome inválido (máx. 60 caracteres).' }
+  if (!Number.isInteger(priceCents) || priceCents < 100 || priceCents > 100000000) {
+    return { error: 'Preço inválido.' }
+  }
+
+  // RLS (plans_write_owner) garante que só o dono do artista ou admin edita
+  const { error } = await supabase
+    .from('plans')
+    .update({ name: trimmed, price_cents: priceCents })
+    .eq('id', planId)
+
+  if (error) {
+    console.log('[v0] update plan error:', error.message)
+    return { error: 'Sem permissão para editar este plano.' }
+  }
+
+  revalidatePath('/dashboard')
+  revalidatePath(`/artist/${slug}/plans`)
+  return { success: true }
+}

@@ -34,6 +34,20 @@ export interface Artist {
   is_featured: boolean
   is_live: boolean
   created_at: string
+  theme: Record<string, unknown>
+  commission_pct: number
+  tool_plan: 'basic' | 'pro' | 'premium'
+}
+
+export interface Transaction {
+  id: string
+  subscription_id: string | null
+  artist_id: string
+  user_id: string
+  amount_cents: number
+  platform_fee_cents: number
+  artist_net_cents: number
+  created_at: string
 }
 
 export interface Plan {

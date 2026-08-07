@@ -17,7 +17,7 @@ export async function subscribeToPlan(slug: string, planId: string) {
   // Validate plan belongs to the artist with this slug (server-side)
   const { data: plan } = await supabase
     .from('plans')
-    .select('id, artist_id, artists!inner(slug)')
+    .select('id, artist_id, price_cents, artists!inner(slug, commission_pct)')
     .eq('id', planId)
     .single()
 
@@ -26,7 +26,7 @@ export async function subscribeToPlan(slug: string, planId: string) {
   }
 
   // Upsert: one subscription per user per artist (simulated payment)
-  const { error } = await supabase
+  const { data: sub, error } = await supabase
     .from('subscriptions')
     .upsert(
       {
@@ -38,11 +38,29 @@ export async function subscribeToPlan(slug: string, planId: string) {
       },
       { onConflict: 'user_id,artist_id' },
     )
+    .select('id')
+    .single()
 
   if (error) {
     console.log('[v0] subscribe error:', error.message)
     return { error: 'Não foi possível concluir a assinatura. Tente novamente.' }
   }
+
+  // Registrar transação com split plataforma/artista (preço e comissão vêm do servidor)
+  const commissionPct = Number(
+    (plan.artists as unknown as { commission_pct: number }).commission_pct ?? 20,
+  )
+  const amount = plan.price_cents
+  const platformFee = Math.round((amount * commissionPct) / 100)
+  const { error: txError } = await supabase.from('transactions').insert({
+    subscription_id: sub?.id ?? null,
+    artist_id: plan.artist_id,
+    user_id: user.id,
+    amount_cents: amount,
+    platform_fee_cents: platformFee,
+    artist_net_cents: amount - platformFee,
+  })
+  if (txError) console.log('[v0] transaction error:', txError.message)
 
   await supabase.from('notifications').insert({
     user_id: user.id,

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft, Check, ShieldCheck } from 'lucide-react'
 import { getArtistBySlug, getArtistPlans, getUserSubscription } from '@/lib/data'
 import { formatPrice } from '@/lib/types'
+import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
 import { SubscribeButton } from './subscribe-button'
 
 export const metadata = { title: 'Planos — WordFan' }
@@ -70,6 +71,7 @@ export default async function PlansPage({ params }: { params: Promise<{ slug: st
   }
 
   return (
+    <ArtistThemeScope theme={artist.theme}>
     <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-40">
       {/* Header / Banner */}
       <div className="relative flex h-72 items-center">
@@ -112,7 +114,13 @@ export default async function PlansPage({ params }: { params: Promise<{ slug: st
         {/* Platina em destaque */}
         {platinum && (
           <div className="relative">
-            <div className="relative overflow-hidden rounded-[40px] border-2 border-club bg-gradient-to-b from-[#2d1b4d] to-card p-8">
+            <div
+              className="relative overflow-hidden rounded-[40px] border-2 border-club p-8"
+              style={{
+                backgroundImage:
+                  'linear-gradient(to bottom, color-mix(in srgb, var(--artist-primary, #ff00a2) 22%, var(--card)), var(--card))',
+              }}
+            >
               <div
                 aria-hidden
                 className="pointer-events-none absolute -top-10 right-0 size-40 rounded-full bg-club/20 blur-[80px]"
@@ -166,5 +174,6 @@ export default async function PlansPage({ params }: { params: Promise<{ slug: st
         </p>
       </main>
     </div>
+    </ArtistThemeScope>
   )
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { getArtists } from '@/lib/data'
+import { resolveTheme } from '@/lib/artist-theme'
 import { BottomNav } from '@/components/wordfan/bottom-nav'
 import { Bell, Search, SlidersHorizontal, Star, BadgeCheck, Check } from 'lucide-react'
 
@@ -88,34 +89,44 @@ export default async function HomePage() {
           </div>
 
           <div className="scrollbar-none -mx-6 mt-5 flex gap-4 overflow-x-auto px-6">
-            {featured.map((a) => (
-              <Link
-                key={a.id}
-                href={`/artist/${a.slug}`}
-                className="relative w-[290px] shrink-0 overflow-hidden rounded-[32px]"
-              >
-                <Image
-                  src={a.avatar_url || '/placeholder.svg?height=380&width=290'}
-                  alt={a.name}
-                  width={290}
-                  height={380}
-                  className="h-[380px] w-full object-cover"
-                />
-                <div
-                  className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent"
-                  aria-hidden="true"
-                />
-                <div className="absolute inset-x-0 bottom-0 p-6">
-                  <p className="flex items-center gap-2 font-serif text-2xl font-extrabold tracking-tight">
-                    {a.name.toUpperCase()}
-                    <BadgeCheck className="size-5 text-brand" aria-hidden="true" />
-                  </p>
-                  <p className="mt-1 text-xs font-extrabold tracking-[0.2em] text-brand">
-                    {formatFans(a.followers_count)} FÃS
-                  </p>
-                </div>
-              </Link>
-            ))}
+            {featured.map((a) => {
+              const t = resolveTheme(a.theme)
+              return (
+                <Link
+                  key={a.id}
+                  href={`/artist/${a.slug}`}
+                  className="relative w-[290px] shrink-0 overflow-hidden rounded-[32px] border"
+                  style={{
+                    borderColor: `color-mix(in srgb, ${t.primary} 45%, transparent)`,
+                    boxShadow: `0 0 40px -12px color-mix(in srgb, ${t.primary} 60%, transparent)`,
+                  }}
+                >
+                  <Image
+                    src={a.avatar_url || '/placeholder.svg?height=380&width=290'}
+                    alt={a.name}
+                    width={290}
+                    height={380}
+                    className="h-[380px] w-full object-cover"
+                  />
+                  <div
+                    className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent"
+                    aria-hidden="true"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 p-6">
+                    <p className="flex items-center gap-2 font-serif text-2xl font-extrabold tracking-tight">
+                      {a.name.toUpperCase()}
+                      <BadgeCheck className="size-5" style={{ color: t.primary }} aria-hidden="true" />
+                    </p>
+                    <p
+                      className="mt-1 text-xs font-extrabold tracking-[0.2em]"
+                      style={{ color: t.primary }}
+                    >
+                      {formatFans(a.followers_count)} FÃS
+                    </p>
+                  </div>
+                </Link>
+              )
+            })}
           </div>
         </section>
 
@@ -131,7 +142,9 @@ export default async function HomePage() {
           </div>
 
           <div className="mt-5 flex flex-col gap-4">
-            {top.map((a) => (
+            {top.map((a) => {
+              const t = resolveTheme(a.theme)
+              return (
               <Link key={a.id} href={`/artist/${a.slug}`} className="flex items-center gap-4">
                 <span className="relative shrink-0">
                   <Image
@@ -139,10 +152,12 @@ export default async function HomePage() {
                     alt=""
                     width={56}
                     height={56}
-                    className="size-14 rounded-2xl object-cover"
+                    className="size-14 rounded-2xl border-2 object-cover"
+                    style={{ borderColor: t.primary }}
                   />
                   <span
-                    className="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full bg-brand"
+                    className="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full"
+                    style={{ backgroundColor: t.primary }}
                     aria-hidden="true"
                   >
                     <Check className="size-3 text-white" />
@@ -163,7 +178,8 @@ export default async function HomePage() {
                   <Star className="size-5" />
                 </span>
               </Link>
-            ))}
+              )
+            })}
           </div>
         </section>
       </main>

@@ -4,12 +4,17 @@ import { notFound, redirect } from 'next/navigation'
 import { ArrowLeft, Play, Users, Lock } from 'lucide-react'
 import { getArtistBySlug, getArtistLives, getUserSubscription, getCurrentUser, canAccess } from '@/lib/data'
 import { TIER_LABELS } from '@/lib/types'
+import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
+import { hasEntitlement } from '@/lib/artist-theme'
 import { LiveChat } from './live-chat'
 
 export default async function LivePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const artist = await getArtistBySlug(slug)
   if (!artist) notFound()
+
+  // Entitlement: lives requerem plano de ferramenta Premium
+  if (!hasEntitlement(artist.tool_plan, 'lives')) redirect(`/artist/${slug}`)
 
   const user = await getCurrentUser()
   if (!user) redirect(`/auth/login?next=/artist/${slug}/live`)
@@ -26,6 +31,7 @@ export default async function LivePage({ params }: { params: Promise<{ slug: str
   const hasAccess = canAccess(userTier, live.min_tier)
 
   return (
+    <ArtistThemeScope theme={artist.theme}>
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background">
       <header className="flex items-center gap-3 px-6 pt-7">
         <Link
@@ -92,5 +98,6 @@ export default async function LivePage({ params }: { params: Promise<{ slug: str
         {hasAccess && <LiveChat displayName={user.user_metadata?.display_name ?? 'Você'} />}
       </main>
     </div>
+    </ArtistThemeScope>
   )
 }
