@@ -15,6 +15,10 @@ import {
   X,
   Loader2,
   AlertTriangle,
+  Mail,
+  Copy,
+  Check,
+  ExternalLink,
 } from 'lucide-react'
 import type { Artist } from '@/lib/types'
 import { resolveTheme } from '@/lib/artist-theme'
@@ -38,9 +42,14 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
 
   // Formulário de criação
   const [newName, setNewName] = useState('')
+  const [newEmail, setNewEmail] = useState('')
   const [newGenre, setNewGenre] = useState('')
   const [newCity, setNewCity] = useState('')
   const [newState, setNewState] = useState('')
+
+  // Resultado do convite
+  const [created, setCreated] = useState<{ slug: string; email: string; inviteLink: string | null } | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -56,18 +65,37 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
   function handleCreate() {
     setError(null)
     startTransition(async () => {
-      const res = await createArtist({ name: newName, genre: newGenre, city: newCity, state: newState })
+      const res = await createArtist({
+        name: newName,
+        email: newEmail,
+        genre: newGenre,
+        city: newCity,
+        state: newState,
+      })
       if (res.error) {
         setError(res.error)
         return
       }
       setShowCreate(false)
+      setCreated({ slug: res.slug!, email: res.email!, inviteLink: res.inviteLink ?? null })
       setNewName('')
+      setNewEmail('')
       setNewGenre('')
       setNewCity('')
       setNewState('')
-      router.push(`/admin/studio?artist=${res.slug}`)
+      router.refresh()
     })
+  }
+
+  async function copyLink() {
+    if (!created?.inviteLink) return
+    try {
+      await navigator.clipboard.writeText(created.inviteLink)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setError('Não foi possível copiar. Selecione e copie manualmente.')
+    }
   }
 
   function handleDelete() {
@@ -243,6 +271,20 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
                 />
               </label>
               <label className="flex flex-col gap-1.5">
+                <span className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">EMAIL DO ARTISTA *</span>
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="artista@email.com"
+                  autoComplete="off"
+                  className="rounded-2xl border border-white/8 bg-background px-4 py-3 text-sm font-medium outline-none focus:border-primary"
+                />
+                <span className="text-[9px] font-bold text-muted-foreground">
+                  Enviaremos um convite para ele definir a própria senha e acessar o painel.
+                </span>
+              </label>
+              <label className="flex flex-col gap-1.5">
                 <span className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">GÊNERO MUSICAL</span>
                 <input
                   value={newGenre}
@@ -282,15 +324,93 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
               <button
                 type="button"
                 onClick={handleCreate}
-                disabled={isPending || !newName.trim()}
+                disabled={isPending || !newName.trim() || !newEmail.trim()}
                 className="gradient-brand mt-1 flex items-center justify-center gap-2 rounded-2xl py-4 text-[10px] font-black tracking-[0.25em] text-white disabled:opacity-50"
               >
                 {isPending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Plus className="size-4" aria-hidden="true" />}
-                {isPending ? 'CRIANDO...' : 'CRIAR E ABRIR NO STUDIO'}
+                {isPending ? 'CRIANDO E CONVIDANDO...' : 'CRIAR E CONVIDAR ARTISTA'}
               </button>
               <p className="text-center text-[9px] font-bold text-muted-foreground">
                 Os 4 planos padrão do fan club serão criados automaticamente.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: convite criado */}
+      {created && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="invite-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+        >
+          <div className="w-full max-w-md rounded-3xl border border-white/8 bg-card p-6">
+            <div className="flex items-center gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15">
+                <Mail className="size-5 text-primary" aria-hidden="true" />
+              </span>
+              <h2 id="invite-title" className="font-serif text-lg font-black">
+                ARTISTA CRIADO
+              </h2>
+            </div>
+
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+              Enviamos um convite para <span className="font-bold text-foreground">{created.email}</span>. O
+              artista define a própria senha pelo link abaixo e passa a acessar o painel dele.
+            </p>
+
+            {created.inviteLink ? (
+              <div className="mt-4">
+                <span className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">LINK DE CONVITE (VÁLIDO POR TEMPO LIMITADO)</span>
+                <div className="mt-2 flex items-stretch gap-2">
+                  <input
+                    readOnly
+                    value={created.inviteLink}
+                    onFocus={(e) => e.currentTarget.select()}
+                    aria-label="Link de convite"
+                    className="min-w-0 flex-1 rounded-2xl border border-white/8 bg-background px-3 py-3 text-xs font-medium outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={copyLink}
+                    aria-label="Copiar link"
+                    className="flex shrink-0 items-center justify-center rounded-2xl bg-primary/15 px-4 text-primary transition-colors hover:bg-primary/25"
+                  >
+                    {copied ? <Check className="size-4" aria-hidden="true" /> : <Copy className="size-4" aria-hidden="true" />}
+                  </button>
+                </div>
+                <p className="mt-2 text-[9px] font-bold text-muted-foreground">
+                  Repasse este link ao artista caso o email não chegue.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-4 rounded-2xl border border-white/8 bg-background px-4 py-3 text-xs font-bold text-muted-foreground">
+                O convite foi enviado por email. Peça ao artista para verificar a caixa de entrada e o spam.
+              </p>
+            )}
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const slug = created.slug
+                  setCreated(null)
+                  router.push(`/admin/studio?artist=${slug}`)
+                }}
+                className="gradient-brand flex flex-1 items-center justify-center gap-2 rounded-2xl py-3.5 text-[10px] font-black tracking-[0.2em] text-white"
+              >
+                <ExternalLink className="size-4" aria-hidden="true" />
+                ABRIR NO STUDIO
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreated(null)}
+                className="rounded-2xl border border-white/8 bg-white/5 px-5 py-3.5 text-[10px] font-black tracking-[0.2em]"
+              >
+                FECHAR
+              </button>
             </div>
           </div>
         </div>
