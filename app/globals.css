@@ -44,9 +44,11 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-  --font-sans: var(--font-body), 'Inter', system-ui, sans-serif;
-  --font-serif: var(--font-display), 'Sora', system-ui, sans-serif;
-  --font-mono: var(--font-numeric), 'Space Grotesk', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+    system-ui, var(--font-body), 'Inter', sans-serif;
+  --font-serif: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui,
+    var(--font-display), 'Sora', sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, var(--font-numeric), 'Space Grotesk', monospace;
   --color-brand: var(--brand);
   --color-brand-light: var(--brand-light);
   --color-club: var(--club);
@@ -54,34 +56,49 @@
 
 :root {
   color-scheme: dark;
-  --background: #070707; /* fundo exato do Figma */
-  --foreground: #ffffff;
-  --card: #151515; /* superfície de card do Figma */
+  /* ===== Sistema de cores iOS (Dark) — Apple HIG ===== */
+  --background: #000000; /* systemGroupedBackground (dark) */
+  --foreground: #ffffff; /* label */
+  --card: #1c1c1e; /* secondarySystemGroupedBackground */
   --card-foreground: #ffffff;
-  --popover: #151515;
+  --popover: #1c1c1e;
   --popover-foreground: #ffffff;
-  --primary: #ff6b00; /* laranja exato do Figma */
+  --primary: #ff6b00; /* tint do app (laranja da marca) */
   --primary-foreground: #ffffff;
-  --secondary: #27272a;
+  --secondary: #2c2c2e; /* tertiarySystemBackground / controle preenchido */
   --secondary-foreground: #ffffff;
-  --muted: #151515;
-  --muted-foreground: #a1a1aa;
-  --accent: #ff8a00;
-  --accent-foreground: #070707;
+  --muted: #1c1c1e;
+  --muted-foreground: rgba(235, 235, 245, 0.6); /* secondaryLabel */
+  --accent: #2c2c2e;
+  --accent-foreground: #ffffff;
   --gold: #ffc857;
   --brand: #ff6b00;
   --brand-light: #ff8a00;
-  --club: #ff00a2; /* rosa do fan club no Figma */
-  --destructive: oklch(0.6 0.22 25);
-  --border: rgba(255, 255, 255, 0.08); /* borda exata do Figma */
-  --input: rgba(255, 255, 255, 0.12);
+  --club: #ff2d92; /* systemPink alinhado ao fan club */
+  --destructive: #ff453a; /* systemRed (dark) */
+  --border: rgba(84, 84, 88, 0.55); /* separator (dark) */
+  --input: rgba(120, 120, 128, 0.24); /* fill (dark) */
   --ring: #ff6b00;
+
+  /* Tokens iOS extras */
+  --ios-grouped-bg: #000000;
+  --ios-secondary-bg: #1c1c1e;
+  --ios-tertiary-bg: #2c2c2e;
+  --ios-separator: rgba(84, 84, 88, 0.55);
+  --ios-fill: rgba(120, 120, 128, 0.24);
+  --ios-fill-2: rgba(120, 120, 128, 0.16);
+  --label-secondary: rgba(235, 235, 245, 0.6);
+  --label-tertiary: rgba(235, 235, 245, 0.3);
+  --ios-blue: #0a84ff;
+  --ios-green: #30d158;
+  --ios-red: #ff453a;
+
   --chart-1: oklch(0.68 0.21 40);
   --chart-2: oklch(0.85 0.13 85);
   --chart-3: oklch(0.6 0.01 60);
   --chart-4: oklch(0.45 0.01 60);
   --chart-5: oklch(0.3 0.01 60);
-  --radius: 1rem;
+  --radius: 0.875rem; /* raio de card iOS (~14px) */
   --sidebar: oklch(0.16 0.005 60);
   --sidebar-foreground: oklch(0.97 0 0);
   --sidebar-primary: oklch(0.68 0.21 40);
@@ -149,6 +166,16 @@
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+  /* Tracking ótico da SF Pro em títulos */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.019em;
   }
 }
 
@@ -279,6 +306,109 @@
     background-color: color-mix(in srgb, var(--artist-primary) 16%, transparent);
     color: var(--artist-primary);
     border: 1px solid color-mix(in srgb, var(--artist-primary) 30%, transparent);
+  }
+
+  /* ===== Design System iOS (Apple HIG) ===== */
+
+  /* Material translúcido (nav bars, tab bars, sheets) */
+  .ios-material {
+    background-color: color-mix(in srgb, var(--ios-secondary-bg) 72%, transparent);
+    backdrop-filter: saturate(180%) blur(24px);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+  }
+  .ios-material-thick {
+    background-color: color-mix(in srgb, #000 74%, transparent);
+    backdrop-filter: saturate(180%) blur(30px);
+    -webkit-backdrop-filter: saturate(180%) blur(30px);
+  }
+
+  /* Card agrupado iOS */
+  .ios-card {
+    background-color: var(--ios-secondary-bg);
+    border-radius: var(--radius);
+  }
+
+  /* Lista "inset grouped": itens separados por hairline, cantos arredondados */
+  .ios-list {
+    background-color: var(--ios-secondary-bg);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .ios-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 44px; /* alvo de toque mínimo iOS */
+    padding: 0.6875rem 1rem;
+  }
+  .ios-row + .ios-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 1rem;
+    right: 0;
+    height: 0.5px;
+    background-color: var(--ios-separator);
+  }
+  .ios-row-inset + .ios-row-inset::before {
+    left: 3.5rem; /* separador recuado quando há ícone/avatar à esquerda */
+  }
+
+  /* Hairline iOS (0.5px) */
+  .ios-separator {
+    height: 0.5px;
+    background-color: var(--ios-separator);
+  }
+
+  /* Preenchimentos de sistema */
+  .ios-fill {
+    background-color: var(--ios-fill);
+  }
+  .ios-fill-2 {
+    background-color: var(--ios-fill-2);
+  }
+
+  /* Título grande iOS (Large Title) e tracking SF */
+  .ios-large-title {
+    font-size: 2.125rem; /* 34pt */
+    line-height: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -0.021em;
+  }
+  .ios-title {
+    letter-spacing: -0.019em;
+  }
+
+  /* Controle segmentado iOS */
+  .ios-segment {
+    background-color: var(--ios-fill-2);
+    border-radius: 0.5625rem;
+    padding: 2px;
+  }
+  .ios-segment-active {
+    background-color: var(--ios-tertiary-bg);
+    border-radius: 0.4375rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Remove o flash de toque azul no iOS */
+  .tap-none {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Áreas seguras (notch / home indicator) */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pb-safe-2 {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  }
+  .min-h-screen-safe {
+    min-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 
   /* ===== Holográfico (Enterprise) ===== */
