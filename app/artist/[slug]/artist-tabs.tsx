@@ -158,7 +158,7 @@ export function ArtistTabs({
             {!isSubscriber && (
               <section
                 aria-label="Experiência ultra-exclusiva"
-                className="relative overflow-hidden rounded-[40px] border-2 border-club bg-black p-8 text-center shadow-[0_0_60px_-15px_var(--club)]"
+                className="elev-2 relative overflow-hidden rounded-[40px] border-2 border-club bg-black p-8 text-center"
               >
                 <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-club">
                   <Gem className="size-7 text-white" aria-hidden="true" />

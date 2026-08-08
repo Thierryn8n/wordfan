@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Artist, Live, Plan, Post, Show, Subscription, GalleryItem, Story, Tier, Video } from '@/lib/types'
+import type { Ad, Artist, Live, Plan, Post, Show, Subscription, GalleryItem, Story, Tier, Video } from '@/lib/types'
 import { TIER_ORDER } from '@/lib/types'
 
 export async function getArtists() {
@@ -95,6 +95,55 @@ export async function getArtistLives(artistId: string) {
     .in('status', ['scheduled', 'live'])
     .order('scheduled_at', { ascending: true })
   return (data ?? []) as Live[]
+}
+
+export async function getUpcomingShows(limit = 50) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('shows')
+    .select('*, artist:artists(*)')
+    .eq('status', 'scheduled')
+    .gte('starts_at', new Date().toISOString())
+    .order('starts_at', { ascending: true })
+    .limit(limit)
+  return (data ?? []) as (Show & { artist: Artist })[]
+}
+
+export async function getLiveNow() {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('lives')
+    .select('*, artist:artists(*)')
+    .eq('status', 'live')
+    .order('scheduled_at', { ascending: true })
+  return (data ?? []) as (Live & { artist: Artist })[]
+}
+
+export async function getUpcomingLives(limit = 20) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('lives')
+    .select('*, artist:artists(*)')
+    .in('status', ['scheduled', 'live'])
+    .order('scheduled_at', { ascending: true })
+    .limit(limit)
+  return (data ?? []) as (Live & { artist: Artist })[]
+}
+
+export async function getActiveAds(placement?: Ad['placement']) {
+  const supabase = await createClient()
+  const nowIso = new Date().toISOString()
+  let query = supabase.from('ads').select('*').eq('active', true)
+  if (placement) query = query.eq('placement', placement)
+  const { data, error } = await query.order('sort_order', { ascending: true })
+  // Tabela pode ainda não existir — falha graciosamente.
+  if (error) return [] as Ad[]
+  const ads = (data ?? []) as Ad[]
+  return ads.filter((a) => {
+    const startsOk = !a.starts_at || a.starts_at <= nowIso
+    const endsOk = !a.ends_at || a.ends_at >= nowIso
+    return startsOk && endsOk
+  })
 }
 
 export async function getCurrentUser() {

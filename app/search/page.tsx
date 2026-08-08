@@ -7,7 +7,7 @@ export const metadata = { title: 'Pesquisar — WordFan' }
 export default async function SearchPage() {
   const artists = await getArtists()
   return (
-    <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-32">
+    <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-40">
       <SearchClient artists={artists} />
       <BottomNav />
     </div>

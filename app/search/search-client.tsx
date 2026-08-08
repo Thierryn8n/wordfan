@@ -35,11 +35,16 @@ export function SearchClient({ artists }: { artists: Artist[] }) {
   }, [artists, query, genre])
 
   return (
-    <main className="px-6 pt-8">
-      <p className="text-[10px] font-black tracking-[0.3em] text-primary">EXPLORAR</p>
-      <h1 className="mt-1 font-serif text-3xl font-black tracking-tight">PESQUISA</h1>
+    <main className="px-6 pt-10">
+      <p className="text-[10px] font-black tracking-[0.3em] text-brand">EXPLORAR</p>
+      <h1 className="mt-1 font-serif text-4xl font-black tracking-tight">
+        <span className="text-gradient-brand">DESCOBRIR</span>
+      </h1>
+      <p className="mt-2 text-sm font-medium text-muted-foreground text-pretty">
+        Encontre novos artistas por gênero, cidade ou nome.
+      </p>
 
-      <div className="mt-5 flex items-center gap-3 rounded-2xl border border-white/8 bg-card px-4 py-3.5">
+      <div className="surface elev-1 mt-5 flex items-center gap-3 rounded-2xl px-4 py-3.5">
         <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         <input
           type="search"
@@ -130,7 +135,7 @@ export function SearchClient({ artists }: { artists: Artist[] }) {
               <li key={a.id}>
                 <Link
                   href={`/artist/${a.slug}`}
-                  className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-3"
+                  className="surface elev-1 flex items-center gap-4 rounded-3xl p-3"
                 >
                   <Image
                     src={a.avatar_url || '/placeholder.svg?height=56&width=56'}

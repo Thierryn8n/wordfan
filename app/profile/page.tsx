@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { redirect } from 'next/navigation'
-import { LayoutDashboard, ShieldCheck, Sparkles, ChevronRight, Zap, Briefcase, Building2 } from 'lucide-react'
+import { LayoutDashboard, ShieldCheck, Sparkles, ChevronRight, Zap, Briefcase, Building2, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { BottomNav } from '@/components/wordfan/bottom-nav'
 import { HoloCrown } from '@/components/wordfan/holo-crown'
@@ -43,7 +43,7 @@ export default async function ProfilePage() {
     .toUpperCase()
 
   return (
-    <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-32">
+    <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-40">
       <main className="px-6 pt-8">
         <p className="text-[10px] font-black tracking-[0.3em] text-primary">SUA CONTA</p>
         <h1 className="mt-1 font-serif text-3xl font-black tracking-tight">PERFIL</h1>
@@ -53,9 +53,19 @@ export default async function ProfilePage() {
           <div className="gradient-brand h-20" />
           <div className="-mt-9 px-6 pb-6">
             <div className="relative w-fit">
-              <span className="flex size-18 items-center justify-center rounded-3xl border-4 border-card bg-background font-serif text-xl font-black">
-                {initials}
-              </span>
+              {profile?.avatar_url ? (
+                <Image
+                  src={profile.avatar_url || '/placeholder.svg'}
+                  alt={`Foto de ${displayName}`}
+                  width={72}
+                  height={72}
+                  className="size-18 rounded-3xl border-4 border-card object-cover"
+                />
+              ) : (
+                <span className="flex size-18 items-center justify-center rounded-3xl border-4 border-card bg-background font-serif text-xl font-black">
+                  {initials}
+                </span>
+              )}
               {isEnterprise && (
                 <HolographicCrown3D
                   size={72}
@@ -70,10 +80,19 @@ export default async function ProfilePage() {
               )}
             </p>
             <p className="truncate text-xs font-medium text-muted-foreground">{user.email}</p>
-            <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1.5 font-numeric text-[10px] font-bold text-gold">
-              <Zap className="size-3" aria-hidden="true" />
-              {(profile?.xp ?? 0).toLocaleString('pt-BR')} XP
-            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <p className="inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1.5 font-numeric text-[10px] font-bold text-gold">
+                <Zap className="size-3" aria-hidden="true" />
+                {(profile?.xp ?? 0).toLocaleString('pt-BR')} XP
+              </p>
+              <Link
+                href="/profile/edit"
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-black tracking-[0.1em] text-foreground transition-colors hover:bg-white/5"
+              >
+                <Pencil className="size-3" aria-hidden="true" />
+                EDITAR
+              </Link>
+            </div>
           </div>
         </div>
 

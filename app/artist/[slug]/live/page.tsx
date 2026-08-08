@@ -66,7 +66,7 @@ export default async function LivePage({ params }: { params: Promise<{ slug: str
           />
           {hasAccess ? (
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-              <span className="gradient-brand flex size-16 items-center justify-center rounded-full shadow-lg shadow-primary/40">
+              <span className="gradient-brand elev-2 flex size-16 items-center justify-center rounded-full">
                 <Play className="size-6 fill-white text-white" aria-hidden="true" />
               </span>
             </div>
