@@ -101,7 +101,7 @@ export function ArtistTabs({
         <div
           role="tablist"
           aria-label="Seções do perfil"
-          className="scrollbar-none glass-panel sheen relative flex gap-1.5 overflow-x-auto rounded-full p-1.5"
+          className="scrollbar-none glass-frost sheen relative flex gap-1.5 overflow-x-auto rounded-full p-1.5"
         >
           {TABS.map(({ key, label }) => (
             <button

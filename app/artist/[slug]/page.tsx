@@ -101,9 +101,9 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
     <ArtistThemeScope theme={artist.theme}>
     <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-44">
       {/* ===== HERO ===== */}
-      <div className="relative h-[420px]">
+      <div className="relative h-[340px]">
         <Image
-          src={artist.banner_url || artist.avatar_url || '/placeholder.svg?height=420&width=375'}
+          src={artist.banner_url || artist.avatar_url || '/placeholder.svg?height=340&width=375'}
           alt=""
           fill
           priority
