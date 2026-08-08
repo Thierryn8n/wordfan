@@ -1,47 +1,13 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { redirect } from 'next/navigation'
-import {
-  ArrowLeft,
-  Users,
-  Mic2,
-  CreditCard,
-  FileText,
-  LayoutDashboard,
-  Palette,
-  BarChart3,
-  Settings,
-  ShieldCheck,
-  Building2,
-  Megaphone,
-} from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
-import { Logo } from '@/components/wordfan/logo'
+import { ArrowLeft, Users, Mic2, CreditCard, FileText } from 'lucide-react'
+import { requireAdmin } from '@/lib/admin-guard'
 import { formatPrice, TIER_LABELS, type Artist, type Plan, type Subscription } from '@/lib/types'
 
 export const metadata = { title: 'Painel administrativo — WordFan' }
 
-const NAV_ITEMS = [
-  { label: 'DASHBOARD', icon: LayoutDashboard, active: true, href: null as string | null },
-  { label: 'ARTISTAS', icon: Mic2, active: false, href: '/admin/artists' },
-  { label: 'ENTERPRISE', icon: Building2, active: false, href: '/admin/enterprise' },
-  { label: 'ANÚNCIOS', icon: Megaphone, active: false, href: '/admin/ads' },
-  { label: 'USUÁRIOS', icon: Users, active: false, href: null as string | null },
-  { label: 'ASSINATURAS', icon: CreditCard, active: false, href: null as string | null },
-  { label: 'STUDIO DO ARTISTA', icon: Palette, active: false, href: '/admin/artists' },
-  { label: 'RELATÓRIOS', icon: BarChart3, active: false, href: null as string | null },
-  { label: 'CONFIGURAÇÕES', icon: Settings, active: false, href: null as string | null },
-]
-
 export default async function AdminPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login?next=/admin')
-
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') redirect('/home')
+  const { supabase } = await requireAdmin('/admin')
 
   const [{ data: artistsData }, { data: subsData }, { count: postsCount }, { count: profilesCount }] =
     await Promise.all([
@@ -72,36 +38,8 @@ export default async function AdminPage() {
   ]
 
   return (
-    <div className="flex min-h-dvh bg-background">
-      {/* Sidebar admin (desktop) */}
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-white/8 bg-card px-5 py-7 lg:flex">
-        <Logo href="/home" className="px-2 text-xl" />
-        <p className="mt-1 flex items-center gap-1.5 px-2 text-[8px] font-black tracking-[0.3em] text-gold">
-          <ShieldCheck className="size-3" aria-hidden="true" />
-          ADMIN SAAS
-        </p>
-        <nav className="mt-8 flex flex-col gap-1" aria-label="Menu do admin">
-          {NAV_ITEMS.map(({ label, icon: Icon, active, href }) => {
-            const className = active
-              ? 'flex items-center gap-3 rounded-2xl bg-gold/15 px-4 py-3 text-[10px] font-black tracking-[0.15em] text-gold'
-              : 'flex items-center gap-3 rounded-2xl px-4 py-3 text-[10px] font-black tracking-[0.15em] text-muted-foreground transition-colors hover:text-foreground'
-            return href ? (
-              <Link key={label} href={href} className={className}>
-                <Icon className="size-4" aria-hidden="true" />
-                {label}
-              </Link>
-            ) : (
-              <span key={label} className={className}>
-                <Icon className="size-4" aria-hidden="true" />
-                {label}
-              </span>
-            )
-          })}
-        </nav>
-      </aside>
-
-      {/* Conteúdo */}
-      <div className="min-w-0 flex-1 px-5 pb-16 pt-6 md:px-8">
+    <div className="min-w-0 flex-1">
+      <div className="px-5 pb-16 pt-6 md:px-8">
         <header className="flex items-center gap-4">
           <Link
             href="/profile"

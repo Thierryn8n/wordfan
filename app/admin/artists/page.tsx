@@ -1,21 +1,13 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { ArrowLeft, Mic2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/admin-guard'
 import type { Artist } from '@/lib/types'
 import { ArtistsManager } from './artists-manager'
 
 export const metadata = { title: 'Artistas — ADM WordFan' }
 
 export default async function AdminArtistsPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login?next=/admin/artists')
-
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') redirect('/home')
+  const { supabase } = await requireAdmin('/admin/artists')
 
   const { data: artistsData } = await supabase
     .from('artists')

@@ -22,10 +22,13 @@ export default async function NotificationsPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login?next=/notifications')
 
+  // Escopo obrigatório por usuário — sem isto o feed vaza notificações alheias.
   const { data } = await supabase
     .from('notifications')
     .select('*')
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
+    .limit(100)
   const notifications = (data ?? []) as Notification[]
 
   // Mark unread as read

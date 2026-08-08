@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/admin-guard'
 import { Logo } from '@/components/wordfan/logo'
 import type { Ad } from '@/lib/types'
 import { AdsManager } from './ads-manager'
@@ -9,14 +8,7 @@ import { AdsManager } from './ads-manager'
 export const metadata = { title: 'Anúncios — Painel administrativo' }
 
 export default async function AdminAdsPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login?next=/admin/ads')
-
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') redirect('/home')
+  const { supabase } = await requireAdmin('/admin/ads')
 
   const { data, error } = await supabase
     .from('ad_banners')
