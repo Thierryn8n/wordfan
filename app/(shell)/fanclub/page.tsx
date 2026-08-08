@@ -11,7 +11,7 @@ const tierBadge: Record<string, string> = {
   bronze: 'bg-[#cd7f32]/15 text-[#cd7f32]',
   silver: 'bg-[#c0c0c8]/15 text-[#c0c0c8]',
   gold: 'bg-[#ffd700]/15 text-[#ffd700]',
-  platinum: 'bg-club/15 text-club',
+  platinum: 'bg-brand/15 text-brand',
 }
 
 export default async function FanClubPage() {
@@ -34,9 +34,9 @@ export default async function FanClubPage() {
       <header className="relative overflow-hidden px-6 pb-6 pt-10">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-club/20 blur-[90px]"
+          className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-brand/20 blur-[90px]"
         />
-        <p className="flex items-center gap-1.5 text-[9px] font-black tracking-[0.3em] text-club">
+        <p className="flex items-center gap-1.5 text-[9px] font-black tracking-[0.3em] text-brand">
           <Sparkles className="size-3" aria-hidden="true" />
           WORDFAN CLUBS
         </p>
@@ -58,7 +58,7 @@ export default async function FanClubPage() {
               id="meus-clubes"
               className="flex items-center gap-2 text-[10px] font-black tracking-[0.25em] text-muted-foreground"
             >
-              <Crown className="size-3.5 text-club" aria-hidden="true" />
+              <Crown className="size-3.5 text-brand" aria-hidden="true" />
               MEUS CLUBES
             </h2>
             <ul className="mt-3 flex flex-col gap-3">
@@ -66,14 +66,14 @@ export default async function FanClubPage() {
                 <li key={sub.id}>
                   <Link
                     href={`/artist/${sub.artist.slug}/club`}
-                    className="group flex items-center gap-4 rounded-3xl border border-club/25 bg-club/5 p-4 transition-colors active:bg-club/10"
+                    className="group flex items-center gap-4 rounded-3xl border border-brand/25 bg-brand/5 p-4 transition-colors active:bg-brand/10"
                   >
                     <Image
                       src={sub.artist.avatar_url || '/placeholder.svg?height=56&width=56'}
                       alt=""
                       width={56}
                       height={56}
-                      className="size-14 rounded-2xl border-2 border-club object-cover"
+                      className="size-14 rounded-2xl border-2 border-brand object-cover"
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-serif text-base font-extrabold leading-tight">
@@ -87,7 +87,7 @@ export default async function FanClubPage() {
                         {TIER_LABELS[sub.plan.tier].toUpperCase()}
                       </span>
                     </div>
-                    <span className="gradient-club flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-[9px] font-black tracking-[0.15em] text-white">
+                    <span className="gradient-brand flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-[9px] font-black tracking-[0.15em] text-white">
                       ENTRAR
                       <ArrowRight
                         className="size-3.5 transition-transform group-active:translate-x-0.5"
@@ -104,8 +104,8 @@ export default async function FanClubPage() {
         {/* Estado vazio */}
         {!hasClubs && (
           <div className="flex flex-col items-center rounded-[32px] border border-white/8 bg-card px-6 py-10 text-center">
-            <span className="flex size-16 items-center justify-center rounded-full bg-club/10">
-              <Star className="size-8 fill-club text-club" aria-hidden="true" />
+            <span className="flex size-16 items-center justify-center rounded-full bg-brand/10">
+              <Star className="size-8 fill-brand text-brand" aria-hidden="true" />
             </span>
             <p className="mt-4 font-serif text-lg font-extrabold">Nenhum clube ainda</p>
             <p className="mt-1.5 max-w-[240px] text-xs font-bold leading-relaxed text-muted-foreground">
@@ -121,7 +121,7 @@ export default async function FanClubPage() {
               id="descobrir"
               className="flex items-center gap-2 text-[10px] font-black tracking-[0.25em] text-muted-foreground"
             >
-              <Users className="size-3.5 text-club" aria-hidden="true" />
+              <Users className="size-3.5 text-brand" aria-hidden="true" />
               {hasClubs ? 'DESCUBRA MAIS CLUBES' : 'ESCOLHA UM ARTISTA'}
             </h2>
             <ul className="mt-3 flex flex-col gap-3">
@@ -148,7 +148,7 @@ export default async function FanClubPage() {
                           : `${artist.followers_count.toLocaleString('pt-BR')} fãs`}
                       </p>
                     </div>
-                    <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-club/40 px-4 py-2.5 text-[9px] font-black tracking-[0.15em] text-club">
+                    <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-brand/40 px-4 py-2.5 text-[9px] font-black tracking-[0.15em] text-brand">
                       ASSINAR
                       <ArrowRight
                         className="size-3.5 transition-transform group-active:translate-x-0.5"

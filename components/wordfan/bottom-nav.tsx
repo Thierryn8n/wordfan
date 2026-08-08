@@ -25,7 +25,8 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
   }, [pathname])
 
   const current = pending ?? pathname
-  const clubActive = current.startsWith('/artist') || current.startsWith('/fanclub')
+  // Rosa (club) só nas páginas de artista; /fanclub usa o laranja do sistema via `accent`.
+  const clubActive = current.startsWith('/artist')
 
   function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof Home }) {
     const active = current === href || current.startsWith(href + '/')
