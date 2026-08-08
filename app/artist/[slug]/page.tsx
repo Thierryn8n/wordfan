@@ -10,7 +10,7 @@ import {
   Music2,
   AudioLines,
   Globe,
-  Play,
+  Pause,
   Check,
   Radio,
   CalendarClock,
@@ -101,9 +101,9 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
     <ArtistThemeScope theme={artist.theme}>
     <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-44">
       {/* ===== HERO ===== */}
-      <div className="relative h-[340px]">
+      <div className="relative h-[480px]">
         <Image
-          src={artist.banner_url || artist.avatar_url || '/placeholder.svg?height=340&width=375'}
+          src={artist.banner_url || artist.avatar_url || '/placeholder.svg?height=480&width=375'}
           alt=""
           fill
           priority
@@ -111,7 +111,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           className="object-cover"
         />
         <div
-          className="absolute inset-0 bg-gradient-to-t from-background via-background/45 to-background/10"
+          className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent"
           aria-hidden="true"
         />
 
@@ -119,7 +119,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           <Link
             href="/home"
             aria-label="Voltar"
-            className="glass-soft flex size-11 items-center justify-center rounded-full"
+            className="flex size-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md"
           >
             <ArrowLeft className="size-5" aria-hidden="true" />
           </Link>
@@ -135,109 +135,60 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
             )}
             <button
               aria-label="Compartilhar"
-              className="glass-soft flex size-11 items-center justify-center rounded-full"
+              className="flex size-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md"
             >
               <Share2 className="size-5" aria-hidden="true" />
             </button>
           </div>
         </div>
-      </div>
 
-      {/* ===== CARTÃO DE IDENTIDADE (sobrepõe o hero) ===== */}
-      <div className="relative z-10 -mt-24 px-5">
-        <div className="glass-panel sheen relative rounded-[34px] p-6 pt-0">
-          <div className="flex items-end gap-4">
-            <div className="relative -mt-12 shrink-0">
-              <span className="skeu-raised sheen relative block rounded-[28px] p-1.5">
-                <Image
-                  src={artist.avatar_url || '/placeholder.svg?height=96&width=96'}
-                  alt={`Foto de ${artist.name}`}
-                  width={96}
-                  height={96}
-                  className="size-24 rounded-[22px] object-cover"
-                />
-              </span>
-              <span
-                className="skeu-btn sheen absolute -bottom-1.5 -right-1.5 flex size-8 items-center justify-center rounded-full"
-                aria-hidden="true"
-              >
-                <Check className="size-4 text-white" />
-              </span>
-            </div>
-            <div className="min-w-0 flex-1 pb-1">
-              <p className="truncate text-[10px] font-black uppercase tracking-[0.2em] text-club">
-                {artist.genre}
-              </p>
-              <p className="mt-1 truncate text-xs font-bold text-muted-foreground">
-                {artist.city}/{artist.state}
-              </p>
-            </div>
+        {/* Identidade */}
+        <div className="absolute inset-x-0 bottom-0 px-6 pb-6">
+          <div className="relative inline-block">
+            <Image
+              src={artist.avatar_url || '/placeholder.svg?height=96&width=96'}
+              alt={`Foto de ${artist.name}`}
+              width={96}
+              height={96}
+              className="size-24 rounded-full border-4 border-club object-cover"
+            />
+            <span
+              className="absolute -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full bg-club"
+              aria-hidden="true"
+            >
+              <Check className="size-4 text-white" />
+            </span>
           </div>
-
-          <h1 className="mt-4 flex items-center gap-2 font-serif text-[38px] font-extrabold leading-[0.95] tracking-tight text-balance">
+          <h1 className="mt-4 flex items-center gap-2 font-serif text-[40px] font-extrabold leading-none tracking-tight">
             {artist.name.toUpperCase()}
-            <BadgeCheck className="size-6 shrink-0 text-club" aria-hidden="true" />
+            <BadgeCheck className="size-7 text-club" aria-hidden="true" />
           </h1>
           {artist.bio && (
-            <p className="mt-2.5 text-sm leading-relaxed text-foreground/75 text-pretty">
-              {artist.bio}
-            </p>
+            <p className="mt-2 max-w-xs text-sm leading-relaxed text-foreground/80">{artist.bio}</p>
           )}
+          <p className="mt-2 text-sm">
+            <span className="text-muted-foreground">
+              {artist.city}/{artist.state} • {artist.genre}
+            </span>
+            <span className="mx-2 text-muted-foreground">•</span>
+            <span className="font-extrabold tracking-[0.15em] text-club">
+              {formatFans(artist.followers_count)} FÃS
+            </span>
+          </p>
 
-          {/* Faixa de estatísticas */}
-          <div className="skeu-inset mt-5 flex rounded-2xl px-3 py-4">
-            {[
-              { value: String(posts.length), label: 'POSTS' },
-              { value: String(videos.length), label: 'VÍDEOS' },
-              { value: String(shows.length), label: 'SHOWS' },
-              { value: formatFans(artist.followers_count), label: 'FÃS' },
-            ].map((s, i) => (
-              <div
-                key={s.label}
-                className={`flex flex-1 flex-col items-center gap-1 ${i > 0 ? 'border-l border-white/8' : ''}`}
-              >
-                <span className="font-numeric text-base font-bold">{s.value}</span>
-                <span className="text-[8px] font-extrabold tracking-[0.1em] text-muted-foreground">
-                  {s.label}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Ações */}
           <div className="mt-5 flex gap-3">
             <Link
               href={subscription ? `/artist/${artist.slug}/club` : `/artist/${artist.slug}/plans`}
-              className="skeu-btn sheen relative flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl text-[11px] font-extrabold tracking-[0.2em] text-white"
+              className="gradient-club flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl text-[11px] font-extrabold tracking-[0.2em] text-white"
             >
               <Star className="size-4 fill-white" aria-hidden="true" />
               {subscription ? 'ACESSAR FAN CLUB' : 'ENTRAR NO FAN CLUB'}
             </Link>
-            <button
-              aria-label="Seguir"
-              className="skeu flex size-14 shrink-0 items-center justify-center rounded-2xl"
-            >
-              <UserPlus className="size-5" aria-hidden="true" />
+            <button className="flex h-14 items-center gap-2 rounded-2xl border border-white/8 bg-card px-5 text-[11px] font-extrabold tracking-[0.2em]">
+              <UserPlus className="size-4" aria-hidden="true" />
+              SEGUIR
             </button>
           </div>
-
-          {/* Redes sociais */}
-          {activeSocials.length > 0 && (
-            <div className="mt-5 flex flex-wrap justify-center gap-2.5">
-              {activeSocials.map(({ key, label, icon: Icon }) => (
-                <a
-                  key={key}
-                  href={artist.social_links[key]}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="skeu-raised flex size-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-foreground"
-                  aria-label={label}
-                >
-                  <Icon className="size-5" aria-hidden="true" />
-                </a>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
@@ -248,9 +199,9 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
       {!liveNow && nextLive && (
         <Link
           href={`/artist/${artist.slug}/live`}
-          className="glass-panel sheen relative mx-5 mt-6 flex items-center gap-4 rounded-3xl p-4"
+          className="mx-6 mt-6 flex items-center gap-4 rounded-3xl border border-club/40 bg-club/10 p-4"
         >
-          <span className="skeu-raised flex size-12 shrink-0 items-center justify-center rounded-2xl text-club">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-club/20 text-club">
             <CalendarClock className="size-5" aria-hidden="true" />
           </span>
           <div className="min-w-0 flex-1">
@@ -272,6 +223,49 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         </Link>
       )}
 
+      {/* Stats */}
+      <div className="mt-6 flex border-y border-white/8 bg-card/30 px-6 py-7">
+        {[
+          { value: String(posts.length), label: 'POSTS' },
+          { value: String(videos.length), label: 'VÍDEOS' },
+          { value: String(shows.length), label: 'SHOWS' },
+          { value: formatFans(artist.followers_count), label: 'FÃS' },
+        ].map((s, i) => (
+          <div
+            key={s.label}
+            className={`flex flex-1 flex-col items-center gap-1 ${i > 0 ? 'border-l border-white/8' : ''}`}
+          >
+            <span className="font-numeric text-sm font-bold">{s.value}</span>
+            <span className="text-[8px] font-extrabold tracking-[0.1em] text-muted-foreground">
+              {s.label}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Redes sociais */}
+      {activeSocials.length > 0 && (
+        <div className="flex justify-center gap-5 px-6 py-7">
+          {activeSocials.map(({ key, label, icon: Icon }) => (
+            <a
+              key={key}
+              href={artist.social_links[key]}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-2"
+              aria-label={label}
+            >
+              <span className="flex size-13 items-center justify-center rounded-2xl border border-white/8 bg-card p-4 text-muted-foreground">
+                <Icon className="size-5" aria-hidden="true" />
+              </span>
+              <span className="text-[8px] font-extrabold tracking-[0.15em] text-muted-foreground">
+                {label}
+              </span>
+            </a>
+          ))}
+        </div>
+      )}
+
       {/* ===== ABAS ===== */}
       <ArtistTabs
         artist={artist}
@@ -284,29 +278,19 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         cheapestPriceCents={cheapest}
       />
 
-      {/* Mini player flutuante — só aparece se o artista estiver AO VIVO (dados reais) */}
+      {/* Mini player flutuante */}
       {liveNow && (
         <Link
           href={`/artist/${artist.slug}/live`}
-          aria-label={`Entrar na live: ${liveNow.title}`}
-          className="skeu-raised sheen fixed inset-x-6 bottom-40 z-40 mx-auto flex max-w-sm items-center gap-3 rounded-3xl p-3"
+          className="fixed inset-x-6 bottom-24 z-50 mx-auto flex max-w-sm items-center gap-4 rounded-3xl border border-club/50 bg-black/90 p-3 backdrop-blur-xl"
         >
-          <div className="relative shrink-0">
-            <Image
-              src={artist.avatar_url || '/placeholder.svg?height=56&width=56'}
-              alt=""
-              width={56}
-              height={56}
-              className="size-14 rounded-2xl object-cover"
-            />
-            <span
-              className="absolute -right-1 -top-1 flex items-center gap-1 rounded-full bg-red-600 px-1.5 py-0.5 text-[7px] font-black tracking-[0.1em] text-white"
-              aria-hidden="true"
-            >
-              <span className="size-1 animate-pulse rounded-full bg-white" />
-              LIVE
-            </span>
-          </div>
+          <Image
+            src={artist.avatar_url || '/placeholder.svg?height=56&width=56'}
+            alt=""
+            width={56}
+            height={56}
+            className="size-14 rounded-2xl object-cover"
+          />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-extrabold tracking-[0.1em]">
               {liveNow.title.toUpperCase()}
@@ -316,10 +300,10 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
             </p>
           </div>
           <span
-            className="skeu-btn sheen relative flex size-12 shrink-0 items-center justify-center rounded-2xl"
+            className="gradient-club flex size-12 shrink-0 items-center justify-center rounded-2xl"
             aria-hidden="true"
           >
-            <Play className="size-5 fill-white text-white" />
+            <Pause className="size-5 fill-white text-white" />
           </span>
         </Link>
       )}

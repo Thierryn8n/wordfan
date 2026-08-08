@@ -152,40 +152,39 @@ export function OnboardingSlides({ isLoggedIn = false }: { isLoggedIn?: boolean 
       </div>
 
       {/* Conteúdo */}
-      <div className="relative z-10 mt-auto flex flex-col px-5 pb-6">
-        <div className="glass-panel sheen relative overflow-hidden rounded-[34px] px-6 pb-7 pt-6">
-          <p className="glass-soft inline-flex w-fit items-center gap-2 rounded-full px-3.5 py-2 text-[10px] font-black tracking-[0.3em] text-brand">
-            <Sparkles className="size-3.5" aria-hidden="true" />
-            {slide.eyebrow}
-          </p>
-          <h1 className="mt-4 font-serif text-[48px] font-black leading-[0.92] tracking-tight text-balance">
-            {slide.titleTop}
-            <br />
-            <span className="text-gradient-brand">{slide.titleAccent}</span>
-          </h1>
-          <p className="mt-4 max-w-sm text-[15px] leading-relaxed text-muted-foreground text-pretty">
-            {slide.body}
-          </p>
+      <div className="relative z-10 mt-auto flex flex-col px-7 pb-10">
+        <p className="flex items-center gap-2 text-[11px] font-black tracking-[0.3em] text-brand">
+          <Sparkles className="size-3.5" aria-hidden="true" />
+          {slide.eyebrow}
+        </p>
+        <h1 className="mt-4 font-serif text-[52px] font-black leading-[0.92] tracking-tight text-balance">
+          {slide.titleTop}
+          <br />
+          <span className="text-gradient-brand">{slide.titleAccent}</span>
+        </h1>
+        <p className="mt-5 max-w-sm text-base leading-relaxed text-muted-foreground text-pretty">
+          {slide.body}
+        </p>
 
-          {/* CTAs */}
-          <div className="mt-7 flex flex-col gap-3">
-            <button
-              type="button"
-              onClick={() => finish('/home')}
-              className="skeu-btn sheen relative flex h-14 items-center justify-center gap-2 rounded-2xl text-[11px] font-black tracking-[0.25em] text-white"
-            >
-              EXPLORAR ARTISTAS
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={() => finish('/auth/sign-up')}
-              className="glass-soft flex h-14 items-center justify-center rounded-2xl text-[11px] font-black tracking-[0.2em] text-foreground transition-colors hover:bg-white/10"
-            >
-              CRIAR MINHA CONTA
-            </button>
-            <p className="mt-1 text-center text-[11px] font-bold text-muted-foreground">
-              Já tem conta?{' '}
+        {/* CTAs */}
+        <div className="mt-8 flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={() => finish('/home')}
+            className="gradient-brand flex h-14 items-center justify-center gap-2 rounded-2xl text-[11px] font-black tracking-[0.25em] text-white transition-transform active:scale-[0.98]"
+          >
+            EXPLORAR ARTISTAS
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => finish('/auth/sign-up')}
+            className="flex h-14 items-center justify-center rounded-2xl border border-white/12 bg-card/60 text-[11px] font-black tracking-[0.2em] text-foreground backdrop-blur-sm transition-colors hover:bg-card"
+          >
+            CRIAR MINHA CONTA
+          </button>
+          <p className="mt-1 text-center text-[11px] font-bold text-muted-foreground">
+            Já tem conta?{' '}
             <Link
               href="/auth/login"
               onClick={() => {
@@ -199,8 +198,7 @@ export function OnboardingSlides({ isLoggedIn = false }: { isLoggedIn?: boolean 
             >
               ENTRAR
             </Link>
-            </p>
-          </div>
+          </p>
         </div>
       </div>
     </main>

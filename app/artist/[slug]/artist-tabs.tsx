@@ -6,7 +6,6 @@ import Image from 'next/image'
 import {
   BadgeCheck,
   Bookmark,
-  ChevronRight,
   Clock,
   Gem,
   Heart,
@@ -96,30 +95,28 @@ export function ArtistTabs({
 
   return (
     <div>
-      {/* Barra de abas flutuante */}
-      <div className="sticky top-3 z-40 mt-6 px-5">
-        <div
-          role="tablist"
-          aria-label="Seções do perfil"
-          className="scrollbar-none glass-frost sheen relative flex gap-1.5 overflow-x-auto rounded-full p-1.5"
-        >
-          {TABS.map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              role="tab"
-              aria-selected={tab === key}
-              onClick={() => setTab(key)}
-              className={
-                tab === key
-                  ? 'skeu-btn sheen relative shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-[11px] font-extrabold tracking-[0.1em] text-white'
-                  : 'shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-[11px] font-extrabold tracking-[0.1em] text-muted-foreground transition-colors hover:text-foreground'
-              }
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+      {/* Barra de abas */}
+      <div
+        role="tablist"
+        aria-label="Seções do perfil"
+        className="scrollbar-none sticky top-0 z-40 flex gap-7 overflow-x-auto border-b border-white/8 bg-background/95 px-6 backdrop-blur-xl"
+      >
+        {TABS.map(({ key, label }) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
+            className={
+              tab === key
+                ? 'shrink-0 whitespace-nowrap border-b-2 border-club py-4 text-xs font-extrabold tracking-[0.1em] text-club'
+                : 'shrink-0 whitespace-nowrap border-b-2 border-transparent py-4 text-xs font-extrabold tracking-[0.1em] text-muted-foreground'
+            }
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <main className="flex flex-col gap-8 px-6 pt-8">
@@ -127,9 +124,9 @@ export function ArtistTabs({
         {gateActive && (
           <section
             aria-label="Login necessário"
-            className="glass-panel sheen relative mt-6 overflow-hidden rounded-[40px] p-10 text-center"
+            className="relative mt-6 overflow-hidden rounded-[40px] border border-white/10 bg-card p-10 text-center"
           >
-            <div className="skeu-raised mx-auto flex size-16 items-center justify-center rounded-full text-club">
+            <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-club/15 text-club">
               <Lock className="size-7" aria-hidden="true" />
             </div>
             <h2 className="mt-6 font-serif text-2xl font-extrabold tracking-tight text-balance">
@@ -141,7 +138,7 @@ export function ArtistTabs({
             </p>
             <Link
               href={loginHref}
-              className="skeu-btn sheen relative mt-7 flex h-14 items-center justify-center gap-2 rounded-2xl text-[11px] font-extrabold tracking-[0.2em] text-white"
+              className="mt-7 flex h-14 items-center justify-center gap-2 rounded-2xl bg-white text-[11px] font-extrabold tracking-[0.2em] text-black"
             >
               <LogIn className="size-4" aria-hidden="true" />
               ENTRAR
@@ -161,11 +158,11 @@ export function ArtistTabs({
             {!isSubscriber && (
               <section
                 aria-label="Experiência ultra-exclusiva"
-              className="glass-panel sheen relative overflow-hidden rounded-[40px] border border-club/50 p-8 text-center"
-            >
-              <div className="skeu-btn sheen relative mx-auto flex size-16 items-center justify-center rounded-full">
-                <Gem className="size-7 text-white" aria-hidden="true" />
-              </div>
+                className="relative overflow-hidden rounded-[40px] border-2 border-club bg-black p-8 text-center shadow-[0_0_60px_-15px_var(--club)]"
+              >
+                <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-club">
+                  <Gem className="size-7 text-white" aria-hidden="true" />
+                </div>
                 <h2 className="mt-6 font-serif text-2xl font-extrabold leading-tight tracking-tight">
                   EXPERIÊNCIA
                   <br />
@@ -176,7 +173,7 @@ export function ArtistTabs({
                 </p>
                 <Link
                   href={`/artist/${artist.slug}/plans`}
-                  className="skeu-btn sheen relative mt-6 flex h-14 items-center justify-center rounded-2xl text-[11px] font-extrabold tracking-[0.25em] text-white"
+                  className="mt-6 flex h-14 items-center justify-center rounded-2xl bg-white text-[11px] font-extrabold tracking-[0.25em] text-black"
                 >
                   VER PLANOS VIP
                 </Link>
@@ -185,41 +182,59 @@ export function ArtistTabs({
 
             {posts.map((p) =>
               p.locked ? (
-                <Link
-                  key={p.id}
-                  href={`/artist/${artist.slug}/plans`}
-                  className="glass-panel sheen relative flex items-center gap-4 overflow-hidden rounded-3xl p-3"
-                >
-                  {/* Miniatura desfocada */}
-                  <div className="relative size-20 shrink-0 overflow-hidden rounded-2xl">
+                <article key={p.id}>
+                  <header className="flex items-center gap-3">
                     <Image
-                      src={artist.banner_url || artist.avatar_url || '/placeholder.svg?height=160&width=160'}
+                      src={artist.avatar_url || '/placeholder.svg?height=40&width=40'}
                       alt=""
-                      fill
-                      sizes="80px"
-                      className="scale-110 object-cover opacity-50 blur-lg"
+                      width={40}
+                      height={40}
+                      className="size-10 rounded-full object-cover opacity-60"
                     />
-                    <span className="absolute inset-0 flex items-center justify-center">
-                      <span className="skeu-btn sheen relative flex size-10 items-center justify-center rounded-full">
-                        <Lock className="size-4 text-white" aria-hidden="true" />
-                      </span>
-                    </span>
+                    <div className="flex-1">
+                      <p className="flex items-center gap-1.5 text-sm font-extrabold tracking-[0.1em]">
+                        {artist.name.toUpperCase()}
+                        <BadgeCheck className="size-4 text-club" aria-hidden="true" />
+                      </p>
+                      <p className="text-[10px] font-extrabold tracking-[0.1em] text-muted-foreground">
+                        {timeAgo(p.created_at)} •{' '}
+                        <span className="text-club">
+                          {p.min_tier ? `${TIER_LABELS[p.min_tier].toUpperCase()} +` : 'VIP'}
+                        </span>
+                      </p>
+                    </div>
+                  </header>
+                  <div className="relative mt-4 overflow-hidden rounded-[40px] border border-white/8">
+                    {/* Fundo blur simulando conteúdo bloqueado */}
+                    <div className="absolute inset-0" aria-hidden="true">
+                      <Image
+                        src={artist.banner_url || artist.avatar_url || '/placeholder.svg?height=400&width=400'}
+                        alt=""
+                        fill
+                        sizes="(max-width: 768px) 100vw, 448px"
+                        className="scale-110 object-cover opacity-40 blur-2xl"
+                      />
+                    </div>
+                    <div className="relative flex flex-col items-center bg-card/50 px-8 py-14 text-center backdrop-blur-md">
+                      <div className="flex size-20 items-center justify-center rounded-full bg-club/90">
+                        <Lock className="size-8 text-white" aria-hidden="true" />
+                      </div>
+                      <h3 className="mt-8 font-serif text-2xl font-extrabold tracking-tight">
+                        DESBLOQUEIE NO FAN CLUB
+                      </h3>
+                      <p className="mt-3 max-w-[240px] text-sm leading-relaxed text-muted-foreground">
+                        Assine o Plano {p.min_tier ? TIER_LABELS[p.min_tier] : 'VIP'} para liberar
+                        este e outros conteúdos exclusivos.
+                      </p>
+                      <Link
+                        href={`/artist/${artist.slug}/plans`}
+                        className="mt-8 rounded-2xl bg-white px-10 py-4 text-[11px] font-extrabold tracking-[0.2em] text-black"
+                      >
+                        ASSINAR PARA VER
+                      </Link>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[9px] font-black tracking-[0.2em] text-club">
-                      {p.min_tier ? `EXCLUSIVO ${TIER_LABELS[p.min_tier].toUpperCase()}` : 'CONTEÚDO VIP'}
-                    </p>
-                    <p className="mt-1 truncate font-serif text-base font-extrabold">
-                      Conteúdo bloqueado
-                    </p>
-                    <p className="mt-0.5 text-[11px] font-bold text-muted-foreground">
-                      {timeAgo(p.created_at)} • Assine para liberar
-                    </p>
-                  </div>
-                  <span className="skeu-raised flex size-9 shrink-0 items-center justify-center rounded-xl text-club">
-                    <ChevronRight className="size-4" aria-hidden="true" />
-                  </span>
-                </Link>
+                </article>
               ) : (
                 <article key={p.id}>
                   <header className="flex items-center gap-3">
@@ -295,10 +310,10 @@ export function ArtistTabs({
                   return (
                     <li
                       key={s.id}
-                      className="skeu overflow-hidden rounded-[28px]"
+                      className="overflow-hidden rounded-[28px] border border-white/8 bg-card"
                     >
                       <div className="flex items-center gap-4 p-5">
-                        <div className="skeu-inset flex size-16 shrink-0 flex-col items-center justify-center rounded-2xl text-club">
+                        <div className="flex size-16 shrink-0 flex-col items-center justify-center rounded-2xl bg-club/10 text-club">
                           <span className="font-numeric text-2xl font-bold leading-none">
                             {date.getDate()}
                           </span>
@@ -325,7 +340,7 @@ export function ArtistTabs({
                       </div>
                       <button
                         type="button"
-                        className="skeu-btn sheen relative flex h-12 w-full items-center justify-center gap-2 text-[10px] font-extrabold tracking-[0.2em] text-white"
+                        className="gradient-club flex h-12 w-full items-center justify-center gap-2 text-[10px] font-extrabold tracking-[0.2em] text-white"
                       >
                         <Ticket className="size-4" aria-hidden="true" />
                         COMPRAR INGRESSO
@@ -470,8 +485,8 @@ export function ArtistTabs({
                 aria-pressed={videoFilter === 'all'}
                 className={
                   videoFilter === 'all'
-                    ? 'skeu-btn sheen relative shrink-0 rounded-full px-5 py-2.5 text-[9px] font-black tracking-[0.15em] text-white'
-                    : 'skeu shrink-0 rounded-full px-5 py-2.5 text-[9px] font-black tracking-[0.15em] text-muted-foreground'
+                    ? 'shrink-0 rounded-full bg-club px-5 py-2.5 text-[9px] font-black tracking-[0.15em] text-white'
+                    : 'shrink-0 rounded-full border border-white/8 bg-card px-5 py-2.5 text-[9px] font-black tracking-[0.15em] text-muted-foreground'
                 }
               >
                 TODOS
@@ -484,8 +499,8 @@ export function ArtistTabs({
                   aria-pressed={videoFilter === c}
                   className={
                     videoFilter === c
-                      ? 'skeu-btn sheen relative shrink-0 rounded-full px-5 py-2.5 text-[9px] font-black tracking-[0.15em] text-white'
-                      : 'skeu shrink-0 rounded-full px-5 py-2.5 text-[9px] font-black tracking-[0.15em] text-muted-foreground'
+                      ? 'shrink-0 rounded-full bg-club px-5 py-2.5 text-[9px] font-black tracking-[0.15em] text-white'
+                      : 'shrink-0 rounded-full border border-white/8 bg-card px-5 py-2.5 text-[9px] font-black tracking-[0.15em] text-muted-foreground'
                   }
                 >
                   {VIDEO_CATEGORY_LABELS[c].toUpperCase()}
@@ -503,7 +518,7 @@ export function ArtistTabs({
                 const blocked = v.is_exclusive && !isSubscriber
                 return (
                   <div key={v.id}>
-                    <div className="skeu relative aspect-video overflow-hidden rounded-3xl">
+                    <div className="relative aspect-video overflow-hidden rounded-3xl border border-white/8">
                       <Image
                         src={v.thumbnail_url || '/placeholder.svg?height=200&width=360'}
                         alt={v.title}
@@ -569,7 +584,7 @@ export function ArtistTabs({
                   {about.influences.map((inf) => (
                     <span
                       key={inf}
-                      className="skeu rounded-full px-4 py-2 text-[10px] font-bold"
+                      className="rounded-full border border-white/10 bg-card px-4 py-2 text-[10px] font-bold"
                     >
                       {inf}
                     </span>
@@ -585,7 +600,7 @@ export function ArtistTabs({
                   {about.discography.map((d) => (
                     <li
                       key={`${d.title}-${d.year}`}
-                      className="skeu flex items-center gap-3 rounded-2xl px-4 py-3"
+                      className="flex items-center gap-3 rounded-2xl border border-white/8 bg-card px-4 py-3"
                     >
                       <Disc3 className="size-4 shrink-0 text-club" aria-hidden="true" />
                       <span className="flex-1 text-sm font-extrabold">{d.title}</span>
@@ -607,7 +622,7 @@ export function ArtistTabs({
                   {about.awards.map((a) => (
                     <li
                       key={a}
-                      className="skeu flex items-center gap-3 rounded-2xl px-4 py-3"
+                      className="flex items-center gap-3 rounded-2xl border border-white/8 bg-card px-4 py-3"
                     >
                       <Trophy className="size-4 shrink-0 text-club" aria-hidden="true" />
                       <span className="text-sm font-bold leading-snug">{a}</span>
@@ -630,7 +645,7 @@ export function ArtistTabs({
         {/* ============ FAN CLUB ============ */}
         {!gateActive && tab === 'fanclub' && (
           <section aria-label="Fan Club" className="flex flex-col items-center gap-6 text-center">
-            <div className="skeu-btn sheen relative flex size-20 items-center justify-center rounded-full">
+            <div className="gradient-club flex size-20 items-center justify-center rounded-full">
               <Star className="size-8 fill-white text-white" aria-hidden="true" />
             </div>
             <div>
@@ -649,7 +664,7 @@ export function ArtistTabs({
               href={
                 isSubscriber ? `/artist/${artist.slug}/club` : `/artist/${artist.slug}/plans`
               }
-              className="skeu-btn sheen relative flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-[11px] font-extrabold tracking-[0.25em] text-white"
+              className="gradient-club flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-[11px] font-extrabold tracking-[0.25em] text-white"
             >
               <Star className="size-4 fill-white" aria-hidden="true" />
               {isSubscriber ? 'ACESSAR MEU FAN CLUB' : 'VER PLANOS E ASSINAR'}
@@ -663,7 +678,7 @@ export function ArtistTabs({
               ].map(({ icon: Icon, label }) => (
                 <div
                   key={label}
-                  className="skeu flex flex-col items-center gap-2 rounded-3xl p-5"
+                  className="flex flex-col items-center gap-2 rounded-3xl border border-white/8 bg-card p-5"
                 >
                   <Icon className="size-5 text-club" aria-hidden="true" />
                   <span className="text-[9px] font-black tracking-[0.15em] text-muted-foreground">

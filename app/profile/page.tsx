@@ -7,7 +7,6 @@ import { BottomNav } from '@/components/wordfan/bottom-nav'
 import { HoloCrown } from '@/components/wordfan/holo-crown'
 import { HolographicCrown3D } from '@/components/wordfan/holo-crown-3d'
 import { SignOutButton } from './sign-out-button'
-import { ProfileEditor } from './profile-editor'
 import { TIER_LABELS } from '@/lib/types'
 import type { Profile, Subscription, Plan, Artist } from '@/lib/types'
 
@@ -45,32 +44,17 @@ export default async function ProfilePage() {
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-32">
-      <main className="px-6 pt-10">
-        <div className="glass-panel sheen relative flex items-center justify-between rounded-[26px] px-5 py-5">
-          <div>
-            <p className="text-[10px] font-black tracking-[0.3em] text-primary">SUA CONTA</p>
-            <h1 className="mt-1 font-serif text-3xl font-black tracking-tight">PERFIL</h1>
-          </div>
-          <ProfileEditor initialName={displayName} initialAvatar={profile?.avatar_url ?? null} />
-        </div>
+      <main className="px-6 pt-8">
+        <p className="text-[10px] font-black tracking-[0.3em] text-primary">SUA CONTA</p>
+        <h1 className="mt-1 font-serif text-3xl font-black tracking-tight">PERFIL</h1>
 
         {/* Card do usuário */}
-        <div className="skeu-raised sheen relative mt-6 overflow-hidden rounded-[32px]">
+        <div className="mt-6 overflow-hidden rounded-[32px] border border-white/8 bg-card">
           <div className="gradient-brand h-20" />
           <div className="-mt-9 px-6 pb-6">
             <div className="relative w-fit">
-              <span className="skeu-raised flex size-18 items-center justify-center overflow-hidden rounded-3xl border-4 border-card font-serif text-xl font-black">
-                {profile?.avatar_url ? (
-                  <Image
-                    src={profile.avatar_url || '/placeholder.svg'}
-                    alt=""
-                    width={72}
-                    height={72}
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  initials
-                )}
+              <span className="flex size-18 items-center justify-center rounded-3xl border-4 border-card bg-background font-serif text-xl font-black">
+                {initials}
               </span>
               {isEnterprise && (
                 <HolographicCrown3D
@@ -86,7 +70,7 @@ export default async function ProfilePage() {
               )}
             </p>
             <p className="truncate text-xs font-medium text-muted-foreground">{user.email}</p>
-            <p className="skeu-inset mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-numeric text-[10px] font-bold text-gold">
+            <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1.5 font-numeric text-[10px] font-bold text-gold">
               <Zap className="size-3" aria-hidden="true" />
               {(profile?.xp ?? 0).toLocaleString('pt-BR')} XP
             </p>
@@ -97,7 +81,7 @@ export default async function ProfilePage() {
           <div className="mt-4 flex flex-col gap-2.5">
             <Link
               href="/dashboard"
-              className="skeu flex items-center gap-4 rounded-3xl p-5 transition-colors hover:brightness-125"
+              className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-5 transition-colors hover:bg-secondary"
             >
               <LayoutDashboard className="size-5 text-primary" aria-hidden="true" />
               <span className="flex-1 text-xs font-extrabold tracking-[0.05em]">DASHBOARD DO ARTISTA</span>
@@ -106,7 +90,7 @@ export default async function ProfilePage() {
             {profile.role === 'admin' && (
               <Link
                 href="/admin"
-                className="skeu flex items-center gap-4 rounded-3xl p-5 transition-colors hover:brightness-125"
+                className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-5 transition-colors hover:bg-secondary"
               >
                 <ShieldCheck className="size-5 text-gold" aria-hidden="true" />
                 <span className="flex-1 text-xs font-extrabold tracking-[0.05em]">PAINEL ADMINISTRATIVO</span>
@@ -120,7 +104,7 @@ export default async function ProfilePage() {
           <div className="mt-4">
             <Link
               href="/manager"
-              className="skeu flex items-center gap-4 rounded-3xl p-5 transition-colors hover:brightness-125"
+              className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-5 transition-colors hover:bg-secondary"
             >
               <Briefcase className="size-5 text-primary" aria-hidden="true" />
               <span className="flex-1 text-xs font-extrabold tracking-[0.05em]">PAINEL DO EMPRESÁRIO</span>
@@ -133,7 +117,7 @@ export default async function ProfilePage() {
           <div className="mt-4">
             <Link
               href="/enterprise/status"
-              className="skeu flex items-center gap-4 rounded-3xl p-5 transition-colors hover:brightness-125"
+              className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-5 transition-colors hover:bg-secondary"
             >
               <Building2 className="size-5 text-primary" aria-hidden="true" />
               <span className="flex-1 text-xs font-extrabold tracking-[0.05em]">MINHAS CONTRATAÇÕES</span>
@@ -149,16 +133,14 @@ export default async function ProfilePage() {
             MINHAS ASSINATURAS
           </h2>
           {subscriptions.length === 0 ? (
-            <div className="glass-panel sheen relative mt-3 flex flex-col items-center gap-4 rounded-[32px] p-8 text-center">
-              <span className="skeu-raised flex size-14 items-center justify-center rounded-2xl">
-                <Sparkles className="size-6 text-muted-foreground" aria-hidden="true" />
-              </span>
+            <div className="mt-3 flex flex-col items-center gap-4 rounded-[32px] border border-white/8 bg-card p-8 text-center">
+              <Sparkles className="size-6 text-muted-foreground" aria-hidden="true" />
               <p className="text-xs font-bold text-muted-foreground text-pretty">
                 Você ainda não assina nenhum fan club.
               </p>
               <Link
                 href="/home"
-                className="skeu-btn sheen relative rounded-full px-6 py-3 text-[10px] font-black tracking-[0.2em] text-white"
+                className="gradient-brand rounded-full px-6 py-3 text-[10px] font-black tracking-[0.2em] text-white"
               >
                 DESCOBRIR ARTISTAS
               </Link>
@@ -169,7 +151,7 @@ export default async function ProfilePage() {
                 <li key={s.id}>
                   <Link
                     href={`/artist/${s.artist.slug}/club`}
-                    className="skeu flex items-center gap-4 rounded-3xl p-4 transition-colors hover:brightness-125"
+                    className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-4 transition-colors hover:bg-secondary"
                   >
                     <Image
                       src={s.artist.avatar_url || '/placeholder.svg?height=48&width=48'}

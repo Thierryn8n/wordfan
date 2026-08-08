@@ -46,7 +46,7 @@ export function LiveChat({ displayName }: { displayName: string }) {
       <h2 className="font-serif text-sm font-semibold text-muted-foreground">Chat da live</h2>
       <div
         ref={listRef}
-        className="skeu-inset mt-2 flex max-h-72 min-h-48 flex-1 flex-col gap-3 overflow-y-auto rounded-2xl p-4"
+        className="glass mt-2 flex max-h-72 min-h-48 flex-1 flex-col gap-3 overflow-y-auto rounded-2xl p-4"
       >
         {messages.map((m) => (
           <p key={m.id} className="text-sm leading-relaxed">
@@ -58,7 +58,7 @@ export function LiveChat({ displayName }: { displayName: string }) {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="skeu-inset mt-3 flex items-center gap-2 rounded-full px-4 py-2">
+      <form onSubmit={handleSubmit} className="glass mt-3 flex items-center gap-2 rounded-full px-4 py-2">
         <input
           type="text"
           value={input}
@@ -71,7 +71,7 @@ export function LiveChat({ displayName }: { displayName: string }) {
         <button
           type="submit"
           aria-label="Enviar mensagem"
-          className="skeu-btn sheen relative flex size-8 shrink-0 items-center justify-center rounded-full text-white"
+          className="gradient-brand flex size-8 shrink-0 items-center justify-center rounded-full text-black"
         >
           <Send className="size-4" aria-hidden="true" />
         </button>

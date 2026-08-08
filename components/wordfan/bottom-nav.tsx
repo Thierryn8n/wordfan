@@ -16,6 +16,7 @@ const right = [
 
 export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
   const pathname = usePathname()
+  const clubActive = pathname.startsWith('/artist') || pathname === '/club'
 
   function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof Home }) {
     const active = pathname === href || pathname.startsWith(href + '/')
@@ -24,7 +25,7 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
         href={href}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          'group flex flex-1 flex-col items-center gap-1.5 py-1 text-[8px] font-extrabold tracking-[0.08em] transition-colors',
+          'flex flex-1 flex-col items-center gap-1.5 py-1 text-[8px] font-extrabold tracking-[0.08em] transition-colors',
           active
             ? accent === 'club'
               ? 'text-club'
@@ -32,14 +33,7 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
             : 'text-muted-foreground hover:text-foreground',
         )}
       >
-        <span
-          className={cn(
-            'flex size-10 items-center justify-center rounded-2xl transition-all',
-            active ? 'skeu-inset' : 'bg-transparent group-hover:bg-white/5',
-          )}
-        >
-          <Icon className="size-5" aria-hidden="true" />
-        </span>
+        <Icon className="size-5" aria-hidden="true" />
         <span>{label}</span>
       </Link>
     )
@@ -48,32 +42,45 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
   return (
     <nav
       aria-label="Navegação principal"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-md px-4 pb-5"
+      className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-md"
     >
-      <div className="nav-dock sheen pointer-events-auto relative rounded-[32px] px-3 pb-2 pt-3">
+      <div className="relative rounded-t-[32px] border border-b-0 border-white/8 bg-black/90 px-4 pb-5 pt-4 backdrop-blur-xl">
         <div className="flex items-end">
           {left.map((item) => (
             <NavItem key={item.href} {...item} />
           ))}
 
-          {/* Slot central — orbe elevado e destacado (z acima do dock) */}
-          <div className="relative z-10 flex flex-1 flex-col items-center gap-1.5">
-            {/* recorte/pedestal atrás do orbe */}
+          {/* Botão central elevado FAN CLUB */}
+          <Link
+            href="/home"
+            aria-label="Fan Club"
+            className="relative -mt-10 flex flex-1 flex-col items-center gap-1.5"
+          >
             <span
-              aria-hidden="true"
-              className="pointer-events-none absolute -top-7 left-1/2 size-[74px] -translate-x-1/2 rounded-full bg-background/80"
-            />
-            <Link
-              href="/home"
-              aria-label="Fan Club"
-              className="nav-orb -mt-11 flex size-16 items-center justify-center rounded-full text-white"
+              className={cn(
+                'flex size-14 items-center justify-center rounded-2xl text-white shadow-lg',
+                accent === 'club'
+                  ? 'gradient-club shadow-club/40'
+                  : 'gradient-brand shadow-brand/40',
+              )}
             >
-              <Star className="size-7 fill-white drop-shadow" aria-hidden="true" />
-            </Link>
-            <span className="whitespace-nowrap pt-0.5 text-[8px] font-extrabold tracking-[0.08em] text-club">
+              <Star className="size-6 fill-white" aria-hidden="true" />
+            </span>
+            <span
+              className={cn(
+                'whitespace-nowrap text-[8px] font-extrabold tracking-[0.08em]',
+                clubActive
+                  ? accent === 'club'
+                    ? 'text-club'
+                    : 'text-brand'
+                  : accent === 'club'
+                    ? 'text-club'
+                    : 'text-brand',
+              )}
+            >
               FAN CLUB
             </span>
-          </div>
+          </Link>
 
           {right.map((item) => (
             <NavItem key={item.href} {...item} />

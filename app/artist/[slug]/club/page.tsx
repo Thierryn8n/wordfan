@@ -61,7 +61,7 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
         <Link
           href={`/artist/${slug}`}
           aria-label="Voltar para o perfil do artista"
-          className="glass-soft absolute left-5 top-5 z-10 flex size-10 items-center justify-center rounded-full"
+          className="absolute left-5 top-5 z-10 flex size-10 items-center justify-center rounded-full border border-white/8 bg-white/8 backdrop-blur-md"
         >
           <ArrowLeft className="size-5" aria-hidden="true" />
         </Link>
@@ -87,7 +87,7 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
 
       <main className="px-6">
         {/* Plano atual */}
-        <div className="glass-panel sheen relative mt-5 flex items-center justify-between rounded-3xl p-5">
+        <div className="mt-5 flex items-center justify-between rounded-3xl border border-club/30 bg-club/5 p-5">
           <div>
             <p className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">SEU NÍVEL DE FÃ</p>
             <p className="mt-1 font-serif text-lg font-extrabold text-club">
@@ -96,7 +96,7 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
           </div>
           <Link
             href={`/artist/${slug}/plans`}
-            className="skeu rounded-full px-4 py-2 text-[9px] font-black tracking-[0.15em] text-club"
+            className="rounded-full border border-club/40 px-4 py-2 text-[9px] font-black tracking-[0.15em] text-club"
           >
             MUDAR PLANO
           </Link>
@@ -106,9 +106,9 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
         {liveNow && (
           <Link
             href={`/artist/${slug}/live`}
-            className="skeu-btn sheen relative mt-4 flex items-center gap-3 rounded-3xl p-4"
+            className="gradient-club mt-4 flex items-center gap-3 rounded-3xl p-4"
           >
-            <span className="glass-soft flex size-11 shrink-0 items-center justify-center rounded-full">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
               <Play className="size-5 fill-white text-white" aria-hidden="true" />
             </span>
             <div className="min-w-0 flex-1">
@@ -138,7 +138,7 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
               {upcoming.map((l) => (
                 <li
                   key={l.id}
-                  className="skeu flex items-center justify-between gap-3 rounded-3xl p-4"
+                  className="flex items-center justify-between gap-3 rounded-3xl border border-white/8 bg-card p-4"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-xs font-extrabold">{l.title}</p>
@@ -175,7 +175,7 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
             <Trophy className="size-3.5 text-gold" aria-hidden="true" />
             RANKING DE FÃS
           </h2>
-          <div className="skeu mt-3 flex flex-col gap-4 rounded-3xl p-5">
+          <div className="mt-3 flex flex-col gap-4 rounded-3xl border border-white/8 bg-card p-5">
             {[
               { pos: 1, name: 'Fernanda M.', xp: 12480 },
               { pos: 2, name: 'Carlos R.', xp: 11020 },
@@ -185,8 +185,8 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
                 <span
                   className={`flex size-8 shrink-0 items-center justify-center rounded-full font-numeric text-xs font-bold ${
                     fan.pos === 1
-                      ? 'skeu-btn sheen relative text-white'
-                      : 'skeu-inset text-muted-foreground'
+                      ? 'gradient-club text-white'
+                      : 'border border-white/8 bg-white/5 text-muted-foreground'
                   }`}
                 >
                   {fan.pos}

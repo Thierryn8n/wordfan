@@ -37,7 +37,7 @@ export default async function LivePage({ params }: { params: Promise<{ slug: str
         <Link
           href={`/artist/${slug}/club`}
           aria-label="Voltar para o fan club"
-          className="skeu flex size-10 shrink-0 items-center justify-center rounded-full"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/8 bg-card"
         >
           <ArrowLeft className="size-5" aria-hidden="true" />
         </Link>
@@ -56,7 +56,7 @@ export default async function LivePage({ params }: { params: Promise<{ slug: str
       </header>
 
       <main className="flex flex-1 flex-col px-6 pb-6 pt-5">
-        <div className="skeu relative aspect-video overflow-hidden rounded-3xl">
+        <div className="relative aspect-video overflow-hidden rounded-3xl border border-white/8 bg-card">
           <Image
             src={artist.banner_url || '/placeholder.svg?height=300&width=530'}
             alt=""
@@ -66,13 +66,13 @@ export default async function LivePage({ params }: { params: Promise<{ slug: str
           />
           {hasAccess ? (
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-              <span className="skeu-btn sheen relative flex size-16 items-center justify-center rounded-full">
+              <span className="gradient-brand flex size-16 items-center justify-center rounded-full shadow-lg shadow-primary/40">
                 <Play className="size-6 fill-white text-white" aria-hidden="true" />
               </span>
             </div>
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 p-6 text-center">
-              <span className="skeu-raised flex size-12 items-center justify-center rounded-full">
+              <span className="flex size-12 items-center justify-center rounded-full border border-white/10 bg-white/5">
                 <Lock className="size-5 text-muted-foreground" aria-hidden="true" />
               </span>
               <p className="font-serif text-sm font-extrabold">LIVE EXCLUSIVA PARA ASSINANTES</p>
@@ -83,7 +83,7 @@ export default async function LivePage({ params }: { params: Promise<{ slug: str
               )}
               <Link
                 href={`/artist/${slug}/plans`}
-                className="skeu-btn sheen relative mt-1 rounded-full px-7 py-3 text-[10px] font-black tracking-[0.2em] text-white"
+                className="gradient-brand mt-1 rounded-full px-7 py-3 text-[10px] font-black tracking-[0.2em] text-white"
               >
                 FAZER UPGRADE
               </Link>

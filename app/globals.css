@@ -159,125 +159,6 @@
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid oklch(1 0 0 / 10%);
   }
-
-  /* ===== Glassmorphism ===== */
-  .glass-panel {
-    background: linear-gradient(
-      160deg,
-      rgba(255, 255, 255, 0.08) 0%,
-      rgba(255, 255, 255, 0.03) 45%,
-      rgba(255, 255, 255, 0.015) 100%
-    );
-    backdrop-filter: blur(22px) saturate(150%);
-    -webkit-backdrop-filter: blur(22px) saturate(150%);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.16),
-      inset 0 -1px 0 0 rgba(0, 0, 0, 0.4),
-      0 24px 48px -24px rgba(0, 0, 0, 0.85);
-  }
-  .glass-soft {
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
-    backdrop-filter: blur(16px) saturate(130%);
-    -webkit-backdrop-filter: blur(16px) saturate(130%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
-  }
-  /* Liquid glass — bem mais fosco/desfocado (menos transparente) */
-  .glass-frost {
-    background: linear-gradient(160deg, rgba(26, 26, 30, 0.82) 0%, rgba(16, 16, 19, 0.7) 100%);
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
-      inset 0 -1px 0 0 rgba(0, 0, 0, 0.55),
-      0 20px 44px -20px rgba(0, 0, 0, 0.92);
-  }
-  /* Dock de navegação — superfície SÓLIDA skeuomórfica (sem vidro/blur) */
-  .nav-dock {
-    background: linear-gradient(180deg, #33333a 0%, #23232a 18%, #191920 55%, #101015 100%);
-    border: 1px solid rgba(0, 0, 0, 0.6);
-    border-top: 1.5px solid rgba(255, 255, 255, 0.22);
-    box-shadow:
-      inset 0 2px 0 0 rgba(255, 255, 255, 0.28),
-      inset 0 12px 22px -14px rgba(255, 255, 255, 0.22),
-      inset 0 -3px 4px 0 rgba(0, 0, 0, 0.7),
-      inset 0 -20px 30px -18px rgba(0, 0, 0, 0.85),
-      0 2px 0 0 rgba(255, 255, 255, 0.04),
-      0 30px 60px -14px rgba(0, 0, 0, 0.98),
-      0 8px 20px -6px rgba(0, 0, 0, 0.7);
-  }
-  /* Orbe central elevado do dock (botão fan club) — cor do artista */
-  .nav-orb {
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--artist-secondary, var(--club)) 82%, white 18%) 0%,
-      var(--artist-primary, var(--club)) 52%,
-      color-mix(in srgb, var(--artist-primary, var(--club)) 76%, black) 100%
-    );
-    border: 1.5px solid rgba(255, 255, 255, 0.42);
-    box-shadow:
-      inset 0 2px 3px 0 rgba(255, 255, 255, 0.6),
-      inset 0 -5px 8px 0 rgba(0, 0, 0, 0.35),
-      0 0 0 6px color-mix(in srgb, var(--artist-primary, var(--club)) 20%, transparent),
-      0 14px 26px -6px color-mix(in srgb, var(--artist-primary, var(--club)) 55%, transparent),
-      0 20px 38px -8px rgba(0, 0, 0, 0.85);
-    transition: transform 0.14s ease, box-shadow 0.14s ease;
-  }
-  .nav-orb:active {
-    transform: translateY(2px) scale(0.97);
-  }
-
-  /* ===== Skeuomorphism / neumorphism (sombras neutras, sem cor) ===== */
-  .skeu {
-    background: linear-gradient(150deg, #1e1e1e 0%, #131313 55%, #0d0d0d 100%);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.09),
-      inset 0 -2px 6px 0 rgba(0, 0, 0, 0.55),
-      6px 8px 22px -10px rgba(0, 0, 0, 0.85);
-  }
-  .skeu-raised {
-    background: linear-gradient(150deg, #242424 0%, #151515 60%, #0f0f0f 100%);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
-      -6px -6px 16px -8px rgba(255, 255, 255, 0.06),
-      8px 10px 26px -8px rgba(0, 0, 0, 0.9);
-  }
-  .skeu-inset {
-    background: linear-gradient(150deg, #0d0d0d 0%, #171717 100%);
-    border: 1px solid rgba(0, 0, 0, 0.6);
-    box-shadow:
-      inset 4px 4px 10px 0 rgba(0, 0, 0, 0.75),
-      inset -3px -3px 8px 0 rgba(255, 255, 255, 0.045);
-  }
-  /* Botão tátil com relevo (skeuomórfico) */
-  .skeu-btn {
-    background: linear-gradient(180deg, #ff8a00 0%, #ff6b00 55%, #e85f00 100%);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.45),
-      inset 0 -3px 8px 0 rgba(0, 0, 0, 0.3),
-      0 10px 24px -10px rgba(0, 0, 0, 0.9);
-    transition: transform 0.12s ease, box-shadow 0.12s ease;
-  }
-  .skeu-btn:active {
-    transform: translateY(1px);
-    box-shadow:
-      inset 0 2px 6px 0 rgba(0, 0, 0, 0.5),
-      0 4px 10px -8px rgba(0, 0, 0, 0.9);
-  }
-  /* Highlight de vidro no topo de superfícies */
-  .sheen::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 38%);
-    pointer-events: none;
-  }
   .gradient-brand {
     background-image: linear-gradient(135deg, #ff8a00 0%, #ff6a00 100%);
   }
@@ -341,16 +222,6 @@
       var(--artist-grad-to) 100%
     );
   }
-  /* Botão tátil usa a identidade do artista (sem laranja) */
-  .artist-scope .skeu-btn {
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--artist-secondary, var(--artist-primary)) 88%, white 12%) 0%,
-      var(--artist-primary) 58%,
-      color-mix(in srgb, var(--artist-primary) 80%, black) 100%
-    );
-    border: 1px solid color-mix(in srgb, white 30%, transparent);
-  }
   .artist-scope .text-gradient-brand {
     background-image: linear-gradient(
       135deg,
@@ -399,9 +270,7 @@
     border-color: color-mix(in srgb, var(--artist-primary) 30%, transparent);
   }
   .artist-glow {
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
-      8px 10px 30px -12px rgba(0, 0, 0, 0.9);
+    box-shadow: 0 0 40px -8px color-mix(in srgb, var(--artist-primary) 55%, transparent);
   }
   .artist-font {
     font-family: var(--artist-font), system-ui, sans-serif;
