@@ -77,10 +77,10 @@ export function ApplyForm({
         <span className="mx-auto flex size-16 items-center justify-center rounded-full holo-fill">
           <Check className="size-8 text-black" aria-hidden="true" />
         </span>
-        <h2 className="mt-5 font-serif text-2xl font-black">VOCÊ ESTÁ NA LISTA</h2>
+        <h2 className="mt-5 font-serif text-2xl font-black">ENTERPRISE ATIVADO</h2>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          Pagamento confirmado e sua solicitação entrou na lista de espera. Assim que a equipe aprovar,
-          o empresário do artista entra em contato e seu perfil ganha o selo holográfico.
+          Pagamento confirmado! Seu perfil já ganhou o selo holográfico Enterprise. O empresário do
+          artista vai entrar em contato para os próximos passos.
         </p>
         <button
           type="button"
@@ -99,11 +99,11 @@ export function ApplyForm({
         <div className="rounded-3xl border border-white/8 bg-card p-7">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-[8px] font-black tracking-[0.2em] text-muted-foreground">
             <CreditCard className="size-3" aria-hidden="true" />
-            ENTRADA NA LISTA DE ESPERA
+            ATIVAÇÃO ENTERPRISE
           </span>
           <p className="mt-4 font-numeric text-4xl font-bold">{formatBRL(priceCents)}</p>
           <p className="mt-1 text-xs font-bold text-muted-foreground">
-            Taxa única para análise e priorização da sua proposta.
+            Taxa única. Seu selo Enterprise é ativado assim que o pagamento é confirmado.
           </p>
 
           {error && (

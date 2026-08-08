@@ -13,7 +13,7 @@ const STATUS_META: Record<
 > = {
   pending_payment: {
     label: 'AGUARDANDO PAGAMENTO',
-    hint: 'Finalize o pagamento da entrada para entrar na lista de espera.',
+    hint: 'Finalize o pagamento para ativar seu Enterprise na hora.',
     icon: CreditCard,
     tone: 'text-amber-400',
   },
@@ -24,8 +24,8 @@ const STATUS_META: Record<
     tone: 'text-sky-400',
   },
   approved: {
-    label: 'APROVADO',
-    hint: 'O empresário do artista vai entrar em contato. Seu perfil agora tem o selo Enterprise.',
+    label: 'ENTERPRISE ATIVO',
+    hint: 'Pagamento confirmado! Seu perfil já exibe o selo Enterprise.',
     icon: Check,
     tone: 'text-emerald-400',
   },
