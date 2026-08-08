@@ -65,3 +65,7 @@ create policy tx_admin_update on public.transactions
 drop policy if exists tx_admin_delete on public.transactions;
 create policy tx_admin_delete on public.transactions
   for delete using (public.is_admin());
+
+-- ============ LIMPEZA ============
+-- Remove a conta temporária usada apenas para validar o painel no navegador.
+delete from auth.users where email = 'qa.admin.temp@example.com';
