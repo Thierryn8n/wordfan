@@ -95,28 +95,30 @@ export function ArtistTabs({
 
   return (
     <div>
-      {/* Barra de abas */}
-      <div
-        role="tablist"
-        aria-label="Seções do perfil"
-        className="scrollbar-none sticky top-0 z-40 flex gap-7 overflow-x-auto border-b border-white/8 bg-background/95 px-6 backdrop-blur-xl"
-      >
-        {TABS.map(({ key, label }) => (
-          <button
-            key={key}
-            type="button"
-            role="tab"
-            aria-selected={tab === key}
-            onClick={() => setTab(key)}
-            className={
-              tab === key
-                ? 'shrink-0 whitespace-nowrap border-b-2 border-club py-4 text-xs font-extrabold tracking-[0.1em] text-club'
-                : 'shrink-0 whitespace-nowrap border-b-2 border-transparent py-4 text-xs font-extrabold tracking-[0.1em] text-muted-foreground'
-            }
-          >
-            {label}
-          </button>
-        ))}
+      {/* Barra de abas flutuante */}
+      <div className="sticky top-3 z-40 mt-6 px-5">
+        <div
+          role="tablist"
+          aria-label="Seções do perfil"
+          className="scrollbar-none glass elev-2 flex gap-1 overflow-x-auto rounded-full p-1.5"
+        >
+          {TABS.map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              onClick={() => setTab(key)}
+              className={
+                tab === key
+                  ? 'gradient-club shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-[11px] font-extrabold tracking-[0.1em] text-white'
+                  : 'shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-[11px] font-extrabold tracking-[0.1em] text-muted-foreground transition-colors hover:text-foreground'
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <main className="flex flex-col gap-8 px-6 pt-8">

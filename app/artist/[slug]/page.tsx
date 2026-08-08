@@ -10,7 +10,7 @@ import {
   Music2,
   AudioLines,
   Globe,
-  Pause,
+  Play,
   Check,
   Radio,
   CalendarClock,
@@ -179,12 +179,12 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           <div className="mt-5 flex gap-3">
             <Link
               href={subscription ? `/artist/${artist.slug}/club` : `/artist/${artist.slug}/plans`}
-              className="gradient-club flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl text-[11px] font-extrabold tracking-[0.2em] text-white"
+              className="gradient-club elev-2 flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl text-[11px] font-extrabold tracking-[0.2em] text-white transition-transform active:scale-[0.98]"
             >
               <Star className="size-4 fill-white" aria-hidden="true" />
               {subscription ? 'ACESSAR FAN CLUB' : 'ENTRAR NO FAN CLUB'}
             </Link>
-            <button className="flex h-14 items-center gap-2 rounded-2xl border border-white/8 bg-card px-5 text-[11px] font-extrabold tracking-[0.2em]">
+            <button className="surface elev-1 flex h-14 items-center gap-2 rounded-2xl px-5 text-[11px] font-extrabold tracking-[0.2em] transition-transform active:scale-[0.98]">
               <UserPlus className="size-4" aria-hidden="true" />
               SEGUIR
             </button>
@@ -224,7 +224,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
       )}
 
       {/* Stats */}
-      <div className="mt-6 flex border-y border-white/8 bg-card/30 px-6 py-7">
+      <div className="surface elev-1 mx-6 mt-6 flex rounded-3xl px-2 py-6">
         {[
           { value: String(posts.length), label: 'POSTS' },
           { value: String(videos.length), label: 'VÍDEOS' },
@@ -233,10 +233,10 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         ].map((s, i) => (
           <div
             key={s.label}
-            className={`flex flex-1 flex-col items-center gap-1 ${i > 0 ? 'border-l border-white/8' : ''}`}
+            className={`flex flex-1 flex-col items-center gap-1.5 ${i > 0 ? 'border-l border-white/8' : ''}`}
           >
-            <span className="font-numeric text-sm font-bold">{s.value}</span>
-            <span className="text-[8px] font-extrabold tracking-[0.1em] text-muted-foreground">
+            <span className="font-numeric text-lg font-black">{s.value}</span>
+            <span className="text-[8px] font-extrabold tracking-[0.15em] text-muted-foreground">
               {s.label}
             </span>
           </div>
@@ -252,10 +252,10 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
               href={artist.social_links[key]}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex flex-col items-center gap-2"
+              className="group flex flex-col items-center gap-2"
               aria-label={label}
             >
-              <span className="flex size-13 items-center justify-center rounded-2xl border border-white/8 bg-card p-4 text-muted-foreground">
+              <span className="surface elev-1 flex size-13 items-center justify-center rounded-2xl p-4 text-foreground/80 transition-colors group-hover:text-club">
                 <Icon className="size-5" aria-hidden="true" />
               </span>
               <span className="text-[8px] font-extrabold tracking-[0.15em] text-muted-foreground">
@@ -278,19 +278,29 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         cheapestPriceCents={cheapest}
       />
 
-      {/* Mini player flutuante */}
+      {/* Mini player flutuante — só aparece se estiver AO VIVO de verdade */}
       {liveNow && (
         <Link
           href={`/artist/${artist.slug}/live`}
-          className="fixed inset-x-6 bottom-24 z-50 mx-auto flex max-w-sm items-center gap-4 rounded-3xl border border-club/50 bg-black/90 p-3 backdrop-blur-xl"
+          aria-label={`Entrar na live: ${liveNow.title}`}
+          className="nav-float fixed inset-x-6 bottom-40 z-40 mx-auto flex max-w-sm items-center gap-3 rounded-3xl p-3"
         >
-          <Image
-            src={artist.avatar_url || '/placeholder.svg?height=56&width=56'}
-            alt=""
-            width={56}
-            height={56}
-            className="size-14 rounded-2xl object-cover"
-          />
+          <div className="relative shrink-0">
+            <Image
+              src={artist.avatar_url || '/placeholder.svg?height=56&width=56'}
+              alt=""
+              width={56}
+              height={56}
+              className="size-14 rounded-2xl object-cover"
+            />
+            <span
+              className="absolute -right-1 -top-1 flex items-center gap-1 rounded-full bg-red-600 px-1.5 py-0.5 text-[7px] font-black tracking-[0.1em] text-white"
+              aria-hidden="true"
+            >
+              <span className="size-1 animate-pulse rounded-full bg-white" />
+              LIVE
+            </span>
+          </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-extrabold tracking-[0.1em]">
               {liveNow.title.toUpperCase()}
@@ -303,7 +313,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
             className="gradient-club flex size-12 shrink-0 items-center justify-center rounded-2xl"
             aria-hidden="true"
           >
-            <Pause className="size-5 fill-white text-white" />
+            <Play className="size-5 fill-white text-white" />
           </span>
         </Link>
       )}
