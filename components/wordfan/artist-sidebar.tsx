@@ -13,7 +13,6 @@ import {
   BarChart3,
   MessageSquare,
   Briefcase,
-  Palette,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -46,10 +45,7 @@ const NAV_GROUPS: {
   },
   {
     title: 'Negócio',
-    items: [
-      { label: 'Financeiro', href: '/dashboard/financeiro', icon: Wallet },
-      { label: 'Perfil e identidade', href: '/dashboard/perfil', icon: Palette },
-    ],
+    items: [{ label: 'Financeiro', href: '/dashboard/financeiro', icon: Wallet }],
   },
 ]
 

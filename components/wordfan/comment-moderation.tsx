@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Trash2, Loader2, MessageSquare } from 'lucide-react'
-import { deleteFanComment } from '@/app/dashboard/perfil/actions'
+import { deleteFanComment } from '@/app/dashboard/comunidade/actions'
 
 export interface ModerationComment {
   id: string
