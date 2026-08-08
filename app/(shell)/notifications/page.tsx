@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { Bell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { BottomNav } from '@/components/wordfan/bottom-nav'
 import type { Notification } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -83,7 +82,6 @@ export default async function NotificationsPage() {
           </ul>
         )}
       </main>
-      <BottomNav />
     </div>
   )
 }

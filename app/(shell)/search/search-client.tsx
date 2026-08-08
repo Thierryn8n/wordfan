@@ -3,13 +3,25 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Search, MapPin, ChevronRight } from 'lucide-react'
-import type { Artist } from '@/lib/types'
+import { Search, MapPin, ChevronRight, CalendarDays } from 'lucide-react'
+import type { Artist, Show } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-export function SearchClient({ artists }: { artists: Artist[] }) {
+type ShowWithArtist = Show & { artist: Artist }
+
+export function SearchClient({
+  artists,
+  shows,
+  initialGenre = null,
+  adSlot,
+}: {
+  artists: Artist[]
+  shows: ShowWithArtist[]
+  initialGenre?: string | null
+  adSlot?: React.ReactNode
+}) {
   const [query, setQuery] = useState('')
-  const [genre, setGenre] = useState<string | null>(null)
+  const [genre, setGenre] = useState<string | null>(initialGenre)
 
   const genres = useMemo(
     () => Array.from(new Set(artists.map((a) => a.genre).filter(Boolean))) as string[],
@@ -28,11 +40,30 @@ export function SearchClient({ artists }: { artists: Artist[] }) {
         !q ||
         a.name.toLowerCase().includes(q) ||
         (a.genre ?? '').toLowerCase().includes(q) ||
-        (a.city ?? '').toLowerCase().includes(q)
+        (a.city ?? '').toLowerCase().includes(q) ||
+        (a.state ?? '').toLowerCase().includes(q)
       const matchesGenre = !genre || a.genre === genre
       return matchesQuery && matchesGenre
     })
   }, [artists, query, genre])
+
+  // Shows que combinam com a busca — dados reais da agenda.
+  const matchingShows = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q && !genre) return []
+    return shows
+      .filter((s) => {
+        const matchesGenre = !genre || s.artist?.genre === genre
+        const matchesQuery =
+          !q ||
+          s.title.toLowerCase().includes(q) ||
+          (s.city ?? '').toLowerCase().includes(q) ||
+          (s.venue ?? '').toLowerCase().includes(q) ||
+          (s.artist?.name ?? '').toLowerCase().includes(q)
+        return matchesGenre && matchesQuery
+      })
+      .slice(0, 5)
+  }, [shows, query, genre])
 
   return (
     <main className="px-6 pt-10">
@@ -111,6 +142,55 @@ export function SearchClient({ artists }: { artists: Artist[] }) {
               </button>
             ))}
           </div>
+        </section>
+      )}
+
+      {adSlot && <div className="mt-7">{adSlot}</div>}
+
+      {/* Eventos encontrados */}
+      {matchingShows.length > 0 && (
+        <section aria-labelledby="shows-heading" className="mt-8">
+          <h2
+            id="shows-heading"
+            className="flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-muted-foreground"
+          >
+            <CalendarDays className="size-3.5" aria-hidden="true" />
+            EVENTOS ENCONTRADOS
+          </h2>
+          <ul className="mt-3 flex flex-col gap-2.5">
+            {matchingShows.map((s) => {
+              const d = new Date(s.starts_at)
+              return (
+                <li key={s.id}>
+                  <Link
+                    href={`/artist/${s.artist.slug}`}
+                    className="surface elev-1 flex items-center gap-4 rounded-3xl p-3"
+                  >
+                    <div className="flex size-12 shrink-0 flex-col items-center justify-center rounded-2xl bg-white/5">
+                      <span className="font-numeric text-base font-black leading-none">
+                        {d.getDate()}
+                      </span>
+                      <span className="mt-0.5 text-[7px] font-black tracking-[0.15em] text-muted-foreground">
+                        {d.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-extrabold">{s.title}</p>
+                      <p className="mt-0.5 truncate text-[10px] font-bold text-brand">
+                        {s.artist.name}
+                      </p>
+                      <p className="mt-0.5 flex items-center gap-1 truncate text-[9px] font-bold text-zinc-500">
+                        <MapPin className="size-2.5 shrink-0" aria-hidden="true" />
+                        {s.city ?? s.venue ?? 'A definir'}
+                        {s.state ? `, ${s.state}` : ''}
+                      </p>
+                    </div>
+                    <ChevronRight className="size-4 shrink-0 text-zinc-600" aria-hidden="true" />
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
         </section>
       )}
 

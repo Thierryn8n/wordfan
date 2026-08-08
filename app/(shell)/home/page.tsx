@@ -2,7 +2,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getArtists, getLiveNow, getUpcomingShows, getActiveAds } from '@/lib/data'
 import { resolveTheme } from '@/lib/artist-theme'
-import { BottomNav } from '@/components/wordfan/bottom-nav'
 import { AdBanner } from '@/components/wordfan/ad-banner'
 import {
   Bell,
@@ -22,8 +21,6 @@ function formatFans(n: number) {
   return String(n)
 }
 
-const GENRES = ['TODOS', 'SERTANEJO', 'FORRÓ', 'POP', 'HIP HOP', 'SAMBA', 'ROCK']
-
 export default async function HomePage() {
   const [artists, lives, shows, heroAds, inlineAds] = await Promise.all([
     getArtists(),
@@ -35,6 +32,8 @@ export default async function HomePage() {
 
   const featured = artists.filter((a) => a.is_featured)
   const top = [...artists].sort((a, b) => b.followers_count - a.followers_count).slice(0, 5)
+  // Gêneros derivados dos artistas cadastrados — nada hardcoded.
+  const genres = Array.from(new Set(artists.map((a) => a.genre).filter(Boolean) as string[]))
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-40">
@@ -76,22 +75,26 @@ export default async function HomePage() {
           <SlidersHorizontal className="size-5 text-muted-foreground" aria-hidden="true" />
         </Link>
 
-        {/* Genre filters */}
-        <div className="scrollbar-none -mx-6 mt-6 flex gap-3 overflow-x-auto px-6">
-          {GENRES.map((g, i) => (
+        {/* Filtros de gênero (vindos dos artistas reais) */}
+        {genres.length > 0 && (
+          <div className="scrollbar-none -mx-6 mt-6 flex gap-3 overflow-x-auto px-6">
             <Link
-              key={g}
               href="/search"
-              className={
-                i === 0
-                  ? 'gradient-brand shrink-0 rounded-full px-6 py-3 text-[11px] font-extrabold tracking-[0.15em] text-white'
-                  : 'surface shrink-0 rounded-full px-6 py-3 text-[11px] font-extrabold tracking-[0.15em] text-muted-foreground'
-              }
+              className="gradient-brand shrink-0 rounded-full px-6 py-3 text-[11px] font-extrabold tracking-[0.15em] text-white"
             >
-              {g}
+              TODOS
             </Link>
-          ))}
-        </div>
+            {genres.map((g) => (
+              <Link
+                key={g}
+                href={`/search?g=${encodeURIComponent(g)}`}
+                className="surface shrink-0 rounded-full px-6 py-3 text-[11px] font-extrabold tracking-[0.15em] text-muted-foreground uppercase"
+              >
+                {g}
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* Anúncio em destaque */}
         {heroAds.length > 0 && (
@@ -357,8 +360,6 @@ export default async function HomePage() {
           </div>
         </section>
       </main>
-
-      <BottomNav />
     </div>
   )
 }

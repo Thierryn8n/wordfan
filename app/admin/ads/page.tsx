@@ -19,7 +19,7 @@ export default async function AdminAdsPage() {
   if (profile?.role !== 'admin') redirect('/home')
 
   const { data, error } = await supabase
-    .from('ads')
+    .from('ad_banners')
     .select('*')
     .order('placement', { ascending: true })
     .order('sort_order', { ascending: true })

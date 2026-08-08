@@ -21,7 +21,7 @@ export default async function ProfileEditPage() {
   const profile = profileData as Profile | null
 
   return (
-    <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-24">
+    <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-40">
       <ProfileEditForm
         email={user.email ?? ''}
         initialName={profile?.display_name ?? ''}

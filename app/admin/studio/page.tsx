@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { ArrowLeft, Palette } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient, isServiceRoleConfigured } from '@/lib/supabase/admin'
-import type { Artist, GalleryItem, Plan, Post, Show, Story, Video } from '@/lib/types'
+import type { Artist, GalleryItem, Live, Plan, Post, Show, Story, Video } from '@/lib/types'
 import { ContentManager } from '@/components/wordfan/content-manager'
 import { StudioEditor } from './studio-editor'
 import { ManagerSection, type ManagerRow } from './manager-section'
@@ -39,6 +39,7 @@ export default async function StudioPage({
     { data: galleryData },
     { data: videosData },
     { data: storiesData },
+    { data: livesData },
     { data: plansData },
   ] = await Promise.all([
     supabase.from('posts').select('*').eq('artist_id', selected.id).order('created_at', { ascending: false }),
@@ -46,6 +47,7 @@ export default async function StudioPage({
     supabase.from('gallery_items').select('*').eq('artist_id', selected.id).order('created_at', { ascending: false }),
     supabase.from('videos').select('*').eq('artist_id', selected.id).order('created_at', { ascending: false }),
     supabase.from('stories').select('*').eq('artist_id', selected.id).order('created_at', { ascending: false }),
+    supabase.from('lives').select('*').eq('artist_id', selected.id).order('scheduled_at', { ascending: false }),
     supabase.from('plans').select('*').eq('artist_id', selected.id).order('price_cents', { ascending: true }),
   ])
 
@@ -122,6 +124,7 @@ export default async function StudioPage({
               gallery={(galleryData as GalleryItem[]) ?? []}
               videos={(videosData as Video[]) ?? []}
               stories={(storiesData as Story[]) ?? []}
+              lives={(livesData as Live[]) ?? []}
               plans={(plansData as Plan[]) ?? []}
             />
           }

@@ -3,7 +3,6 @@ import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { LayoutDashboard, ShieldCheck, Sparkles, ChevronRight, Zap, Briefcase, Building2, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { BottomNav } from '@/components/wordfan/bottom-nav'
 import { HoloCrown } from '@/components/wordfan/holo-crown'
 import { HolographicCrown3D } from '@/components/wordfan/holo-crown-3d'
 import { SignOutButton } from './sign-out-button'
@@ -199,7 +198,6 @@ export default async function ProfilePage() {
           <SignOutButton />
         </div>
       </main>
-      <BottomNav />
     </div>
   )
 }

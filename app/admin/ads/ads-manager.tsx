@@ -14,6 +14,7 @@ import {
   Eye,
   EyeOff,
   ExternalLink,
+  MousePointerClick,
 } from 'lucide-react'
 import type { Ad, AdPlacement } from '@/lib/types'
 import { AD_PLACEMENT_LABELS } from '@/lib/types'
@@ -26,11 +27,13 @@ type FormState = {
   id?: string
   title: string
   subtitle: string
+  description: string
   imageUrl: string
   ctaLabel: string
-  ctaHref: string
+  ctaUrl: string
   placement: AdPlacement
-  active: boolean
+  accentColor: string
+  isActive: boolean
   sortOrder: number
   startsAt: string
   endsAt: string
@@ -39,11 +42,13 @@ type FormState = {
 const EMPTY: FormState = {
   title: '',
   subtitle: '',
+  description: '',
   imageUrl: '',
   ctaLabel: '',
-  ctaHref: '',
+  ctaUrl: '',
   placement: 'home_inline',
-  active: true,
+  accentColor: '#ff6b00',
+  isActive: true,
   sortOrder: 0,
   startsAt: '',
   endsAt: '',
@@ -54,11 +59,13 @@ function toFormState(ad: Ad): FormState {
     id: ad.id,
     title: ad.title,
     subtitle: ad.subtitle ?? '',
+    description: ad.description ?? '',
     imageUrl: ad.image_url ?? '',
     ctaLabel: ad.cta_label ?? '',
-    ctaHref: ad.cta_href ?? '',
+    ctaUrl: ad.cta_url ?? '',
     placement: ad.placement,
-    active: ad.active,
+    accentColor: ad.accent_color ?? '#ff6b00',
+    isActive: ad.is_active,
     sortOrder: ad.sort_order,
     startsAt: ad.starts_at ? ad.starts_at.slice(0, 10) : '',
     endsAt: ad.ends_at ? ad.ends_at.slice(0, 10) : '',
@@ -70,15 +77,20 @@ function previewAd(f: FormState): Ad {
     id: f.id ?? 'preview',
     title: f.title || 'Título do anúncio',
     subtitle: f.subtitle || null,
+    description: f.description || null,
     image_url: f.imageUrl || null,
     cta_label: f.ctaLabel || null,
-    cta_href: f.ctaHref || null,
+    cta_url: f.ctaUrl || null,
     placement: f.placement,
-    active: f.active,
+    accent_color: f.accentColor || null,
+    is_active: f.isActive,
     sort_order: f.sortOrder,
     starts_at: f.startsAt || null,
     ends_at: f.endsAt || null,
+    impressions: 0,
+    clicks: 0,
     created_at: new Date().toISOString(),
+    updated_at: null,
   }
 }
 
@@ -113,11 +125,13 @@ export function AdsManager({ ads, tableMissing }: { ads: Ad[]; tableMissing: boo
         id: form.id,
         title: form.title,
         subtitle: form.subtitle,
+        description: form.description,
         imageUrl: form.imageUrl,
         ctaLabel: form.ctaLabel,
-        ctaHref: form.ctaHref,
+        ctaUrl: form.ctaUrl,
         placement: form.placement,
-        active: form.active,
+        accentColor: form.accentColor,
+        isActive: form.isActive,
         sortOrder: Number(form.sortOrder) || 0,
         startsAt: form.startsAt,
         endsAt: form.endsAt,
@@ -133,7 +147,7 @@ export function AdsManager({ ads, tableMissing }: { ads: Ad[]; tableMissing: boo
 
   function handleToggle(ad: Ad) {
     startTransition(async () => {
-      const res = await toggleAd(ad.id, !ad.active)
+      const res = await toggleAd(ad.id, !ad.is_active)
       if (res.error) setError(res.error)
       router.refresh()
     })
@@ -176,11 +190,10 @@ export function AdsManager({ ads, tableMissing }: { ads: Ad[]; tableMissing: boo
         <div className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
           <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-400" aria-hidden="true" />
           <div>
-            <p className="text-sm font-extrabold text-amber-300">Tabela de anúncios não encontrada</p>
+            <p className="text-sm font-extrabold text-amber-300">Tabela de anúncios indisponível</p>
             <p className="mt-1 text-xs text-amber-200/80">
-              A tabela <code className="rounded bg-black/30 px-1">ads</code> ainda não existe no banco.
-              Habilite o MCP do Supabase (painel de Ferramentas) para que eu a crie automaticamente,
-              ou rode o SQL fornecido. Assim que existir, os anúncios criados aqui aparecerão no app.
+              Não foi possível ler a tabela <code className="rounded bg-black/30 px-1">ad_banners</code>.
+              Verifique as políticas de acesso no Supabase.
             </p>
           </div>
         </div>
@@ -240,35 +253,45 @@ export function AdsManager({ ads, tableMissing }: { ads: Ad[]; tableMissing: boo
                           <p className="truncate text-sm font-extrabold">{ad.title}</p>
                           <span
                             className={
-                              ad.active
+                              ad.is_active
                                 ? 'rounded-full bg-emerald-500/15 px-2 py-0.5 text-[8px] font-black tracking-[0.15em] text-emerald-400'
                                 : 'rounded-full bg-white/10 px-2 py-0.5 text-[8px] font-black tracking-[0.15em] text-zinc-500'
                             }
                           >
-                            {ad.active ? 'ATIVO' : 'INATIVO'}
+                            {ad.is_active ? 'ATIVO' : 'INATIVO'}
                           </span>
                         </div>
-                        {ad.subtitle && (
+                        {(ad.subtitle || ad.description) && (
                           <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                            {ad.subtitle}
+                            {ad.subtitle || ad.description}
                           </p>
                         )}
-                        {ad.cta_href && (
-                          <p className="mt-1 flex items-center gap-1 truncate text-[10px] font-bold text-brand">
-                            <ExternalLink className="size-2.5 shrink-0" aria-hidden="true" />
-                            <span className="truncate">{ad.cta_href}</span>
-                          </p>
-                        )}
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                          {ad.cta_url && (
+                            <span className="flex min-w-0 items-center gap-1 text-[10px] font-bold text-brand">
+                              <ExternalLink className="size-2.5 shrink-0" aria-hidden="true" />
+                              <span className="truncate">{ad.cta_url}</span>
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1 font-numeric text-[10px] font-bold text-zinc-500">
+                            <Eye className="size-2.5" aria-hidden="true" />
+                            {ad.impressions ?? 0}
+                          </span>
+                          <span className="flex items-center gap-1 font-numeric text-[10px] font-bold text-zinc-500">
+                            <MousePointerClick className="size-2.5" aria-hidden="true" />
+                            {ad.clicks ?? 0}
+                          </span>
+                        </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleToggle(ad)}
                           disabled={isPending}
-                          aria-label={ad.active ? 'Desativar' : 'Ativar'}
+                          aria-label={ad.is_active ? 'Desativar' : 'Ativar'}
                           className="surface flex size-9 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-50"
                         >
-                          {ad.active ? (
+                          {ad.is_active ? (
                             <EyeOff className="size-4" aria-hidden="true" />
                           ) : (
                             <Eye className="size-4" aria-hidden="true" />
@@ -330,12 +353,20 @@ export function AdsManager({ ads, tableMissing }: { ads: Ad[]; tableMissing: boo
                   />
                 </Field>
                 <Field label="Subtítulo">
-                  <textarea
+                  <input
                     value={form.subtitle}
                     onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+                    className="ad-input"
+                    placeholder="Chamada curta exibida no card"
+                  />
+                </Field>
+                <Field label="Descrição">
+                  <textarea
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
                     rows={2}
                     className="ad-input resize-none"
-                    placeholder="Descrição curta do anúncio"
+                    placeholder="Texto de apoio (usado quando não há subtítulo)"
                   />
                 </Field>
                 <Field label="URL da imagem">
@@ -357,14 +388,14 @@ export function AdsManager({ ads, tableMissing }: { ads: Ad[]; tableMissing: boo
                   </Field>
                   <Field label="Link do botão">
                     <input
-                      value={form.ctaHref}
-                      onChange={(e) => setForm({ ...form, ctaHref: e.target.value })}
+                      value={form.ctaUrl}
+                      onChange={(e) => setForm({ ...form, ctaUrl: e.target.value })}
                       className="ad-input"
                       placeholder="/artist/... ou https://..."
                     />
                   </Field>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <Field label="Posição">
                     <select
                       value={form.placement}
@@ -386,6 +417,15 @@ export function AdsManager({ ads, tableMissing }: { ads: Ad[]; tableMissing: boo
                       value={form.sortOrder}
                       onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })}
                       className="ad-input"
+                    />
+                  </Field>
+                  <Field label="Cor de destaque">
+                    <input
+                      type="color"
+                      value={form.accentColor}
+                      onChange={(e) => setForm({ ...form, accentColor: e.target.value })}
+                      className="ad-input h-[42px] cursor-pointer p-1"
+                      aria-label="Cor de destaque do anúncio"
                     />
                   </Field>
                 </div>
@@ -410,8 +450,8 @@ export function AdsManager({ ads, tableMissing }: { ads: Ad[]; tableMissing: boo
                 <label className="flex items-center gap-3">
                   <input
                     type="checkbox"
-                    checked={form.active}
-                    onChange={(e) => setForm({ ...form, active: e.target.checked })}
+                    checked={form.isActive}
+                    onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                     className="size-4 accent-[var(--brand)]"
                   />
                   <span className="text-xs font-bold">Anúncio ativo (visível no app)</span>

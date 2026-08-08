@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { getUpcomingShows, getUpcomingLives, getActiveAds } from '@/lib/data'
-import { BottomNav } from '@/components/wordfan/bottom-nav'
 import { AdBanner } from '@/components/wordfan/ad-banner'
 import { Radio, MapPin, CalendarDays, Ticket, ChevronRight } from 'lucide-react'
 
@@ -192,8 +191,6 @@ export default async function EventsPage() {
           )}
         </section>
       </main>
-
-      <BottomNav />
     </div>
   )
 }

@@ -133,17 +133,29 @@ export async function getUpcomingLives(limit = 20) {
 export async function getActiveAds(placement?: Ad['placement']) {
   const supabase = await createClient()
   const nowIso = new Date().toISOString()
-  let query = supabase.from('ads').select('*').eq('active', true)
+  let query = supabase.from('ad_banners').select('*').eq('is_active', true)
   if (placement) query = query.eq('placement', placement)
   const { data, error } = await query.order('sort_order', { ascending: true })
-  // Tabela pode ainda não existir — falha graciosamente.
-  if (error) return [] as Ad[]
+  if (error) {
+    console.log('[v0] getActiveAds error:', error.message)
+    return [] as Ad[]
+  }
   const ads = (data ?? []) as Ad[]
   return ads.filter((a) => {
     const startsOk = !a.starts_at || a.starts_at <= nowIso
     const endsOk = !a.ends_at || a.ends_at >= nowIso
     return startsOk && endsOk
   })
+}
+
+export async function getAllLives(limit = 100) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('lives')
+    .select('*, artist:artists(*)')
+    .order('scheduled_at', { ascending: false })
+    .limit(limit)
+  return (data ?? []) as (Live & { artist: Artist })[]
 }
 
 export async function getCurrentUser() {

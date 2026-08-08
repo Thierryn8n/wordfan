@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Search, Star, Calendar, User } from 'lucide-react'
@@ -16,16 +17,25 @@ const right = [
 
 export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
   const pathname = usePathname()
-  const clubActive = pathname.startsWith('/artist') || pathname === '/club'
+  // Destino tocado: destaca a aba na hora do toque, antes de a rota trocar.
+  const [pending, setPending] = useState<string | null>(null)
+
+  useEffect(() => {
+    setPending(null)
+  }, [pathname])
+
+  const current = pending ?? pathname
+  const clubActive = current.startsWith('/artist')
 
   function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof Home }) {
-    const active = pathname === href || pathname.startsWith(href + '/')
+    const active = current === href || current.startsWith(href + '/')
     return (
       <Link
         href={href}
+        onNavigate={() => setPending(href)}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          'group flex flex-1 flex-col items-center gap-1.5 py-1 text-[8px] font-extrabold tracking-[0.1em] transition-colors',
+          'group flex flex-1 flex-col items-center gap-1.5 py-1 text-[8px] font-extrabold tracking-[0.1em] transition-colors duration-200',
           active
             ? accent === 'club'
               ? 'text-club'
@@ -35,11 +45,11 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
       >
         <span
           className={cn(
-            'flex size-9 items-center justify-center rounded-2xl transition-colors',
-            active ? 'bg-white/8' : 'bg-transparent',
+            'flex size-9 items-center justify-center rounded-2xl transition-all duration-300 ease-out active:scale-90',
+            active ? 'scale-105 bg-white/10' : 'scale-100 bg-transparent',
           )}
         >
-          <Icon className="size-5" aria-hidden="true" />
+          <Icon className={cn('size-5 transition-transform duration-300', active && '-translate-y-px')} aria-hidden="true" />
         </span>
         <span>{label}</span>
       </Link>
@@ -67,9 +77,10 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
               />
               <Link
                 href="/home"
+                onNavigate={() => setPending('/home')}
                 aria-label="Fan Club"
                 className={cn(
-                  'elev-2 relative z-10 flex size-16 items-center justify-center rounded-full text-white ring-1 ring-white/25 transition-transform active:scale-95',
+                  'elev-2 relative z-10 flex size-16 items-center justify-center rounded-full text-white ring-1 ring-white/25 transition-transform duration-200 ease-out active:scale-90',
                   accent === 'club' ? 'gradient-club' : 'gradient-brand',
                 )}
               >
@@ -78,14 +89,8 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
             </div>
             <span
               className={cn(
-                'whitespace-nowrap pt-0.5 text-[8px] font-extrabold tracking-[0.1em]',
-                clubActive
-                  ? accent === 'club'
-                    ? 'text-club'
-                    : 'text-brand'
-                  : accent === 'club'
-                    ? 'text-club'
-                    : 'text-brand',
+                'whitespace-nowrap pt-0.5 text-[8px] font-extrabold tracking-[0.1em] transition-colors duration-200',
+                clubActive || accent === 'club' ? 'text-club' : 'text-brand',
               )}
             >
               FAN CLUB

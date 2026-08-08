@@ -19,8 +19,9 @@ import {
   Circle,
   Star,
   Check,
+  Radio,
 } from 'lucide-react'
-import type { GalleryItem, Plan, Post, Show, Story, Video, Tier } from '@/lib/types'
+import type { GalleryItem, Live, Plan, Post, Show, Story, Video, Tier } from '@/lib/types'
 import { TIER_LABELS, TIER_ORDER, VIDEO_CATEGORY_LABELS, formatPrice } from '@/lib/types'
 import {
   savePost,
@@ -33,12 +34,14 @@ import {
   deleteVideo,
   saveStory,
   deleteStory,
+  saveLive,
+  deleteLive,
   savePlan,
   deletePlan,
   uploadContentImage,
 } from '@/app/actions/content'
 
-type Section = 'feed' | 'stories' | 'agenda' | 'galeria' | 'videos' | 'fanclub'
+type Section = 'feed' | 'stories' | 'agenda' | 'galeria' | 'videos' | 'lives' | 'fanclub'
 
 const SECTIONS: { key: Section; label: string; icon: typeof FileText }[] = [
   { key: 'feed', label: 'FEED', icon: FileText },
@@ -46,8 +49,15 @@ const SECTIONS: { key: Section; label: string; icon: typeof FileText }[] = [
   { key: 'agenda', label: 'AGENDA', icon: CalendarDays },
   { key: 'galeria', label: 'GALERIA', icon: ImageIcon },
   { key: 'videos', label: 'VÍDEOS', icon: PlaySquare },
+  { key: 'lives', label: 'LIVES', icon: Radio },
   { key: 'fanclub', label: 'FAN CLUB', icon: Star },
 ]
+
+const LIVE_STATUS_LABELS: Record<Live['status'], string> = {
+  scheduled: 'AGENDADA',
+  live: 'AO VIVO',
+  ended: 'ENCERRADA',
+}
 
 const inputCls =
   'w-full rounded-2xl border border-white/8 bg-background px-4 py-3 text-xs font-bold outline-none transition-colors focus:border-primary'
@@ -185,6 +195,7 @@ export function ContentManager({
   gallery,
   videos,
   stories = [],
+  lives = [],
   plans = [],
 }: {
   artistId: string
@@ -193,6 +204,7 @@ export function ContentManager({
   gallery: GalleryItem[]
   videos: Video[]
   stories?: Story[]
+  lives?: Live[]
   plans?: Plan[]
 }) {
   const router = useRouter()
@@ -228,6 +240,13 @@ export function ContentManager({
     minTier: 'bronze',
   })
   const [storyForm, setStoryForm] = useState({ mediaUrl: '', caption: '' })
+  const [liveForm, setLiveForm] = useState({
+    title: '',
+    scheduledAt: '',
+    status: 'scheduled' as Live['status'],
+    isExclusive: false,
+    minTier: 'bronze',
+  })
   const [planForm, setPlanForm] = useState({
     tier: 'bronze' as Tier,
     name: '',
@@ -241,6 +260,7 @@ export function ContentManager({
     setGalleryForm({ url: '', album: '' })
     setVideoForm({ title: '', category: 'clipe', thumbnailUrl: '', duration: '', isExclusive: false, minTier: 'bronze' })
     setStoryForm({ mediaUrl: '', caption: '' })
+    setLiveForm({ title: '', scheduledAt: '', status: 'scheduled', isExclusive: false, minTier: 'bronze' })
     setPlanForm({ tier: 'bronze', name: '', priceReais: '', benefits: [''] })
     setEditing(null)
     setStatus({})
@@ -987,6 +1007,161 @@ export function ContentManager({
               </p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ============ LIVES ============ */}
+      {section === 'lives' && (
+        <div className="mt-5">
+          {editing === null && (
+            <button type="button" onClick={() => setEditing('new')} className={btnPrimary}>
+              <Plus className="size-3.5" aria-hidden="true" />
+              NOVA LIVE
+            </button>
+          )}
+
+          {editing !== null && (
+            <form
+              className="flex flex-col gap-4 rounded-3xl border border-white/8 bg-background/50 p-5"
+              onSubmit={(e) => {
+                e.preventDefault()
+                run(
+                  () => saveLive({ id: editing === 'new' ? undefined : editing, artistId, ...liveForm }),
+                  editing === 'new' ? 'Live agendada!' : 'Live atualizada!',
+                )
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-[9px] font-black tracking-[0.2em] text-primary">
+                  {editing === 'new' ? 'NOVA LIVE' : 'EDITAR LIVE'}
+                </p>
+                <button type="button" onClick={resetForms} aria-label="Fechar formulário">
+                  <X className="size-4 text-muted-foreground" aria-hidden="true" />
+                </button>
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="cm-live-title">TÍTULO *</label>
+                <input
+                  id="cm-live-title"
+                  className={`mt-1.5 ${inputCls}`}
+                  value={liveForm.title}
+                  onChange={(e) => setLiveForm((f) => ({ ...f, title: e.target.value }))}
+                  required
+                  maxLength={140}
+                  placeholder="Ex.: Bastidores do novo álbum"
+                />
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="cm-live-date">DATA E HORA *</label>
+                <input
+                  id="cm-live-date"
+                  type="datetime-local"
+                  className={`mt-1.5 ${inputCls}`}
+                  value={liveForm.scheduledAt}
+                  onChange={(e) => setLiveForm((f) => ({ ...f, scheduledAt: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <p className={labelCls}>SITUAÇÃO</p>
+                <div className="mt-1.5 flex gap-2">
+                  {(['scheduled', 'live', 'ended'] as const).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setLiveForm((f) => ({ ...f, status: v }))}
+                      className={
+                        liveForm.status === v
+                          ? 'rounded-full bg-primary/15 px-4 py-2 text-[8px] font-black tracking-[0.15em] text-primary'
+                          : 'rounded-full border border-white/8 px-4 py-2 text-[8px] font-black tracking-[0.15em] text-muted-foreground'
+                      }
+                    >
+                      {LIVE_STATUS_LABELS[v]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className={labelCls}>QUEM PODE ASSISTIR</p>
+                <div className="mt-1.5">
+                  <TierPicker
+                    isExclusive={liveForm.isExclusive}
+                    minTier={liveForm.minTier}
+                    onChange={(isExclusive, minTier) =>
+                      setLiveForm((f) => ({ ...f, isExclusive, minTier }))
+                    }
+                  />
+                </div>
+              </div>
+              <button type="submit" disabled={isPending} className={btnPrimary}>
+                {isPending && <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />}
+                {editing === 'new' ? 'AGENDAR LIVE' : 'SALVAR ALTERAÇÕES'}
+              </button>
+            </form>
+          )}
+
+          <ul className="mt-4 flex flex-col gap-2">
+            {lives.map((l) => (
+              <li
+                key={l.id}
+                className="flex items-center gap-3 rounded-2xl border border-white/8 bg-background/40 p-3.5"
+              >
+                <span
+                  className={
+                    l.status === 'live'
+                      ? 'flex size-11 shrink-0 items-center justify-center rounded-xl bg-red-500/15 text-red-400'
+                      : 'flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary'
+                  }
+                >
+                  <Radio className="size-4" aria-hidden="true" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[11px] font-extrabold">{l.title}</p>
+                  <p className="mt-0.5 truncate text-[8px] font-black tracking-[0.1em] text-muted-foreground">
+                    {new Date(l.scheduled_at).toLocaleString('pt-BR', {
+                      day: '2-digit',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}{' '}
+                    · {LIVE_STATUS_LABELS[l.status]}
+                    {l.min_tier ? ` · ${TIER_LABELS[l.min_tier].toUpperCase()}+` : ' · PÚBLICA'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label={`Editar ${l.title}`}
+                  className="flex size-8 items-center justify-center rounded-full border border-white/8 text-muted-foreground transition-colors hover:text-foreground"
+                  onClick={() => {
+                    setEditing(l.id)
+                    setLiveForm({
+                      title: l.title,
+                      scheduledAt: new Date(l.scheduled_at).toISOString().slice(0, 16),
+                      status: l.status,
+                      isExclusive: Boolean(l.min_tier),
+                      minTier: l.min_tier ?? 'bronze',
+                    })
+                  }}
+                >
+                  <Pencil className="size-3.5" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Excluir ${l.title}`}
+                  disabled={isPending}
+                  className="flex size-8 items-center justify-center rounded-full border border-red-500/20 text-red-400 transition-colors hover:bg-red-500/10"
+                  onClick={() => confirmDelete(() => deleteLive(l.id, artistId))}
+                >
+                  <Trash2 className="size-3.5" aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+            {lives.length === 0 && (
+              <li className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-[10px] font-bold text-muted-foreground">
+                Nenhuma live agendada.
+              </li>
+            )}
+          </ul>
         </div>
       )}
 

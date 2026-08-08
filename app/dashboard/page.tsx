@@ -26,6 +26,7 @@ import {
   TIER_LABELS,
   type Artist,
   type GalleryItem,
+  type Live,
   type Plan,
   type Post,
   type Show,
@@ -90,6 +91,7 @@ export default async function DashboardPage() {
     { data: galleryData },
     { data: videosData },
     { data: storiesData },
+    { data: livesData },
     { data: plansData },
   ] = await Promise.all([
     supabase
@@ -107,6 +109,7 @@ export default async function DashboardPage() {
     supabase.from('gallery_items').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
     supabase.from('videos').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
     supabase.from('stories').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
+    supabase.from('lives').select('*').eq('artist_id', artist.id).order('scheduled_at', { ascending: false }),
     supabase.from('plans').select('*').eq('artist_id', artist.id).order('price_cents', { ascending: true }),
   ])
 
@@ -117,6 +120,7 @@ export default async function DashboardPage() {
   const gallery = (galleryData ?? []) as GalleryItem[]
   const videos = (videosData ?? []) as Video[]
   const stories = (storiesData ?? []) as Story[]
+  const lives = (livesData ?? []) as Live[]
   const plans = (plansData ?? []) as Plan[]
 
   const gross = txs.reduce((acc, t) => acc + t.amount_cents, 0)
@@ -310,6 +314,7 @@ export default async function DashboardPage() {
                 gallery={gallery}
                 videos={videos}
                 stories={stories}
+                lives={lives}
                 plans={plans}
               />
             </div>

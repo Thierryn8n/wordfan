@@ -11,7 +11,6 @@ import {
   getCurrentUser,
 } from '@/lib/data'
 import { PostCard } from '@/components/wordfan/post-card'
-import { BottomNav } from '@/components/wordfan/bottom-nav'
 import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
 import { hasEntitlement } from '@/lib/artist-theme'
 import { TIER_LABELS } from '@/lib/types'
@@ -241,8 +240,6 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
           </div>
         </section>
       </main>
-
-      <BottomNav />
     </div>
     </ArtistThemeScope>
   )

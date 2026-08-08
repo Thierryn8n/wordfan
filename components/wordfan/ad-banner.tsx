@@ -6,29 +6,37 @@ import type { Ad } from '@/lib/types'
 function AdWrapper({
   ad,
   className,
+  style,
   children,
 }: {
   ad: Ad
   className?: string
+  style?: React.CSSProperties
   children: React.ReactNode
 }) {
-  if (ad.cta_href) {
-    const external = /^https?:\/\//.test(ad.cta_href)
+  if (ad.cta_url) {
+    const external = /^https?:\/\//.test(ad.cta_url)
     return (
       <Link
-        href={ad.cta_href}
+        href={ad.cta_url}
         target={external ? '_blank' : undefined}
         rel={external ? 'noopener noreferrer' : undefined}
         className={className}
+        style={style}
       >
         {children}
       </Link>
     )
   }
-  return <div className={className}>{children}</div>
+  return (
+    <div className={className} style={style}>
+      {children}
+    </div>
+  )
 }
 
 export function AdBanner({ ad, variant = 'inline' }: { ad: Ad; variant?: 'hero' | 'inline' }) {
+  const accent = ad.accent_color || undefined
   const label = (
     <span className="absolute right-3 top-3 z-10 rounded-full bg-black/60 px-2 py-0.5 text-[7px] font-black tracking-[0.2em] text-white/70 backdrop-blur-sm">
       PATROCINADO
@@ -39,7 +47,12 @@ export function AdBanner({ ad, variant = 'inline' }: { ad: Ad; variant?: 'hero' 
     return (
       <AdWrapper
         ad={ad}
-        className="elev-2 group relative block overflow-hidden rounded-[32px] border border-white/10"
+        className="elev-2 group relative block overflow-hidden rounded-[32px] border"
+        style={{
+          borderColor: accent
+            ? `color-mix(in srgb, ${accent} 45%, transparent)`
+            : 'rgba(255,255,255,0.1)',
+        }}
       >
         {label}
         <div className="relative aspect-[16/9]">
@@ -56,13 +69,16 @@ export function AdBanner({ ad, variant = 'inline' }: { ad: Ad; variant?: 'hero' 
           <h3 className="font-serif text-2xl font-extrabold leading-tight tracking-tight text-balance">
             {ad.title}
           </h3>
-          {ad.subtitle && (
+          {(ad.subtitle || ad.description) && (
             <p className="mt-1.5 line-clamp-2 text-sm font-medium text-white/75 text-pretty">
-              {ad.subtitle}
+              {ad.subtitle || ad.description}
             </p>
           )}
           {ad.cta_label && (
-            <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2.5 text-[11px] font-black tracking-[0.15em] text-black">
+            <span
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[11px] font-black tracking-[0.15em] text-black"
+              style={{ backgroundColor: accent ?? '#ffffff' }}
+            >
               {ad.cta_label}
               <ArrowUpRight className="size-3.5" aria-hidden="true" />
             </span>
@@ -89,13 +105,16 @@ export function AdBanner({ ad, variant = 'inline' }: { ad: Ad; variant?: 'hero' 
       </div>
       <div className="min-w-0 flex-1 pr-2">
         <h3 className="line-clamp-1 text-sm font-extrabold tracking-[0.05em]">{ad.title}</h3>
-        {ad.subtitle && (
+        {(ad.subtitle || ad.description) && (
           <p className="mt-1 line-clamp-2 text-[11px] font-medium text-muted-foreground text-pretty">
-            {ad.subtitle}
+            {ad.subtitle || ad.description}
           </p>
         )}
         {ad.cta_label && (
-          <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-black tracking-[0.15em] text-brand">
+          <span
+            className="mt-2 inline-flex items-center gap-1 text-[10px] font-black tracking-[0.15em]"
+            style={{ color: accent ?? 'var(--brand)' }}
+          >
             {ad.cta_label}
             <ArrowUpRight className="size-3" aria-hidden="true" />
           </span>

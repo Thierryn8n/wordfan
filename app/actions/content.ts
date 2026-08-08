@@ -272,6 +272,85 @@ export async function deleteStory(id: string, artistId: string) {
   return { success: true }
 }
 
+// ============ LIVES ============
+const LIVE_STATUSES = ['scheduled', 'live', 'ended']
+
+export async function saveLive(input: {
+  id?: string
+  artistId: string
+  title: string
+  scheduledAt: string
+  status: 'scheduled' | 'live' | 'ended'
+  isExclusive: boolean
+  minTier: string
+}) {
+  const { supabase, error, slug } = await requireManager(input.artistId)
+  if (error) return { error }
+
+  const title = input.title.trim().slice(0, 140)
+  if (!title) return { error: 'Título obrigatório.' }
+  const scheduledAt = new Date(input.scheduledAt)
+  if (Number.isNaN(scheduledAt.getTime())) return { error: 'Data inválida.' }
+
+  const status = LIVE_STATUSES.includes(input.status) ? input.status : 'scheduled'
+  const minTier = input.isExclusive && TIERS.includes(input.minTier) ? input.minTier : null
+
+  const payload = {
+    artist_id: input.artistId,
+    title,
+    scheduled_at: scheduledAt.toISOString(),
+    status,
+    min_tier: minTier,
+  }
+
+  const q = input.id
+    ? supabase.from('lives').update(payload).eq('id', input.id).eq('artist_id', input.artistId)
+    : supabase.from('lives').insert(payload)
+  const { error: dbError } = await q
+  if (dbError) {
+    console.log('[v0] saveLive error:', dbError.message)
+    return { error: 'Não foi possível salvar a live.' }
+  }
+
+  // Mantém o selo "ao vivo" do artista coerente com as lives em andamento.
+  const { data: activeLives } = await supabase
+    .from('lives')
+    .select('id')
+    .eq('artist_id', input.artistId)
+    .eq('status', 'live')
+  await supabase
+    .from('artists')
+    .update({ is_live: (activeLives ?? []).length > 0 })
+    .eq('id', input.artistId)
+
+  revalidateArtist(slug!)
+  revalidatePath('/events')
+  revalidatePath('/home')
+  return { success: true }
+}
+
+export async function deleteLive(id: string, artistId: string) {
+  const { supabase, error, slug } = await requireManager(artistId)
+  if (error) return { error }
+  const { error: dbError } = await supabase.from('lives').delete().eq('id', id).eq('artist_id', artistId)
+  if (dbError) return { error: 'Não foi possível excluir.' }
+
+  const { data: activeLives } = await supabase
+    .from('lives')
+    .select('id')
+    .eq('artist_id', artistId)
+    .eq('status', 'live')
+  await supabase
+    .from('artists')
+    .update({ is_live: (activeLives ?? []).length > 0 })
+    .eq('id', artistId)
+
+  revalidateArtist(slug!)
+  revalidatePath('/events')
+  revalidatePath('/home')
+  return { success: true }
+}
+
 // ============ PLANOS (Fan Club) — CRUD completo ============
 export async function savePlan(input: {
   id?: string

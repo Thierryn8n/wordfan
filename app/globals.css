@@ -239,6 +239,27 @@
     }
   }
 
+  /* ===== Troca de tela (dock inferior permanece fixo) ===== */
+  @keyframes screenEnter {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+  .screen-enter {
+    animation: screenEnter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    will-change: transform, opacity;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .screen-enter {
+      animation: none;
+    }
+  }
+
   /* ===== Tema por artista (CSS vars aplicadas pelo ArtistThemeProvider) ===== */
   .artist-scope {
     /* Redireciona os tokens do design system para a identidade do artista */

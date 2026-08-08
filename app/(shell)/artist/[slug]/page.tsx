@@ -27,7 +27,6 @@ import {
   getUserSubscription,
   getCurrentUser,
 } from '@/lib/data'
-import { BottomNav } from '@/components/wordfan/bottom-nav'
 import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
 import { ArtistTabs } from './artist-tabs'
 import { ArtistStories } from './artist-stories'
@@ -317,8 +316,6 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           </span>
         </Link>
       )}
-
-      <BottomNav accent="club" />
     </div>
     </ArtistThemeScope>
   )
