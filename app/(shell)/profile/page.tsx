@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation'
 import { LayoutDashboard, ShieldCheck, Sparkles, ChevronRight, Zap, Briefcase, Building2, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { HoloCrown } from '@/components/wordfan/holo-crown'
-import { HolographicCrown3D } from '@/components/wordfan/holo-crown-3d'
 import { SignOutButton } from './sign-out-button'
 import { TIER_LABELS } from '@/lib/types'
 import type { Profile, Subscription, Plan, Artist } from '@/lib/types'
@@ -66,9 +65,9 @@ export default async function ProfilePage() {
                 </span>
               )}
               {isEnterprise && (
-                <HolographicCrown3D
-                  size={72}
-                  className="pointer-events-none absolute -right-8 -top-12"
+                <HoloCrown
+                  size={40}
+                  className="pointer-events-none absolute -right-3 -top-6"
                 />
               )}
             </div>
