@@ -18,7 +18,7 @@ export function SignOutButton() {
     <button
       type="button"
       onClick={handleSignOut}
-      className="glass flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-destructive"
+      className="skeu flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-bold text-muted-foreground transition-colors hover:text-destructive"
     >
       <LogOut className="size-4" aria-hidden="true" />
       Sair da conta

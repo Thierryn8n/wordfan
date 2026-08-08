@@ -1,6 +1,54 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Artist, Live, Plan, Post, Show, Subscription, GalleryItem, Story, Tier, Video } from '@/lib/types'
+import type { Ad, AdPlacement, Artist, Live, Plan, Post, Show, Subscription, GalleryItem, Story, Tier, Video } from '@/lib/types'
 import { TIER_ORDER } from '@/lib/types'
+
+/**
+ * Busca anúncios ativos por placement. Usa try/catch pois a tabela `ads`
+ * pode ainda não existir no banco — nesse caso retorna lista vazia.
+ */
+export async function getAds(placement?: AdPlacement) {
+  try {
+    const supabase = await createClient()
+    let query = supabase.from('ads').select('*').eq('active', true)
+    if (placement) query = query.eq('placement', placement)
+    const { data, error } = await query.order('position', { ascending: true })
+    if (error) return [] as Ad[]
+    const now = Date.now()
+    return ((data ?? []) as Ad[]).filter((a) => {
+      const startsOk = !a.starts_at || new Date(a.starts_at).getTime() <= now
+      const endsOk = !a.ends_at || new Date(a.ends_at).getTime() >= now
+      return startsOk && endsOk
+    })
+  } catch {
+    return [] as Ad[]
+  }
+}
+
+export async function getAllAdsAdmin() {
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('ads')
+      .select('*')
+      .order('position', { ascending: true })
+    if (error) return { ads: [] as Ad[], missing: true }
+    return { ads: (data ?? []) as Ad[], missing: false }
+  } catch {
+    return { ads: [] as Ad[], missing: true }
+  }
+}
+
+export async function getUpcomingShows(limit = 12) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('shows')
+    .select('*, artist:artists(*)')
+    .eq('status', 'scheduled')
+    .gte('starts_at', new Date().toISOString())
+    .order('starts_at', { ascending: true })
+    .limit(limit)
+  return (data ?? []) as (Show & { artist: Artist | null })[]
+}
 
 export async function getArtists() {
   const supabase = await createClient()

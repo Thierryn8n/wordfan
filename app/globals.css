@@ -159,6 +159,80 @@
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid oklch(1 0 0 / 10%);
   }
+
+  /* ===== Glassmorphism ===== */
+  .glass-panel {
+    background: linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.03) 45%,
+      rgba(255, 255, 255, 0.015) 100%
+    );
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.16),
+      inset 0 -1px 0 0 rgba(0, 0, 0, 0.4),
+      0 24px 48px -24px rgba(0, 0, 0, 0.85);
+  }
+  .glass-soft {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+    backdrop-filter: blur(16px) saturate(130%);
+    -webkit-backdrop-filter: blur(16px) saturate(130%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* ===== Skeuomorphism / neumorphism (sombras neutras, sem cor) ===== */
+  .skeu {
+    background: linear-gradient(150deg, #1e1e1e 0%, #131313 55%, #0d0d0d 100%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.09),
+      inset 0 -2px 6px 0 rgba(0, 0, 0, 0.55),
+      6px 8px 22px -10px rgba(0, 0, 0, 0.85);
+  }
+  .skeu-raised {
+    background: linear-gradient(150deg, #242424 0%, #151515 60%, #0f0f0f 100%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+      -6px -6px 16px -8px rgba(255, 255, 255, 0.06),
+      8px 10px 26px -8px rgba(0, 0, 0, 0.9);
+  }
+  .skeu-inset {
+    background: linear-gradient(150deg, #0d0d0d 0%, #171717 100%);
+    border: 1px solid rgba(0, 0, 0, 0.6);
+    box-shadow:
+      inset 4px 4px 10px 0 rgba(0, 0, 0, 0.75),
+      inset -3px -3px 8px 0 rgba(255, 255, 255, 0.045);
+  }
+  /* Botão tátil com relevo (skeuomórfico) */
+  .skeu-btn {
+    background: linear-gradient(180deg, #ff8a00 0%, #ff6b00 55%, #e85f00 100%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.45),
+      inset 0 -3px 8px 0 rgba(0, 0, 0, 0.3),
+      0 10px 24px -10px rgba(0, 0, 0, 0.9);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .skeu-btn:active {
+    transform: translateY(1px);
+    box-shadow:
+      inset 0 2px 6px 0 rgba(0, 0, 0, 0.5),
+      0 4px 10px -8px rgba(0, 0, 0, 0.9);
+  }
+  /* Highlight de vidro no topo de superfícies */
+  .sheen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 38%);
+    pointer-events: none;
+  }
   .gradient-brand {
     background-image: linear-gradient(135deg, #ff8a00 0%, #ff6a00 100%);
   }
@@ -270,7 +344,9 @@
     border-color: color-mix(in srgb, var(--artist-primary) 30%, transparent);
   }
   .artist-glow {
-    box-shadow: 0 0 40px -8px color-mix(in srgb, var(--artist-primary) 55%, transparent);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+      8px 10px 30px -12px rgba(0, 0, 0, 0.9);
   }
   .artist-font {
     font-family: var(--artist-font), system-ui, sans-serif;

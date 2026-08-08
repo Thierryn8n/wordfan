@@ -184,6 +184,29 @@ export interface Story {
   created_at: string
 }
 
+export type AdPlacement = 'home_hero' | 'home_feed' | 'discover'
+
+export const AD_PLACEMENT_LABELS: Record<AdPlacement, string> = {
+  home_hero: 'Home — Destaque',
+  home_feed: 'Home — Feed',
+  discover: 'Descobrir',
+}
+
+export interface Ad {
+  id: string
+  title: string
+  subtitle: string | null
+  image_url: string | null
+  cta_label: string | null
+  cta_url: string | null
+  placement: AdPlacement
+  active: boolean
+  position: number
+  starts_at: string | null
+  ends_at: string | null
+  created_at: string
+}
+
 export interface Notification {
   id: string
   user_id: string
