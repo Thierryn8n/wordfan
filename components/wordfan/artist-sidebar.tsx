@@ -10,6 +10,10 @@ import {
   HeartHandshake,
   ExternalLink,
   ChevronLeft,
+  BarChart3,
+  MessageSquare,
+  Briefcase,
+  Palette,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -20,11 +24,33 @@ interface ArtistSidebarProps {
   planLabel: string
 }
 
-const NAV = [
-  { label: 'Visão geral', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Estúdio', href: '/dashboard/estudio', icon: Clapperboard },
-  { label: 'Financeiro', href: '/dashboard/financeiro', icon: Wallet },
-  { label: 'Fãs', href: '/dashboard/fas', icon: HeartHandshake },
+const NAV_GROUPS: {
+  title: string
+  items: { label: string; href: string; icon: typeof LayoutDashboard }[]
+}[] = [
+  {
+    title: 'Gestão',
+    items: [
+      { label: 'Visão geral', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Estúdio', href: '/dashboard/estudio', icon: Clapperboard },
+      { label: 'Insights', href: '/dashboard/insights', icon: BarChart3 },
+    ],
+  },
+  {
+    title: 'Relacionamento',
+    items: [
+      { label: 'Fãs', href: '/dashboard/fas', icon: HeartHandshake },
+      { label: 'Comunidade', href: '/dashboard/comunidade', icon: MessageSquare },
+      { label: 'Propostas', href: '/dashboard/propostas', icon: Briefcase },
+    ],
+  },
+  {
+    title: 'Negócio',
+    items: [
+      { label: 'Financeiro', href: '/dashboard/financeiro', icon: Wallet },
+      { label: 'Perfil e identidade', href: '/dashboard/perfil', icon: Palette },
+    ],
+  },
 ]
 
 export function ArtistSidebar({ name, slug, avatarUrl, planLabel }: ArtistSidebarProps) {
@@ -63,35 +89,46 @@ export function ArtistSidebar({ name, slug, avatarUrl, planLabel }: ArtistSideba
         </div>
 
         {/* Navegação */}
-        <nav className="flex flex-1 flex-col gap-1.5 p-3" aria-label="Menu do painel do artista">
-          {NAV.map(({ label, href, icon: Icon }) => {
-            const active = href === '/dashboard' ? pathname === href : pathname.startsWith(href)
-            return (
-              <Link
-                key={href}
-                href={href}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'group flex items-center gap-3 rounded-2xl px-4 py-3 text-[11px] font-black tracking-[0.08em] transition-all',
-                  active
-                    ? 'bg-[var(--artist-primary)]/15 text-[var(--artist-primary)]'
-                    : 'text-[var(--artist-muted)] hover:bg-white/5 hover:text-[var(--artist-text)]',
-                )}
-              >
-                <span
-                  className={cn(
-                    'flex size-8 items-center justify-center rounded-xl transition-colors',
-                    active
-                      ? 'gradient-brand text-white'
-                      : 'bg-white/5 text-[var(--artist-muted)] group-hover:text-[var(--artist-text)]',
-                  )}
-                >
-                  <Icon className="size-4" aria-hidden="true" />
-                </span>
-                {label.toUpperCase()}
-              </Link>
-            )
-          })}
+        <nav
+          className="scrollbar-none flex flex-1 flex-col gap-4 overflow-y-auto p-3"
+          aria-label="Menu do painel do artista"
+        >
+          {NAV_GROUPS.map((group) => (
+            <div key={group.title} className="flex flex-col gap-1">
+              <p className="px-4 pb-1 text-[8px] font-black tracking-[0.25em] text-[var(--artist-muted)]/70">
+                {group.title.toUpperCase()}
+              </p>
+              {group.items.map(({ label, href, icon: Icon }) => {
+                const active =
+                  href === '/dashboard' ? pathname === href : pathname.startsWith(href)
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    aria-current={active ? 'page' : undefined}
+                    className={cn(
+                      'group flex items-center gap-3 rounded-2xl px-4 py-2.5 text-[11px] font-black tracking-[0.08em] transition-all',
+                      active
+                        ? 'bg-[var(--artist-primary)]/15 text-[var(--artist-primary)]'
+                        : 'text-[var(--artist-muted)] hover:bg-white/5 hover:text-[var(--artist-text)]',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'flex size-8 items-center justify-center rounded-xl transition-colors',
+                        active
+                          ? 'gradient-brand text-white'
+                          : 'bg-white/5 text-[var(--artist-muted)] group-hover:text-[var(--artist-text)]',
+                      )}
+                    >
+                      <Icon className="size-4" aria-hidden="true" />
+                    </span>
+                    {label.toUpperCase()}
+                  </Link>
+                )
+              })}
+            </div>
+          ))}
         </nav>
 
         {/* Rodapé */}

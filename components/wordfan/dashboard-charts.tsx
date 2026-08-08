@@ -111,6 +111,45 @@ export function SubscribersBarChart({ data }: { data: MonthPoint[] }) {
   )
 }
 
+/* Barras horizontais: conteúdo em destaque (ex.: posts por curtidas). */
+export function TopContentBarChart({
+  data,
+}: {
+  data: { name: string; value: number }[]
+}) {
+  const config = {
+    value: { label: 'Total', color: 'var(--artist-primary)' },
+  } satisfies ChartConfig
+
+  if (data.length === 0) {
+    return (
+      <div className="flex h-[240px] items-center justify-center text-[10px] font-bold text-[var(--artist-muted)]">
+        Sem dados suficientes ainda.
+      </div>
+    )
+  }
+
+  return (
+    <ChartContainer config={config} className="h-[240px] w-full">
+      <BarChart data={data} layout="vertical" margin={{ left: 4, right: 16, top: 4, bottom: 4 }}>
+        <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
+        <XAxis type="number" tickLine={false} axisLine={false} className="text-[10px] font-bold" allowDecimals={false} />
+        <YAxis
+          type="category"
+          dataKey="name"
+          width={110}
+          tickLine={false}
+          axisLine={false}
+          className="text-[10px] font-bold"
+          tickFormatter={(v: string) => (v.length > 16 ? `${v.slice(0, 15)}…` : v)}
+        />
+        <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+        <Bar dataKey="value" fill="var(--color-value)" radius={[0, 6, 6, 0]} maxBarSize={26} />
+      </BarChart>
+    </ChartContainer>
+  )
+}
+
 type TierSlice = { tier: string; label: string; value: number; color: string }
 
 export function TierDonutChart({ data }: { data: TierSlice[] }) {
