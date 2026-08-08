@@ -1,10 +1,13 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
+import { markOnboardingSeen } from '@/app/actions/onboarding'
+
+const ONBOARDING_STORAGE_KEY = 'wordfan_onboarding_seen'
 
 const SLIDES = [
   {
@@ -47,15 +50,50 @@ const SLIDES = [
 export function OnboardingSlides() {
   const router = useRouter()
   const [index, setIndex] = useState(0)
+  const [ready, setReady] = useState(false)
   const slide = SLIDES[index]
   const isLast = index === SLIDES.length - 1
 
+  // Se o usuário já viu o onboarding (localStorage), pula direto para o login.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true') {
+        router.replace('/auth/login')
+        return
+      }
+    } catch {
+      // localStorage indisponível: segue mostrando o onboarding.
+    }
+    setReady(true)
+  }, [router])
+
+  // Persiste o status: localStorage sempre; tabela do usuário se estiver logado.
+  function persistSeen() {
+    try {
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true')
+    } catch {
+      // ignora se localStorage estiver bloqueado
+    }
+    // fire-and-forget: grava em profiles.onboarding_completed quando houver sessão
+    void markOnboardingSeen()
+  }
+
   function next() {
     if (isLast) {
+      persistSeen()
       router.push('/auth/sign-up')
     } else {
       setIndex((i) => i + 1)
     }
+  }
+
+  function skip() {
+    persistSeen()
+  }
+
+  // Evita um flash do onboarding antes de decidir o redirecionamento.
+  if (!ready) {
+    return <main className="min-h-dvh bg-background" aria-hidden />
   }
 
   return (
@@ -102,6 +140,7 @@ export function OnboardingSlides() {
       <div className="relative z-10 flex items-center justify-between px-8 pb-12 pt-8">
         <Link
           href="/auth/login"
+          onClick={skip}
           className="text-sm font-extrabold tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
         >
           PULAR
