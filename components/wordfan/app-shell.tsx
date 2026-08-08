@@ -21,7 +21,8 @@ function isImmersive(pathname: string) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const immersive = isImmersive(pathname)
-  const accent = pathname.startsWith('/artist') ? 'club' : 'brand'
+  const accent =
+    pathname.startsWith('/artist') || pathname.startsWith('/fanclub') ? 'club' : 'brand'
 
   return (
     <div className="relative mx-auto w-full max-w-md">

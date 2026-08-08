@@ -182,6 +182,24 @@ export async function getUserSubscription(artistId: string): Promise<(Subscripti
   return (data as (Subscription & { plan: Plan }) | null) ?? null
 }
 
+/** Todas as assinaturas ativas do usuário logado, já com artista e plano. */
+export async function getMySubscriptions(): Promise<
+  (Subscription & { plan: Plan; artist: Artist })[]
+> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+  const { data } = await supabase
+    .from('subscriptions')
+    .select('*, plan:plans(*), artist:artists(*)')
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+  return (data ?? []) as (Subscription & { plan: Plan; artist: Artist })[]
+}
+
 export function tierRank(tier: Tier | null | undefined) {
   if (!tier) return 0
   return TIER_ORDER.indexOf(tier) + 1

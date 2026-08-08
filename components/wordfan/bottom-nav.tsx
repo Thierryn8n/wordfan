@@ -25,7 +25,7 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
   }, [pathname])
 
   const current = pending ?? pathname
-  const clubActive = current.startsWith('/artist')
+  const clubActive = current.startsWith('/artist') || current.startsWith('/fanclub')
 
   function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof Home }) {
     const active = current === href || current.startsWith(href + '/')
@@ -76,8 +76,8 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
                 className="pointer-events-none absolute inset-[-7px] -z-10 rounded-full bg-background/70"
               />
               <Link
-                href="/home"
-                onNavigate={() => setPending('/home')}
+                href="/fanclub"
+                onNavigate={() => setPending('/fanclub')}
                 aria-label="Fan Club"
                 className={cn(
                   'elev-2 relative z-10 flex size-16 items-center justify-center rounded-full text-white ring-1 ring-white/25 transition-transform duration-200 ease-out active:scale-90',
