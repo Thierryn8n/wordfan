@@ -2,7 +2,9 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { createServiceClient } from '@/lib/supabase/admin'
+import { createServiceClient, isServiceRoleConfigured } from '@/lib/supabase/admin'
+
+const SERVICE_KEY_ERROR = 'Configure a variável SUPABASE_SERVICE_ROLE_KEY no projeto para usar este recurso.'
 
 async function requireAdmin() {
   const supabase = await createClient()
@@ -12,6 +14,7 @@ async function requireAdmin() {
   if (!user) return { error: 'Você precisa estar logado.' }
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') return { error: 'Apenas administradores.' }
+  if (!isServiceRoleConfigured()) return { error: SERVICE_KEY_ERROR }
   return { error: null as string | null }
 }
 

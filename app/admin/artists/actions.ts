@@ -2,7 +2,9 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { createServiceClient } from '@/lib/supabase/admin'
+import { createServiceClient, isServiceRoleConfigured } from '@/lib/supabase/admin'
+
+const SERVICE_KEY_ERROR = 'Configure a variável SUPABASE_SERVICE_ROLE_KEY no projeto para usar este recurso.'
 
 async function requireAdmin() {
   const supabase = await createClient()
@@ -85,6 +87,7 @@ export async function createArtist({
 }) {
   const { supabase, error: authError } = await requireAdmin()
   if (authError) return { error: authError }
+  if (!isServiceRoleConfigured()) return { error: SERVICE_KEY_ERROR }
 
   const cleanName = name.trim()
   if (!cleanName || cleanName.length > 80) return { error: 'Nome inválido (máx. 80 caracteres).' }

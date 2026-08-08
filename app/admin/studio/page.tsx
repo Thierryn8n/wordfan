@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ArrowLeft, Palette } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { createServiceClient } from '@/lib/supabase/admin'
+import { createServiceClient, isServiceRoleConfigured } from '@/lib/supabase/admin'
 import type { Artist, GalleryItem, Plan, Post, Show, Story, Video } from '@/lib/types'
 import { ContentManager } from '@/components/wordfan/content-manager'
 import { StudioEditor } from './studio-editor'
@@ -49,25 +49,31 @@ export default async function StudioPage({
     supabase.from('plans').select('*').eq('artist_id', selected.id).order('price_cents', { ascending: true }),
   ])
 
-  // Empresários vinculados a este artista (admin usa service client para ler emails)
-  const admin = createServiceClient()
-  const { data: managerLinks } = await admin
-    .from('managers')
-    .select('user_id, created_at, profile:profiles(display_name)')
-    .eq('artist_id', selected.id)
-  const managers: ManagerRow[] = await Promise.all(
-    (managerLinks ?? []).map(async (m) => {
-      const { data: u } = await admin.auth.admin.getUserById((m as { user_id: string }).user_id)
-      return {
-        userId: (m as { user_id: string }).user_id,
-        email: u?.user?.email ?? '—',
-        name:
-          ((m as { profile?: { display_name?: string } }).profile?.display_name) ||
-          (u?.user?.user_metadata?.display_name as string | undefined) ||
-          'Empresário',
-      }
-    }),
-  )
+  // Empresários vinculados a este artista (admin usa service client para ler emails).
+  // A service role key pode não estar configurada — nesse caso a seção degrada
+  // graciosamente em vez de derrubar a página inteira.
+  const serviceKeyConfigured = isServiceRoleConfigured()
+  let managers: ManagerRow[] = []
+  if (serviceKeyConfigured) {
+    const admin = createServiceClient()
+    const { data: managerLinks } = await admin
+      .from('managers')
+      .select('user_id, created_at, profile:profiles(display_name)')
+      .eq('artist_id', selected.id)
+    managers = await Promise.all(
+      (managerLinks ?? []).map(async (m) => {
+        const { data: u } = await admin.auth.admin.getUserById((m as { user_id: string }).user_id)
+        return {
+          userId: (m as { user_id: string }).user_id,
+          email: u?.user?.email ?? '—',
+          name:
+            ((m as { profile?: { display_name?: string } }).profile?.display_name) ||
+            (u?.user?.user_metadata?.display_name as string | undefined) ||
+            'Empresário',
+        }
+      }),
+    )
+  }
 
   return (
     <div className="min-h-dvh bg-background pb-16">
@@ -121,7 +127,12 @@ export default async function StudioPage({
           }
         />
 
-        <ManagerSection artistId={selected.id} artistName={selected.name} managers={managers} />
+        <ManagerSection
+          artistId={selected.id}
+          artistName={selected.name}
+          managers={managers}
+          serviceKeyConfigured={serviceKeyConfigured}
+        />
       </main>
     </div>
   )
