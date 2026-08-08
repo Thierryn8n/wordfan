@@ -57,31 +57,36 @@ export function ArtistSidebar({ name, slug, avatarUrl, planLabel }: ArtistSideba
   const pathname = usePathname()
 
   return (
-    <aside className="sticky top-4 z-20 hidden h-[calc(100dvh-2rem)] w-[248px] shrink-0 lg:block">
-      <div className="flex h-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[var(--artist-surface)]/80 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.7)] backdrop-blur-xl">
-        {/* Cabeçalho com identidade do artista */}
-        <div className="gradient-brand relative px-5 pb-6 pt-5">
-          <div className="pointer-events-none absolute inset-0 bg-black/10" aria-hidden="true" />
+    <aside className="crm-scope sticky top-4 z-20 hidden h-[calc(100dvh-2rem)] w-[236px] shrink-0 lg:block">
+      <div className="flex h-full flex-col overflow-hidden rounded-[14px] border border-white/10 bg-[var(--artist-surface)]">
+        {/* Cabeçalho neutro — identidade do artista como acento discreto */}
+        <div className="relative border-b border-white/8 px-4 pb-4 pt-4">
+          {/* Fina barra de acento na cor do artista */}
+          <span
+            className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-[var(--artist-primary)]"
+            aria-hidden="true"
+          />
           <Link
             href="/profile"
-            className="relative flex items-center gap-1.5 text-[9px] font-black tracking-[0.2em] text-white/80 transition-colors hover:text-white"
+            className="flex items-center gap-1.5 text-[8px] font-black tracking-[0.2em] text-[var(--artist-muted)] transition-colors hover:text-[var(--artist-text)]"
           >
             <ChevronLeft className="size-3" aria-hidden="true" />
             PAINEL DO ARTISTA
           </Link>
-          <div className="relative mt-4 flex items-center gap-3">
+          <div className="mt-3 flex items-center gap-3">
             <Image
-              src={avatarUrl || '/placeholder.svg?height=48&width=48&query=artist avatar'}
+              src={avatarUrl || '/placeholder.svg?height=44&width=44&query=artist avatar'}
               alt=""
-              width={48}
-              height={48}
-              className="size-12 rounded-2xl border-2 border-white/30 object-cover"
+              width={44}
+              height={44}
+              className="size-11 rounded-[10px] border border-[var(--artist-primary)]/40 object-cover"
             />
             <div className="min-w-0">
-              <p className="truncate font-serif text-base font-black leading-tight text-white">
+              <p className="truncate font-serif text-sm font-black leading-tight text-[var(--artist-text)]">
                 {name}
               </p>
-              <p className="mt-0.5 text-[8px] font-black tracking-[0.2em] text-white/70">
+              <p className="mt-0.5 flex items-center gap-1 text-[8px] font-black tracking-[0.15em] text-[var(--artist-muted)]">
+                <span className="size-1.5 rounded-full bg-[var(--artist-primary)]" aria-hidden="true" />
                 PLANO {planLabel.toUpperCase()}
               </p>
             </div>
@@ -90,12 +95,12 @@ export function ArtistSidebar({ name, slug, avatarUrl, planLabel }: ArtistSideba
 
         {/* Navegação */}
         <nav
-          className="scrollbar-none flex flex-1 flex-col gap-4 overflow-y-auto p-3"
+          className="scrollbar-none flex flex-1 flex-col gap-3 overflow-y-auto p-2.5"
           aria-label="Menu do painel do artista"
         >
           {NAV_GROUPS.map((group) => (
-            <div key={group.title} className="flex flex-col gap-1">
-              <p className="px-4 pb-1 text-[8px] font-black tracking-[0.25em] text-[var(--artist-muted)]/70">
+            <div key={group.title} className="flex flex-col gap-0.5">
+              <p className="px-3 pb-1 text-[8px] font-black tracking-[0.22em] text-[var(--artist-muted)]/60">
                 {group.title.toUpperCase()}
               </p>
               {group.items.map(({ label, href, icon: Icon }) => {
@@ -107,22 +112,26 @@ export function ArtistSidebar({ name, slug, avatarUrl, planLabel }: ArtistSideba
                     href={href}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      'group flex items-center gap-3 rounded-2xl px-4 py-2.5 text-[11px] font-black tracking-[0.08em] transition-all',
+                      'group relative flex items-center gap-2.5 rounded-[8px] px-3 py-2 text-[11px] font-bold tracking-[0.04em] transition-colors',
                       active
-                        ? 'bg-[var(--artist-primary)]/15 text-[var(--artist-primary)]'
+                        ? 'bg-[var(--artist-primary)]/10 text-[var(--artist-text)]'
                         : 'text-[var(--artist-muted)] hover:bg-white/5 hover:text-[var(--artist-text)]',
                     )}
                   >
-                    <span
+                    {/* Indicador ativo: barra lateral discreta */}
+                    {active && (
+                      <span
+                        className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-[var(--artist-primary)]"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <Icon
                       className={cn(
-                        'flex size-8 items-center justify-center rounded-xl transition-colors',
-                        active
-                          ? 'gradient-brand text-white'
-                          : 'bg-white/5 text-[var(--artist-muted)] group-hover:text-[var(--artist-text)]',
+                        'size-4 shrink-0',
+                        active ? 'text-[var(--artist-primary)]' : 'text-current',
                       )}
-                    >
-                      <Icon className="size-4" aria-hidden="true" />
-                    </span>
+                      aria-hidden="true"
+                    />
                     {label.toUpperCase()}
                   </Link>
                 )
@@ -132,10 +141,10 @@ export function ArtistSidebar({ name, slug, avatarUrl, planLabel }: ArtistSideba
         </nav>
 
         {/* Rodapé */}
-        <div className="p-3 pt-0">
+        <div className="border-t border-white/8 p-2.5">
           <Link
             href={`/artist/${slug}`}
-            className="flex items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-[9px] font-black tracking-[0.15em] text-[var(--artist-text)] transition-colors hover:bg-white/10"
+            className="flex items-center justify-between gap-2 rounded-[8px] border border-white/10 px-3 py-2.5 text-[9px] font-black tracking-[0.12em] text-[var(--artist-muted)] transition-colors hover:bg-white/5 hover:text-[var(--artist-text)]"
           >
             VER PERFIL PÚBLICO
             <ExternalLink className="size-3.5 text-[var(--artist-primary)]" aria-hidden="true" />

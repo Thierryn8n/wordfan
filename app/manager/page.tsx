@@ -55,8 +55,8 @@ export default async function ManagerPage({
   // Nenhum artista sob gestão
   if (artists.length === 0) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-background px-6">
-        <div className="max-w-sm rounded-[32px] border border-white/8 bg-card p-8 text-center">
+      <main className="crm-scope flex min-h-dvh items-center justify-center bg-background px-6">
+        <div className="max-w-sm rounded-[14px] border border-white/8 bg-card p-8 text-center">
           <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/15">
             <Briefcase className="size-6 text-primary" aria-hidden="true" />
           </span>
@@ -81,16 +81,16 @@ export default async function ManagerPage({
   // ===== Lista de artistas geridos =====
   if (!selected) {
     return (
-      <div className="min-h-dvh bg-background pb-16">
-        <header className="border-b border-white/8 bg-card/50 px-6 py-6 md:px-10">
+      <div className="crm-scope min-h-dvh bg-background pb-16">
+        <header className="border-b border-white/8 bg-card/50 px-6 py-5 md:px-10">
           <div className="mx-auto flex max-w-5xl items-center gap-4">
             <Logo href="/home" className="text-xl" />
             <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-2 text-[9px] font-black tracking-[0.3em] text-primary">
-                <Briefcase className="size-3.5" aria-hidden="true" />
+              <p className="flex items-center gap-1.5 text-[9px] font-black tracking-[0.28em] text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
                 PAINEL DO EMPRESÁRIO
               </p>
-              <h1 className="mt-1 font-serif text-2xl font-black tracking-tight">SEUS ARTISTAS</h1>
+              <h1 className="mt-1 font-serif text-xl font-black tracking-tight">SEUS ARTISTAS</h1>
             </div>
           </div>
         </header>
@@ -101,14 +101,14 @@ export default async function ManagerPage({
               <Link
                 key={a.id}
                 href={`/manager?artist=${a.slug}`}
-                className="group flex items-center gap-4 rounded-[28px] border border-white/8 bg-card p-5 transition-colors hover:border-primary/40"
+                className="group flex items-center gap-4 rounded-[12px] border border-white/8 bg-card p-4 transition-colors hover:border-primary/40"
               >
                 <Image
                   src={a.avatar_url || '/placeholder.svg?height=64&width=64'}
                   alt=""
-                  width={64}
-                  height={64}
-                  className="size-16 rounded-2xl object-cover"
+                  width={56}
+                  height={56}
+                  className="size-14 rounded-[10px] object-cover"
                 />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-serif text-lg font-black">{a.name}</p>
@@ -160,28 +160,28 @@ export default async function ManagerPage({
 
   return (
     <ArtistThemeScope theme={artist.theme}>
-      <div className="min-h-dvh bg-background pb-16">
-        <header className="border-b border-white/8 bg-card/50 px-6 py-6 md:px-10">
+      <div className="crm-scope min-h-dvh bg-background pb-16">
+        <header className="border-b border-white/8 bg-card/50 px-6 py-5 md:px-10">
           <div className="mx-auto flex max-w-6xl items-center gap-4">
             <Link
               href="/manager"
               aria-label="Voltar para seus artistas"
-              className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/8 bg-card"
+              className="flex size-9 shrink-0 items-center justify-center rounded-[8px] border border-white/8 bg-card"
             >
-              <ArrowLeft className="size-5" aria-hidden="true" />
+              <ArrowLeft className="size-4" aria-hidden="true" />
             </Link>
             <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-2 text-[9px] font-black tracking-[0.3em] text-primary">
-                <Briefcase className="size-3.5" aria-hidden="true" />
+              <p className="flex items-center gap-1.5 text-[9px] font-black tracking-[0.28em] text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
                 EMPRESÁRIO — GESTÃO
               </p>
-              <h1 className="mt-1 truncate font-serif text-2xl font-black tracking-tight">
+              <h1 className="mt-1 truncate font-serif text-xl font-black tracking-tight">
                 {artist.name.toUpperCase()}
               </h1>
             </div>
             <Link
               href={`/artist/${artist.slug}`}
-              className="flex shrink-0 items-center gap-2 rounded-full border border-white/8 bg-card px-5 py-2.5 text-[9px] font-black tracking-[0.15em] transition-colors hover:bg-secondary"
+              className="flex shrink-0 items-center gap-2 rounded-[8px] border border-white/8 bg-card px-4 py-2 text-[9px] font-black tracking-[0.15em] transition-colors hover:bg-secondary"
             >
               VER PERFIL
               <ExternalLink className="size-3" aria-hidden="true" />
@@ -192,24 +192,28 @@ export default async function ManagerPage({
         <main className="mx-auto max-w-6xl px-6 pt-8 md:px-10">
           <section aria-label="Métricas" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {stats.map(({ label, value, icon: Icon }) => (
-              <div key={label} className="rounded-3xl border border-white/8 bg-card p-5">
-                <span className="flex size-9 items-center justify-center rounded-xl bg-primary/10">
-                  <Icon className="size-4 text-primary" aria-hidden="true" />
-                </span>
-                <p className="mt-4 font-numeric text-2xl font-bold">{value}</p>
-                <p className="mt-1 text-[8px] font-black tracking-[0.2em] text-muted-foreground">{label}</p>
+              <div key={label} className="crm-card p-4">
+                <div className="flex items-center gap-2">
+                  <span className="flex size-7 items-center justify-center rounded-[7px] bg-primary/10">
+                    <Icon className="size-3.5 text-primary" aria-hidden="true" />
+                  </span>
+                  <p className="text-[8px] font-black tracking-[0.18em] text-muted-foreground">
+                    {label}
+                  </p>
+                </div>
+                <p className="mt-3 font-numeric text-2xl font-bold">{value}</p>
               </div>
             ))}
           </section>
 
           {/* Leads Enterprise deste artista */}
           <section aria-labelledby="leads-h" className="mt-8">
-            <h2 id="leads-h" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
+            <h2 id="leads-h" className="crm-section-title">
               PROPOSTAS ENTERPRISE (EMPRESAS INTERESSADAS)
             </h2>
             <ul className="mt-3 flex flex-col gap-2.5">
               {leads.length === 0 && (
-                <li className="rounded-3xl border border-dashed border-white/10 p-6 text-center text-[11px] font-bold text-muted-foreground">
+                <li className="rounded-[10px] border border-dashed border-white/10 p-6 text-center text-[11px] font-bold text-muted-foreground">
                   Nenhuma empresa entrou em contato ainda.
                 </li>
               )}
@@ -217,7 +221,7 @@ export default async function ManagerPage({
                 const st = LEAD_STATUS[l.status]
                 const showContact = l.status === 'approved'
                 return (
-                  <li key={l.id} className="rounded-3xl border border-white/8 bg-card p-5">
+                  <li key={l.id} className="crm-card p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-serif text-base font-black">{l.company_name}</p>
@@ -260,7 +264,7 @@ export default async function ManagerPage({
 
           {/* Gestão de conteúdo completa */}
           <section aria-labelledby="mgr-content-h" className="mt-8">
-            <h2 id="mgr-content-h" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
+            <h2 id="mgr-content-h" className="crm-section-title">
               GERENCIAR CONTEÚDO
             </h2>
             <p className="mt-1 text-[10px] font-bold text-muted-foreground/70">

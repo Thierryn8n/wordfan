@@ -78,7 +78,7 @@ export default async function OverviewPage() {
         eyebrow="VISÃO GERAL"
         title={artist.name}
         action={
-          <span className="gradient-brand flex items-center gap-2 rounded-full px-5 py-2.5 text-[9px] font-black tracking-[0.15em] text-white">
+          <span className="flex items-center gap-2 rounded-[8px] border border-[var(--artist-primary)]/30 bg-[var(--artist-primary)]/10 px-4 py-2 text-[9px] font-black tracking-[0.15em] text-[var(--artist-primary)]">
             <Sparkles className="size-3.5" aria-hidden="true" />
             PLANO {toolInfo.label.toUpperCase()}
           </span>
@@ -88,28 +88,25 @@ export default async function OverviewPage() {
       {/* Métricas */}
       <section aria-label="Métricas principais" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {stats.map(({ label, value, icon: Icon }) => (
-          <div
-            key={label}
-            className="rounded-[24px] border border-white/8 bg-[var(--artist-surface)]/60 p-5 backdrop-blur-sm"
-          >
-            <span className="flex size-9 items-center justify-center rounded-xl bg-[var(--artist-primary)]/12">
-              <Icon className="size-4 text-[var(--artist-primary)]" aria-hidden="true" />
-            </span>
-            <p className="mt-4 font-numeric text-2xl font-bold text-[var(--artist-text)]">{value}</p>
-            <p className="mt-1 text-[8px] font-black tracking-[0.2em] text-[var(--artist-muted)]">
-              {label}
-            </p>
+          <div key={label} className="crm-card p-4">
+            <div className="flex items-center gap-2">
+              <span className="flex size-7 items-center justify-center rounded-[7px] bg-[var(--artist-primary)]/10">
+                <Icon className="size-3.5 text-[var(--artist-primary)]" aria-hidden="true" />
+              </span>
+              <p className="text-[8px] font-black tracking-[0.18em] text-[var(--artist-muted)]">
+                {label}
+              </p>
+            </div>
+            <p className="mt-3 font-numeric text-2xl font-bold text-[var(--artist-text)]">{value}</p>
           </div>
         ))}
       </section>
 
       {/* Gráficos reais */}
       <section className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-[28px] border border-white/8 bg-[var(--artist-surface)]/60 p-5 backdrop-blur-sm">
+        <div className="crm-card p-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-[10px] font-black tracking-[0.25em] text-[var(--artist-muted)]">
-              RECEITA (6 MESES)
-            </h2>
+            <h2 className="crm-section-title">RECEITA (6 MESES)</h2>
             <span className="font-numeric text-[11px] font-bold text-[var(--artist-primary)]">
               {formatPrice(gross)}
             </span>
@@ -119,11 +116,9 @@ export default async function OverviewPage() {
           </div>
         </div>
 
-        <div className="rounded-[28px] border border-white/8 bg-[var(--artist-surface)]/60 p-5 backdrop-blur-sm">
+        <div className="crm-card p-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-[10px] font-black tracking-[0.25em] text-[var(--artist-muted)]">
-              NOVOS ASSINANTES (6 MESES)
-            </h2>
+            <h2 className="crm-section-title">NOVOS ASSINANTES (6 MESES)</h2>
             <span className="font-numeric text-[11px] font-bold text-[var(--artist-primary)]">
               +{subsSeries.reduce((a, b) => a + b.value, 0)}
             </span>
@@ -137,10 +132,7 @@ export default async function OverviewPage() {
       {/* Publicações recentes */}
       <section aria-labelledby="recent-heading">
         <div className="flex items-center justify-between">
-          <h2
-            id="recent-heading"
-            className="text-[10px] font-black tracking-[0.25em] text-[var(--artist-muted)]"
-          >
+          <h2 id="recent-heading" className="crm-section-title">
             PUBLICAÇÕES RECENTES
           </h2>
           <Link
@@ -153,10 +145,7 @@ export default async function OverviewPage() {
         </div>
         <ul className="mt-3 grid gap-2.5 md:grid-cols-2">
           {posts.slice(0, 6).map((p) => (
-            <li
-              key={p.id}
-              className="flex items-center gap-4 rounded-[20px] border border-white/8 bg-[var(--artist-surface)]/60 p-4"
-            >
+            <li key={p.id} className="crm-card flex items-center gap-4 p-4">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-extrabold text-[var(--artist-text)]">
                   {p.title ?? 'Sem título'}

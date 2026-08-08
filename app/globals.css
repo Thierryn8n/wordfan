@@ -349,6 +349,37 @@
     border: 1px solid color-mix(in srgb, var(--artist-primary) 30%, transparent);
   }
 
+  /* ===== Modo CRM (painéis do artista e do empresário) =====
+     Deixa a interface mais densa e funcional: bordas menos arredondadas e a
+     cor do artista usada apenas como acento discreto (não domina a tela). */
+  .crm-scope {
+    --radius: 0.65rem;
+  }
+  /* Limita o raio dos cards grandes a um valor de CRM, sem afetar pills
+     (rounded-full) nem inputs pequenos. Captura os arbitrários usados nos
+     painéis e os utilitários 2xl/3xl. */
+  .crm-scope [class*='rounded-[28px]'],
+  .crm-scope [class*='rounded-[24px]'],
+  .crm-scope [class*='rounded-[20px]'],
+  .crm-scope [class*='rounded-[32px]'],
+  .crm-scope .rounded-3xl,
+  .crm-scope .rounded-2xl {
+    border-radius: 0.65rem;
+  }
+  /* Superfície de card padrão do CRM: fundo sólido, borda definida. */
+  .crm-card {
+    background-color: color-mix(in srgb, var(--artist-surface, var(--card)) 92%, transparent);
+    border: 1px solid var(--border);
+    border-radius: 0.65rem;
+  }
+  /* Cabeçalho de seção com linha divisória — cara de CRM. */
+  .crm-section-title {
+    font-size: 0.625rem;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    color: var(--artist-muted, var(--muted-foreground));
+  }
+
   /* ===== Holográfico (Enterprise) ===== */
   @keyframes holoShift {
     0% {

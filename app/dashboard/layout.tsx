@@ -41,7 +41,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <DesktopOnly>
       <ArtistThemeScope theme={artist.theme}>
-        <div className="mx-auto flex w-full max-w-[1500px] gap-5 px-4 pb-6">
+        <div className="crm-scope mx-auto flex w-full max-w-[1500px] gap-5 px-4 pb-6">
           <ArtistSidebar
             name={artist.name}
             slug={artist.slug}
