@@ -50,7 +50,7 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
       aria-label="Navegação principal"
       className="pointer-events-none fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-md px-4 pb-5"
     >
-      <div className="glass-panel sheen pointer-events-auto relative rounded-[30px] px-3 pb-2 pt-3">
+      <div className="nav-dock sheen pointer-events-auto relative rounded-[30px] px-3 pb-2 pt-3">
         <div className="flex items-end">
           {left.map((item) => (
             <NavItem key={item.href} {...item} />
