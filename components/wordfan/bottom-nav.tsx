@@ -59,20 +59,23 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
 
           {/* Botão central elevado FAN CLUB */}
           <div className="relative z-10 flex flex-1 flex-col items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute -top-8 left-1/2 size-[74px] -translate-x-1/2 rounded-full bg-background/70"
-            />
-            <Link
-              href="/home"
-              aria-label="Fan Club"
-              className={cn(
-                'elev-2 -mt-11 flex size-16 items-center justify-center rounded-full text-white ring-1 ring-white/25 transition-transform active:scale-95',
-                accent === 'club' ? 'gradient-club' : 'gradient-brand',
-              )}
-            >
-              <Star className="size-7 fill-white" aria-hidden="true" />
-            </Link>
+            <div className="relative -mt-11 flex size-16 items-center justify-center">
+              {/* Recorte/plataforma — sempre atrás do botão, simétrico em todas as direções */}
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-[-7px] -z-10 rounded-full bg-background/70"
+              />
+              <Link
+                href="/home"
+                aria-label="Fan Club"
+                className={cn(
+                  'elev-2 relative z-10 flex size-16 items-center justify-center rounded-full text-white ring-1 ring-white/25 transition-transform active:scale-95',
+                  accent === 'club' ? 'gradient-club' : 'gradient-brand',
+                )}
+              >
+                <Star className="size-7 fill-white" aria-hidden="true" />
+              </Link>
+            </div>
             <span
               className={cn(
                 'whitespace-nowrap pt-0.5 text-[8px] font-extrabold tracking-[0.1em]',
