@@ -10,7 +10,7 @@ import {
   Music2,
   AudioLines,
   Globe,
-  Pause,
+  Play,
   Check,
   Radio,
   CalendarClock,
@@ -284,19 +284,29 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         cheapestPriceCents={cheapest}
       />
 
-      {/* Mini player flutuante */}
+      {/* Mini player flutuante — só aparece se o artista estiver AO VIVO (dados reais) */}
       {liveNow && (
         <Link
           href={`/artist/${artist.slug}/live`}
-          className="glass-panel sheen fixed inset-x-6 bottom-24 z-50 mx-auto flex max-w-sm items-center gap-4 rounded-3xl p-3"
+          aria-label={`Entrar na live: ${liveNow.title}`}
+          className="skeu-raised sheen fixed inset-x-6 bottom-40 z-40 mx-auto flex max-w-sm items-center gap-3 rounded-3xl p-3"
         >
-          <Image
-            src={artist.avatar_url || '/placeholder.svg?height=56&width=56'}
-            alt=""
-            width={56}
-            height={56}
-            className="size-14 rounded-2xl object-cover"
-          />
+          <div className="relative shrink-0">
+            <Image
+              src={artist.avatar_url || '/placeholder.svg?height=56&width=56'}
+              alt=""
+              width={56}
+              height={56}
+              className="size-14 rounded-2xl object-cover"
+            />
+            <span
+              className="absolute -right-1 -top-1 flex items-center gap-1 rounded-full bg-red-600 px-1.5 py-0.5 text-[7px] font-black tracking-[0.1em] text-white"
+              aria-hidden="true"
+            >
+              <span className="size-1 animate-pulse rounded-full bg-white" />
+              LIVE
+            </span>
+          </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-extrabold tracking-[0.1em]">
               {liveNow.title.toUpperCase()}
@@ -306,10 +316,10 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
             </p>
           </div>
           <span
-            className="gradient-club flex size-12 shrink-0 items-center justify-center rounded-2xl"
+            className="skeu-btn sheen relative flex size-12 shrink-0 items-center justify-center rounded-2xl"
             aria-hidden="true"
           >
-            <Pause className="size-5 fill-white text-white" />
+            <Play className="size-5 fill-white text-white" />
           </span>
         </Link>
       )}
