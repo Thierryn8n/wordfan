@@ -6,6 +6,7 @@ import Image from 'next/image'
 import {
   BadgeCheck,
   Bookmark,
+  ChevronRight,
   Clock,
   Gem,
   Heart,
@@ -182,59 +183,41 @@ export function ArtistTabs({
 
             {posts.map((p) =>
               p.locked ? (
-                <article key={p.id}>
-                  <header className="flex items-center gap-3">
+                <Link
+                  key={p.id}
+                  href={`/artist/${artist.slug}/plans`}
+                  className="glass-panel sheen relative flex items-center gap-4 overflow-hidden rounded-3xl p-3"
+                >
+                  {/* Miniatura desfocada */}
+                  <div className="relative size-20 shrink-0 overflow-hidden rounded-2xl">
                     <Image
-                      src={artist.avatar_url || '/placeholder.svg?height=40&width=40'}
+                      src={artist.banner_url || artist.avatar_url || '/placeholder.svg?height=160&width=160'}
                       alt=""
-                      width={40}
-                      height={40}
-                      className="size-10 rounded-full object-cover opacity-60"
+                      fill
+                      sizes="80px"
+                      className="scale-110 object-cover opacity-50 blur-lg"
                     />
-                    <div className="flex-1">
-                      <p className="flex items-center gap-1.5 text-sm font-extrabold tracking-[0.1em]">
-                        {artist.name.toUpperCase()}
-                        <BadgeCheck className="size-4 text-club" aria-hidden="true" />
-                      </p>
-                      <p className="text-[10px] font-extrabold tracking-[0.1em] text-muted-foreground">
-                        {timeAgo(p.created_at)} •{' '}
-                        <span className="text-club">
-                          {p.min_tier ? `${TIER_LABELS[p.min_tier].toUpperCase()} +` : 'VIP'}
-                        </span>
-                      </p>
-                    </div>
-                  </header>
-                  <div className="relative mt-4 overflow-hidden rounded-[40px] border border-white/8">
-                    {/* Fundo blur simulando conteúdo bloqueado */}
-                    <div className="absolute inset-0" aria-hidden="true">
-                      <Image
-                        src={artist.banner_url || artist.avatar_url || '/placeholder.svg?height=400&width=400'}
-                        alt=""
-                        fill
-                        sizes="(max-width: 768px) 100vw, 448px"
-                        className="scale-110 object-cover opacity-40 blur-2xl"
-                      />
-                    </div>
-                    <div className="relative flex flex-col items-center bg-card/50 px-8 py-14 text-center backdrop-blur-md">
-                      <div className="skeu-btn sheen relative flex size-20 items-center justify-center rounded-full">
-                        <Lock className="size-8 text-white" aria-hidden="true" />
-                      </div>
-                      <h3 className="mt-8 font-serif text-2xl font-extrabold tracking-tight">
-                        DESBLOQUEIE NO FAN CLUB
-                      </h3>
-                      <p className="mt-3 max-w-[240px] text-sm leading-relaxed text-muted-foreground">
-                        Assine o Plano {p.min_tier ? TIER_LABELS[p.min_tier] : 'VIP'} para liberar
-                        este e outros conteúdos exclusivos.
-                      </p>
-                      <Link
-                        href={`/artist/${artist.slug}/plans`}
-                        className="skeu-btn sheen relative mt-8 rounded-2xl px-10 py-4 text-[11px] font-extrabold tracking-[0.2em] text-white"
-                      >
-                        ASSINAR PARA VER
-                      </Link>
-                    </div>
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <span className="skeu-btn sheen relative flex size-10 items-center justify-center rounded-full">
+                        <Lock className="size-4 text-white" aria-hidden="true" />
+                      </span>
+                    </span>
                   </div>
-                </article>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[9px] font-black tracking-[0.2em] text-club">
+                      {p.min_tier ? `EXCLUSIVO ${TIER_LABELS[p.min_tier].toUpperCase()}` : 'CONTEÚDO VIP'}
+                    </p>
+                    <p className="mt-1 truncate font-serif text-base font-extrabold">
+                      Conteúdo bloqueado
+                    </p>
+                    <p className="mt-0.5 text-[11px] font-bold text-muted-foreground">
+                      {timeAgo(p.created_at)} • Assine para liberar
+                    </p>
+                  </div>
+                  <span className="skeu-raised flex size-9 shrink-0 items-center justify-center rounded-xl text-club">
+                    <ChevronRight className="size-4" aria-hidden="true" />
+                  </span>
+                </Link>
               ) : (
                 <article key={p.id}>
                   <header className="flex items-center gap-3">
