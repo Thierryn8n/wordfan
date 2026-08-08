@@ -29,7 +29,7 @@ export function SubscribeButton({
 
   if (isCurrent) {
     return (
-      <p className="mt-5 rounded-2xl border border-club/50 py-3.5 text-center text-[11px] font-extrabold tracking-[0.2em] text-club">
+      <p className="skeu-inset mt-5 rounded-2xl py-3.5 text-center text-[11px] font-extrabold tracking-[0.2em] text-club">
         SEU PLANO ATUAL
       </p>
     )
@@ -42,10 +42,8 @@ export function SubscribeButton({
         onClick={handleClick}
         disabled={isPending}
         className={cn(
-          'flex w-full items-center justify-center gap-2 rounded-2xl text-[11px] font-extrabold tracking-[0.25em] transition-opacity disabled:opacity-60',
-          variant === 'featured'
-            ? 'h-16 bg-white text-black'
-            : 'h-12 border border-white/8 bg-white/5 text-foreground hover:bg-white/10',
+          'relative flex w-full items-center justify-center gap-2 rounded-2xl text-[11px] font-extrabold tracking-[0.25em] transition-opacity disabled:opacity-60',
+          variant === 'featured' ? 'skeu-btn sheen h-16 text-white' : 'skeu h-12 text-foreground',
         )}
       >
         {isPending ? 'ASSINANDO...' : 'ASSINAR AGORA'}

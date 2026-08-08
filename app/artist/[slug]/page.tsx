@@ -119,7 +119,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           <Link
             href="/home"
             aria-label="Voltar"
-            className="flex size-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md"
+            className="glass-soft flex size-11 items-center justify-center rounded-full"
           >
             <ArrowLeft className="size-5" aria-hidden="true" />
           </Link>
@@ -135,7 +135,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
             )}
             <button
               aria-label="Compartilhar"
-              className="flex size-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md"
+              className="glass-soft flex size-11 items-center justify-center rounded-full"
             >
               <Share2 className="size-5" aria-hidden="true" />
             </button>
@@ -179,12 +179,12 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           <div className="mt-5 flex gap-3">
             <Link
               href={subscription ? `/artist/${artist.slug}/club` : `/artist/${artist.slug}/plans`}
-              className="gradient-club flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl text-[11px] font-extrabold tracking-[0.2em] text-white"
+              className="skeu-btn sheen relative flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl text-[11px] font-extrabold tracking-[0.2em] text-white"
             >
               <Star className="size-4 fill-white" aria-hidden="true" />
               {subscription ? 'ACESSAR FAN CLUB' : 'ENTRAR NO FAN CLUB'}
             </Link>
-            <button className="flex h-14 items-center gap-2 rounded-2xl border border-white/8 bg-card px-5 text-[11px] font-extrabold tracking-[0.2em]">
+            <button className="skeu flex h-14 items-center gap-2 rounded-2xl px-5 text-[11px] font-extrabold tracking-[0.2em]">
               <UserPlus className="size-4" aria-hidden="true" />
               SEGUIR
             </button>
@@ -199,9 +199,9 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
       {!liveNow && nextLive && (
         <Link
           href={`/artist/${artist.slug}/live`}
-          className="mx-6 mt-6 flex items-center gap-4 rounded-3xl border border-club/40 bg-club/10 p-4"
+          className="glass-panel sheen relative mx-6 mt-6 flex items-center gap-4 rounded-3xl p-4"
         >
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-club/20 text-club">
+          <span className="skeu-raised flex size-12 shrink-0 items-center justify-center rounded-2xl text-club">
             <CalendarClock className="size-5" aria-hidden="true" />
           </span>
           <div className="min-w-0 flex-1">
@@ -224,7 +224,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
       )}
 
       {/* Stats */}
-      <div className="mt-6 flex border-y border-white/8 bg-card/30 px-6 py-7">
+      <div className="skeu-inset mx-6 mt-6 flex rounded-[28px] px-6 py-7">
         {[
           { value: String(posts.length), label: 'POSTS' },
           { value: String(videos.length), label: 'VÍDEOS' },
@@ -255,7 +255,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
               className="flex flex-col items-center gap-2"
               aria-label={label}
             >
-              <span className="flex size-13 items-center justify-center rounded-2xl border border-white/8 bg-card p-4 text-muted-foreground">
+              <span className="skeu-raised flex size-13 items-center justify-center rounded-2xl p-4 text-muted-foreground">
                 <Icon className="size-5" aria-hidden="true" />
               </span>
               <span className="text-[8px] font-extrabold tracking-[0.15em] text-muted-foreground">
@@ -282,7 +282,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
       {liveNow && (
         <Link
           href={`/artist/${artist.slug}/live`}
-          className="fixed inset-x-6 bottom-24 z-50 mx-auto flex max-w-sm items-center gap-4 rounded-3xl border border-club/50 bg-black/90 p-3 backdrop-blur-xl"
+          className="glass-panel sheen fixed inset-x-6 bottom-24 z-50 mx-auto flex max-w-sm items-center gap-4 rounded-3xl p-3"
         >
           <Image
             src={artist.avatar_url || '/placeholder.svg?height=56&width=56'}

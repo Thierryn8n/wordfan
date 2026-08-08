@@ -42,7 +42,7 @@ export default async function PlansPage({ params }: { params: Promise<{ slug: st
   function CompactCard({ plan }: { plan: NonNullable<typeof bronze> }) {
     const isCurrent = subscription?.plan_id === plan.id
     return (
-      <div className="rounded-[32px] border border-white/8 bg-card p-6">
+      <div className="skeu-raised sheen relative rounded-[32px] p-6">
         <div className="flex items-start justify-between">
           <div>
             <h2 className={`font-serif text-xl font-extrabold ${tierColor[plan.tier]}`}>
@@ -61,7 +61,7 @@ export default async function PlansPage({ params }: { params: Promise<{ slug: st
           {plan.benefits.slice(0, 3).map((b) => (
             <span
               key={b}
-              className="rounded-full bg-white/5 px-3 py-1 text-[8px] font-extrabold tracking-[0.1em] text-muted-foreground uppercase"
+              className="skeu-inset rounded-full px-3 py-1 text-[8px] font-extrabold uppercase tracking-[0.1em] text-muted-foreground"
             >
               {b}
             </span>
@@ -103,7 +103,7 @@ export default async function PlansPage({ params }: { params: Promise<{ slug: st
           <Link
             href={`/artist/${slug}`}
             aria-label="Voltar para o perfil"
-            className="flex size-10 items-center justify-center rounded-full border border-white/8 bg-white/8 backdrop-blur-md"
+            className="glass-soft flex size-10 items-center justify-center rounded-full"
           >
             <ArrowLeft className="size-5" aria-hidden="true" />
           </Link>
@@ -116,17 +116,7 @@ export default async function PlansPage({ params }: { params: Promise<{ slug: st
         {/* Platina em destaque */}
         {platinum && (
           <div className="relative">
-            <div
-              className="relative overflow-hidden rounded-[40px] border-2 border-club p-8"
-              style={{
-                backgroundImage:
-                  'linear-gradient(to bottom, color-mix(in srgb, var(--artist-primary, #ff00a2) 22%, var(--card)), var(--card))',
-              }}
-            >
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -top-10 right-0 size-40 rounded-full bg-club/20 blur-[80px]"
-              />
+            <div className="glass-panel sheen relative overflow-hidden rounded-[40px] border-2 border-club p-8">
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="font-serif text-2xl font-black tracking-tight">
@@ -160,7 +150,7 @@ export default async function PlansPage({ params }: { params: Promise<{ slug: st
                 variant="featured"
               />
             </div>
-            <span className="gradient-club absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-[8px] font-black tracking-[0.2em] text-white shadow-lg">
+            <span className="skeu-btn sheen absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-[8px] font-black tracking-[0.2em] text-white">
               RECOMENDADO
             </span>
           </div>

@@ -24,7 +24,7 @@ export function PostCard({
 }) {
   const a = artist ?? post.artist
   return (
-    <article className="glass overflow-hidden rounded-2xl">
+    <article className="glass-panel sheen relative overflow-hidden rounded-2xl">
       {a && (
         <header className="flex items-center gap-3 p-4 pb-3">
           <Image
@@ -45,7 +45,7 @@ export function PostCard({
       )}
 
       {locked ? (
-        <div className="mx-4 mb-4 flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-secondary/40 px-6 py-10 text-center">
+        <div className="skeu-inset mx-4 mb-4 flex flex-col items-center gap-3 rounded-xl px-6 py-10 text-center">
           <Lock className="size-6 text-muted-foreground" aria-hidden="true" />
           <p className="text-sm font-medium">Conteúdo exclusivo para assinantes</p>
           {post.min_tier && (
@@ -56,7 +56,7 @@ export function PostCard({
           {a && (
             <Link
               href={`/artist/${a.slug}/plans`}
-              className="gradient-brand mt-1 rounded-full px-5 py-2 text-sm font-semibold text-black"
+              className="skeu-btn sheen relative mt-1 rounded-full px-5 py-2 text-sm font-semibold text-white"
             >
               Ver planos
             </Link>
