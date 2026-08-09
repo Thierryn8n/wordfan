@@ -13,7 +13,7 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const h = await headers()
-  if (isMobileUserAgent(h.get('user-agent'))) return <DesktopBlocker>()
+  if (isMobileUserAgent(h.get('user-agent'))) return <DesktopBlocker />
 
   const { artist, role } = await getDashboardArtist('/dashboard')
   const allArtists = role === 'admin' ? await getAllArtists() : []
