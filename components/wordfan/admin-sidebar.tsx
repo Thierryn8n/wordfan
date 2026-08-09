@@ -7,6 +7,7 @@ import {
   BarChart3,
   Bell,
   Building2,
+  Briefcase,
   CreditCard,
   LayoutDashboard,
   Megaphone,
@@ -23,9 +24,15 @@ const NAV_GROUPS = [
     title: 'Controle',
     items: [
       { label: 'Visão global', icon: LayoutDashboard, href: '/admin' },
-      { label: 'Artistas', icon: Mic2, href: '/admin/artists' },
-      { label: 'Studio do artista', icon: Palette, href: '/admin/studio' },
-      { label: 'Usuários', icon: Users, href: '/admin/users' },
+      { label: 'Artistas', icon: Users, href: '/admin/artists' },
+      { label: 'Estúdio', icon: Mic2, href: '/admin/studio' },
+      { label: 'Temas', icon: Palette, href: '/admin/themes' },
+    ],
+  },
+  {
+    title: 'Artistas',
+    items: [
+      { label: 'Painéis dos Artistas', icon: Briefcase, href: '/dashboard' },
     ],
   },
   {
