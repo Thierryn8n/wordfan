@@ -46,6 +46,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             name={artist.name}
             slug={artist.slug}
             avatarUrl={artist.avatar_url}
+            logoUrl={(artist as any).logo_url}
             planLabel={planLabel}
           />
           <main className="relative min-w-0 flex-1 overflow-hidden px-6 pb-12 pt-8 xl:px-10">

@@ -61,7 +61,7 @@ function ImageUploader({
   label: string
   url: string
   artistId: string
-  kind: 'avatar' | 'banner'
+  kind: 'avatar' | 'banner' | 'logo'
   onUploaded: (url: string) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -236,14 +236,18 @@ export function ProfileEditor({
   artist,
   avatarUrl,
   bannerUrl,
+  logoUrl,
   onAvatarChange,
   onBannerChange,
+  onLogoChange,
 }: {
   artist: Artist
   avatarUrl: string
   bannerUrl: string
+  logoUrl: string
   onAvatarChange: (url: string) => void
   onBannerChange: (url: string) => void
+  onLogoChange: (url: string) => void
 }) {
   const about = (artist.about ?? {}) as ArtistAbout
   const [name, setName] = useState(artist.name)
@@ -277,6 +281,7 @@ export function ProfileEditor({
         about: { history, influences, discography, awards },
         avatarUrl,
         bannerUrl,
+        logoUrl,
       })
       if (res?.error) setStatus({ error: res.error })
       else setStatus({ ok: 'Perfil salvo! Páginas públicas atualizadas.' })
@@ -303,6 +308,13 @@ export function ProfileEditor({
             artistId={artist.id}
             kind="banner"
             onUploaded={onBannerChange}
+          />
+          <ImageUploader
+            label="LOGO DO ARTISTA"
+            url={logoUrl}
+            artistId={artist.id}
+            kind="logo"
+            onUploaded={onLogoChange}
           />
         </div>
         <p className="mt-3 flex items-center gap-2 rounded-2xl border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-[9px] font-bold text-emerald-300/80">

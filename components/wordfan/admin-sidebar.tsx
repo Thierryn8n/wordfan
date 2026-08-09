@@ -39,6 +39,12 @@ const NAV_GROUPS = [
       { label: 'Relatórios', icon: BarChart3, href: '/admin/reports' },
     ],
   },
+  {
+    title: 'Sistema',
+    items: [
+      { label: 'Configurações', icon: Settings2, href: '/admin/settings' },
+    ],
+  },
 ] as const
 
 export function AdminSidebar() {

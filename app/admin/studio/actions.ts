@@ -119,6 +119,7 @@ export async function saveArtistProfile({
   about,
   avatarUrl,
   bannerUrl,
+  logoUrl,
 }: {
   artistId: string
   slug: string
@@ -130,6 +131,7 @@ export async function saveArtistProfile({
   socialLinks: Record<string, string>
   avatarUrl: string
   bannerUrl: string
+  logoUrl: string
   about: {
     history: string
     influences: string[]
@@ -163,6 +165,7 @@ export async function saveArtistProfile({
 
   const avatar = avatarUrl.trim().slice(0, 500)
   const banner = bannerUrl.trim().slice(0, 500)
+  const logo = logoUrl.trim().slice(0, 500)
 
   const { error } = await supabase
     .from('artists')
@@ -176,6 +179,7 @@ export async function saveArtistProfile({
       about: cleanAbout,
       avatar_url: avatar || null,
       banner_url: banner || null,
+      logo_url: logo || null,
     })
     .eq('id', artistId)
 
@@ -192,7 +196,7 @@ export async function saveArtistProfile({
 }
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
-const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml']
 
 export async function uploadArtistImage(formData: FormData) {
   const artistId = String(formData.get('artistId') ?? '')
@@ -203,10 +207,10 @@ export async function uploadArtistImage(formData: FormData) {
   const kind = String(formData.get('kind') ?? '')
 
   if (!artistId) return { error: 'Artista não identificado.' }
-  if (kind !== 'avatar' && kind !== 'banner') return { error: 'Tipo de imagem inválido.' }
+  if (kind !== 'avatar' && kind !== 'banner' && kind !== 'logo') return { error: 'Tipo de imagem inválido.' }
   if (!file || file.size === 0) return { error: 'Nenhum arquivo enviado.' }
   if (file.size > MAX_IMAGE_BYTES) return { error: 'Imagem muito grande (máx. 5MB).' }
-  if (!ALLOWED_TYPES.includes(file.type)) return { error: 'Formato inválido (use PNG, JPG, WebP ou GIF).' }
+  if (!ALLOWED_TYPES.includes(file.type)) return { error: 'Formato inválido (use PNG, JPG, WebP, GIF ou SVG).' }
 
   const { data: artist } = await supabase
     .from('artists')
@@ -232,7 +236,7 @@ export async function uploadArtistImage(formData: FormData) {
     data: { publicUrl },
   } = supabase.storage.from('artist-media').getPublicUrl(path)
 
-  const column = kind === 'avatar' ? 'avatar_url' : 'banner_url'
+  const column = kind === 'avatar' ? 'avatar_url' : kind === 'banner' ? 'banner_url' : 'logo_url'
   const { error: updateError } = await supabase
     .from('artists')
     .update({ [column]: publicUrl })

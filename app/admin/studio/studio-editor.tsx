@@ -73,6 +73,7 @@ export function StudioEditor({
   const [toolPlan, setToolPlan] = useState<ToolPlan>((artist.tool_plan ?? 'basic') as ToolPlan)
   const [avatarUrl, setAvatarUrl] = useState(artist.avatar_url ?? '')
   const [bannerUrl, setBannerUrl] = useState(artist.banner_url ?? '')
+  const [logoUrl, setLogoUrl] = useState((artist as any).logo_url ?? '')
   const [status, setStatus] = useState<{ ok?: string; error?: string }>({})
   const [isPending, startTransition] = useTransition()
   const [tab, setTab] = useState<'identity' | 'profile' | 'content'>('identity')
@@ -155,8 +156,10 @@ export function StudioEditor({
             artist={artist}
             avatarUrl={avatarUrl}
             bannerUrl={bannerUrl}
+            logoUrl={logoUrl}
             onAvatarChange={setAvatarUrl}
             onBannerChange={setBannerUrl}
+            onLogoChange={setLogoUrl}
           />
         )}
 
