@@ -15,7 +15,12 @@ export default async function DashboardLayout({
   const h = await headers()
   if (isMobileUserAgent(h.get('user-agent'))) return <DesktopBlocker />
 
-  const { artist, role } = await getDashboardArtist('/dashboard')
+  // Ler parâmetro artist da URL usando headers
+  const url = h.get('x-url') || h.get('referer') || 'http://localhost:3000/dashboard'
+  const urlObj = new URL(url)
+  const artistSlug = urlObj.searchParams.get('artist') || undefined
+  
+  const { artist, role } = await getDashboardArtist('/dashboard', artistSlug)
   const allArtists = role === 'admin' ? await getAllArtists() : []
 
   // Conta ainda não vinculada a um artista.
