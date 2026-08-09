@@ -3,10 +3,12 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 import {
   BarChart3,
   Briefcase,
   ChevronLeft,
+  ChevronRight,
   Clapperboard,
   ExternalLink,
   HeartHandshake,
@@ -54,18 +56,34 @@ const NAV_GROUPS = [
 
 export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel, isAdmin = false, allArtists = [] }: ArtistSidebarProps) {
   const pathname = usePathname()
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   return (
-    <aside className="sticky top-0 z-20 hidden h-dvh w-96 shrink-0 border-r border-white/8 bg-[#050505] lg:block">
+    <aside className={cn(
+      'sticky top-0 z-20 hidden h-dvh shrink-0 border-r border-white/8 bg-[#050505] lg:block transition-all duration-300',
+      isCollapsed ? 'w-20' : 'w-72'
+    )}>
       <div className="flex h-full flex-col">
         <div className="border-b border-white/8 px-7 py-7">
-          <Logo href="/home" className="text-xl" imageUrl={logoUrl || undefined} />
-          <p className="mt-1 text-[8px] font-black tracking-[0.24em] text-[var(--artist-primary)]">
-            {isAdmin ? 'PAINEL ADMIN' : 'PAINEL DO ARTISTA'}
-          </p>
+          <div className="flex items-center justify-between">
+            {!isCollapsed && (
+              <>
+                <Logo href="/home" className="text-xl" imageUrl={logoUrl || undefined} />
+                <p className="mt-1 text-[8px] font-black tracking-[0.24em] text-[var(--artist-primary)]">
+                  {isAdmin ? 'PAINEL ADMIN' : 'PAINEL DO ARTISTA'}
+                </p>
+              </>
+            )}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="flex size-8 items-center justify-center rounded-lg border border-white/8 bg-white/[0.025] text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-white"
+            >
+              {isCollapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+            </button>
+          </div>
         </div>
 
-        {isAdmin && allArtists.length > 0 && (
+        {!isCollapsed && isAdmin && allArtists.length > 0 && (
           <div className="border-b border-white/8 px-5 py-4">
             <p className="mb-3 flex items-center gap-2 text-[9px] font-black tracking-[0.2em] text-zinc-600">
               <Users className="size-3" />
@@ -97,33 +115,37 @@ export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel, isAdm
           </div>
         )}
 
-        <div className="border-b border-white/8 px-5 py-5">
-          <div className="rounded-2xl border border-white/8 bg-white/[0.035] p-4">
-            <div className="flex items-center gap-3">
-              <Image
-                src={avatarUrl || '/placeholder-user.jpg'}
-                alt=""
-                width={48}
-                height={48}
-                className="size-12 rounded-xl border border-[var(--artist-primary)]/30 object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-serif text-sm font-black text-white">{name}</p>
-                <p className="mt-1 flex items-center gap-1.5 text-[8px] font-black tracking-[0.13em] text-zinc-500">
-                  <span className="size-1.5 rounded-full bg-[var(--artist-primary)]" aria-hidden="true" />
-                  PLANO {planLabel.toUpperCase()}
-                </p>
+        {!isCollapsed && (
+          <div className="border-b border-white/8 px-5 py-5">
+            <div className="rounded-2xl border border-white/8 bg-white/[0.035] p-4">
+              <div className="flex items-center gap-3">
+                <Image
+                  src={avatarUrl || '/placeholder-user.jpg'}
+                  alt=""
+                  width={48}
+                  height={48}
+                  className="size-12 rounded-xl border border-[var(--artist-primary)]/30 object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-serif text-sm font-black text-white">{name}</p>
+                  <p className="mt-1 flex items-center gap-1.5 text-[8px] font-black tracking-[0.13em] text-zinc-500">
+                    <span className="size-1.5 rounded-full bg-[var(--artist-primary)]" aria-hidden="true" />
+                    PLANO {planLabel.toUpperCase()}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         <nav className="scrollbar-none flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-6" aria-label="Menu do painel do artista">
           {NAV_GROUPS.map((group) => (
             <div key={group.title}>
-              <p className="px-3 pb-2 text-[9px] font-black tracking-[0.2em] text-zinc-600">
-                {group.title.toUpperCase()}
-              </p>
+              {!isCollapsed && (
+                <p className="px-3 pb-2 text-[9px] font-black tracking-[0.2em] text-zinc-600">
+                  {group.title.toUpperCase()}
+                </p>
+              )}
               <div className="flex flex-col gap-1">
                 {group.items.map(({ label, href, icon: Icon }) => {
                   const active = href === '/dashboard' ? pathname === href : pathname.startsWith(href)
@@ -137,7 +159,9 @@ export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel, isAdm
                         active
                           ? 'bg-[var(--artist-primary)]/12 text-white'
                           : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white',
+                        isCollapsed && 'justify-center px-0'
                       )}
+                      title={isCollapsed ? label : undefined}
                     >
                       {active && (
                         <span className="absolute inset-y-2 right-0 w-0.5 rounded-full bg-[var(--artist-primary)]" aria-hidden="true" />
@@ -151,7 +175,7 @@ export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel, isAdm
                         )}
                         aria-hidden="true"
                       />
-                      {label}
+                      {!isCollapsed && <span>{label}</span>}
                     </Link>
                   )
                 })}
@@ -160,22 +184,24 @@ export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel, isAdm
           ))}
         </nav>
 
-        <div className="border-t border-white/8 p-4">
-          <Link
-            href={`/artist/${slug}`}
-            className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.025] px-4 py-3 text-[9px] font-black tracking-[0.12em] text-zinc-500 transition-colors hover:bg-white/[0.05] hover:text-white"
-          >
-            VER PERFIL PÚBLICO
-            <ExternalLink className="size-3.5 text-[var(--artist-primary)]" aria-hidden="true" />
-          </Link>
-          <Link
-            href="/profile"
-            className="mt-2 flex items-center gap-2 px-3 py-2 text-[8px] font-black tracking-[0.14em] text-zinc-600 transition-colors hover:text-white"
-          >
-            <ChevronLeft className="size-3" aria-hidden="true" />
-            VOLTAR AO APLICATIVO
-          </Link>
-        </div>
+        {!isCollapsed && (
+          <div className="border-t border-white/8 p-4">
+            <Link
+              href={`/artist/${slug}`}
+              className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.025] px-4 py-3 text-[9px] font-black tracking-[0.12em] text-zinc-500 transition-colors hover:bg-white/[0.05] hover:text-white"
+            >
+              VER PERFIL PÚBLICO
+              <ExternalLink className="size-3.5 text-[var(--artist-primary)]" aria-hidden="true" />
+            </Link>
+            <Link
+              href="/profile"
+              className="mt-2 flex items-center gap-2 px-3 py-2 text-[8px] font-black tracking-[0.14em] text-zinc-600 transition-colors hover:text-white"
+            >
+              <ChevronLeft className="size-3" aria-hidden="true" />
+              VOLTAR AO APLICATIVO
+            </Link>
+          </div>
+        )}
       </div>
     </aside>
   )

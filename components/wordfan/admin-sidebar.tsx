@@ -2,12 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 import {
   ArrowUpRight,
   BarChart3,
   Bell,
   Building2,
   Briefcase,
+  ChevronLeft,
+  ChevronRight,
   CreditCard,
   LayoutDashboard,
   Megaphone,
@@ -55,21 +58,37 @@ const NAV_GROUPS = [
 
 export function AdminSidebar({ siteLogoUrl }: { siteLogoUrl?: string }) {
   const pathname = usePathname()
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   return (
-    <aside className="sticky top-0 hidden h-dvh w-96 shrink-0 flex-col border-r border-white/8 bg-[#050505] lg:flex">
+    <aside className={cn(
+      'sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-white/8 bg-[#050505] lg:flex transition-all duration-300',
+      isCollapsed ? 'w-20' : 'w-72'
+    )}>
       <div className="border-b border-white/8 px-7 py-7">
-        <div className="flex items-center gap-3">
-          <Logo href="/admin" className="text-12xl" imageUrl={siteLogoUrl || undefined} />
+        <div className="flex items-center justify-between">
+          {!isCollapsed && (
+            <div className="flex items-center gap-3">
+              <Logo href="/admin" className="text-12xl" imageUrl={siteLogoUrl || undefined} />
+            </div>
+          )}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="flex size-8 items-center justify-center rounded-lg border border-white/8 bg-white/[0.025] text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-white"
+          >
+            {isCollapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+          </button>
         </div>
       </div>
 
       <nav className="scrollbar-none flex flex-1 flex-col gap-7 overflow-y-auto px-4 py-6" aria-label="Menu administrativo">
         {NAV_GROUPS.map((group) => (
           <div key={group.title}>
-            <p className="px-3 pb-2 text-[9px] font-black tracking-[0.22em] text-zinc-600">
-              {group.title.toUpperCase()}
-            </p>
+            {!isCollapsed && (
+              <p className="px-3 pb-2 text-[9px] font-black tracking-[0.22em] text-zinc-600">
+                {group.title.toUpperCase()}
+              </p>
+            )}
             <div className="flex flex-col gap-1">
               {group.items.map(({ label, icon: Icon, href }) => {
                 const active = href === '/admin' ? pathname === href : pathname.startsWith(href)
@@ -83,13 +102,15 @@ export function AdminSidebar({ siteLogoUrl }: { siteLogoUrl?: string }) {
                       active
                         ? 'bg-primary/12 text-white'
                         : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white',
+                      isCollapsed && 'justify-center px-0'
                     )}
+                    title={isCollapsed ? label : undefined}
                   >
                     {active && (
                       <span className="absolute inset-y-2 right-0 w-0.5 rounded-full bg-primary" aria-hidden="true" />
                     )}
                     <Icon className={cn('size-4', active ? 'text-primary' : 'text-zinc-500 group-hover:text-zinc-300')} aria-hidden="true" />
-                    {label}
+                    {!isCollapsed && <span>{label}</span>}
                   </Link>
                 )
               })}
@@ -98,26 +119,28 @@ export function AdminSidebar({ siteLogoUrl }: { siteLogoUrl?: string }) {
         ))}
       </nav>
 
-      <div className="border-t border-white/8 p-4">
-        <div className="rounded-2xl border border-white/8 bg-white/[0.035] p-4">
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-full bg-primary/12">
-              <Settings2 className="size-4 text-primary" aria-hidden="true" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[10px] font-black text-white">Administrador</p>
-              <p className="mt-0.5 text-[8px] font-bold text-zinc-600">Acesso total</p>
+      {!isCollapsed && (
+        <div className="border-t border-white/8 p-4">
+          <div className="rounded-2xl border border-white/8 bg-white/[0.035] p-4">
+            <div className="flex items-center gap-3">
+              <span className="flex size-9 items-center justify-center rounded-full bg-primary/12">
+                <Settings2 className="size-4 text-primary" aria-hidden="true" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[10px] font-black text-white">Administrador</p>
+                <p className="mt-0.5 text-[8px] font-bold text-zinc-600">Acesso total</p>
+              </div>
             </div>
+            <Link
+              href="/home"
+              className="mt-3 flex items-center justify-between border-t border-white/8 pt-3 text-[8px] font-black tracking-[0.14em] text-zinc-500 transition-colors hover:text-white"
+            >
+              VER APLICATIVO
+              <ArrowUpRight className="size-3.5 text-primary" aria-hidden="true" />
+            </Link>
           </div>
-          <Link
-            href="/home"
-            className="mt-3 flex items-center justify-between border-t border-white/8 pt-3 text-[8px] font-black tracking-[0.14em] text-zinc-500 transition-colors hover:text-white"
-          >
-            VER APLICATIVO
-            <ArrowUpRight className="size-3.5 text-primary" aria-hidden="true" />
-          </Link>
         </div>
-      </div>
+      )}
     </aside>
   )
 }
