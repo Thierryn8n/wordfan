@@ -102,11 +102,11 @@ export function StudioEditor({
   }
 
   return (
-    <div className="mt-8 grid gap-8 lg:grid-cols-2">
+    <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(380px,.65fr)]">
       {/* ===== Controles ===== */}
-      <div className="flex flex-col gap-7">
+      <div className="admin-panel flex min-w-0 flex-col gap-7 p-6">
         {/* Abas do editor */}
-        <div className="flex gap-2" role="tablist" aria-label="Seções do editor">
+        <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-white/8 bg-black/25 p-1.5" role="tablist" aria-label="Seções do editor">
           <button
             type="button"
             role="tab"
@@ -114,8 +114,8 @@ export function StudioEditor({
             onClick={() => setTab('identity')}
             className={
               tab === 'identity'
-                ? 'gradient-brand flex-1 rounded-2xl py-3.5 text-[10px] font-black tracking-[0.2em] text-white'
-                : 'flex-1 rounded-2xl border border-white/8 bg-card py-3.5 text-[10px] font-black tracking-[0.2em] text-muted-foreground'
+                ? 'gradient-brand rounded-xl py-3 text-[9px] font-black tracking-[0.14em] text-white'
+                : 'rounded-xl py-3 text-[9px] font-black tracking-[0.14em] text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300'
             }
           >
             IDENTIDADE VISUAL
@@ -127,8 +127,8 @@ export function StudioEditor({
             onClick={() => setTab('profile')}
             className={
               tab === 'profile'
-                ? 'gradient-brand flex-1 rounded-2xl py-3.5 text-[10px] font-black tracking-[0.2em] text-white'
-                : 'flex-1 rounded-2xl border border-white/8 bg-card py-3.5 text-[10px] font-black tracking-[0.2em] text-muted-foreground'
+                ? 'gradient-brand rounded-xl py-3 text-[9px] font-black tracking-[0.14em] text-white'
+                : 'rounded-xl py-3 text-[9px] font-black tracking-[0.14em] text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300'
             }
           >
             PERFIL COMPLETO
@@ -141,8 +141,8 @@ export function StudioEditor({
               onClick={() => setTab('content')}
               className={
                 tab === 'content'
-                  ? 'gradient-brand flex-1 rounded-2xl py-3.5 text-[10px] font-black tracking-[0.2em] text-white'
-                  : 'flex-1 rounded-2xl border border-white/8 bg-card py-3.5 text-[10px] font-black tracking-[0.2em] text-muted-foreground'
+                  ? 'gradient-brand rounded-xl py-3 text-[9px] font-black tracking-[0.14em] text-white'
+                  : 'rounded-xl py-3 text-[9px] font-black tracking-[0.14em] text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300'
               }
             >
               CONTEÚDO
@@ -393,10 +393,14 @@ export function StudioEditor({
       </div>
 
       {/* ===== Preview ao vivo ===== */}
-      <div className="lg:sticky lg:top-8 lg:self-start">
-        <h2 className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
-          PREVIEW AO VIVO
-        </h2>
+      <div className="admin-panel p-5 xl:sticky xl:top-6 xl:self-start">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[9px] font-black tracking-[0.2em] text-zinc-500">PREVIEW AO VIVO</h2>
+          <span className="flex items-center gap-1.5 text-[8px] font-black tracking-[0.12em] text-emerald-400">
+            <span className="size-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
+            SINCRONIZADO
+          </span>
+        </div>
         <div
           style={vars}
           className="artist-scope mt-3 overflow-hidden rounded-[36px] border border-white/10"

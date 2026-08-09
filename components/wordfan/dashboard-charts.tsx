@@ -30,7 +30,7 @@ export function RevenueAreaChart({
   currency?: boolean
 }) {
   const config = {
-    value: { label: currency ? 'Receita' : 'Total', color: 'var(--artist-primary)' },
+    value: { label: currency ? 'Receita' : 'Total', color: 'var(--artist-primary, var(--primary))' },
   } satisfies ChartConfig
 
   return (
@@ -89,7 +89,7 @@ export function RevenueAreaChart({
 
 export function SubscribersBarChart({ data }: { data: MonthPoint[] }) {
   const config = {
-    value: { label: 'Novos assinantes', color: 'var(--artist-primary)' },
+    value: { label: 'Novos assinantes', color: 'var(--artist-primary, var(--primary))' },
   } satisfies ChartConfig
 
   return (
@@ -118,7 +118,7 @@ export function TopContentBarChart({
   data: { name: string; value: number }[]
 }) {
   const config = {
-    value: { label: 'Total', color: 'var(--artist-primary)' },
+    value: { label: 'Total', color: 'var(--artist-primary, var(--primary))' },
   } satisfies ChartConfig
 
   if (data.length === 0) {

@@ -61,8 +61,8 @@ export async function saveArtistStudio({
       theme: clean,
       commission_pct: commissionPct,
       tool_plan: toolPlan,
-      ...(avatar ? { avatar_url: avatar } : {}),
-      ...(banner ? { banner_url: banner } : {}),
+      avatar_url: avatar || null,
+      banner_url: banner || null,
     })
     .eq('id', artistId)
 
@@ -117,6 +117,8 @@ export async function saveArtistProfile({
   state,
   socialLinks,
   about,
+  avatarUrl,
+  bannerUrl,
 }: {
   artistId: string
   slug: string
@@ -126,6 +128,8 @@ export async function saveArtistProfile({
   city: string
   state: string
   socialLinks: Record<string, string>
+  avatarUrl: string
+  bannerUrl: string
   about: {
     history: string
     influences: string[]
@@ -157,6 +161,9 @@ export async function saveArtistProfile({
     awards: about.awards.map((a) => a.trim().slice(0, 160)).filter(Boolean).slice(0, 20),
   }
 
+  const avatar = avatarUrl.trim().slice(0, 500)
+  const banner = bannerUrl.trim().slice(0, 500)
+
   const { error } = await supabase
     .from('artists')
     .update({
@@ -167,6 +174,8 @@ export async function saveArtistProfile({
       state: state.trim().slice(0, 2).toUpperCase(),
       social_links: cleanSocials,
       about: cleanAbout,
+      avatar_url: avatar || null,
+      banner_url: banner || null,
     })
     .eq('id', artistId)
 
@@ -186,19 +195,28 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
 
 export async function uploadArtistImage(formData: FormData) {
-  const { supabase, error: authError } = await requireManager()
+  const artistId = String(formData.get('artistId') ?? '')
+  const { supabase, error: authError } = await requireManager(artistId)
   if (authError) return { error: authError }
 
   const file = formData.get('file') as File | null
-  const artistSlug = String(formData.get('slug') ?? 'artist').slice(0, 60)
-  const kind = String(formData.get('kind') ?? 'image').slice(0, 20)
+  const kind = String(formData.get('kind') ?? '')
 
+  if (!artistId) return { error: 'Artista não identificado.' }
+  if (kind !== 'avatar' && kind !== 'banner') return { error: 'Tipo de imagem inválido.' }
   if (!file || file.size === 0) return { error: 'Nenhum arquivo enviado.' }
   if (file.size > MAX_IMAGE_BYTES) return { error: 'Imagem muito grande (máx. 5MB).' }
   if (!ALLOWED_TYPES.includes(file.type)) return { error: 'Formato inválido (use PNG, JPG, WebP ou GIF).' }
 
+  const { data: artist } = await supabase
+    .from('artists')
+    .select('slug')
+    .eq('id', artistId)
+    .single()
+  if (!artist?.slug) return { error: 'Artista não encontrado.' }
+
   const ext = file.type.split('/')[1] === 'jpeg' ? 'jpg' : file.type.split('/')[1]
-  const path = `${artistSlug}/${kind}-${Date.now()}.${ext}`
+  const path = `${artist.slug}/${kind}-${Date.now()}.${ext}`
 
   const { error } = await supabase.storage.from('artist-media').upload(path, file, {
     contentType: file.type,
@@ -213,6 +231,25 @@ export async function uploadArtistImage(formData: FormData) {
   const {
     data: { publicUrl },
   } = supabase.storage.from('artist-media').getPublicUrl(path)
+
+  const column = kind === 'avatar' ? 'avatar_url' : 'banner_url'
+  const { error: updateError } = await supabase
+    .from('artists')
+    .update({ [column]: publicUrl })
+    .eq('id', artistId)
+
+  if (updateError) {
+    await supabase.storage.from('artist-media').remove([path])
+    console.log('[v0] artist image update error:', updateError.message)
+    return { error: 'A imagem foi enviada, mas não foi possível atualizar o perfil.' }
+  }
+
+  revalidatePath('/admin/studio')
+  revalidatePath('/admin/artists')
+  revalidatePath('/home')
+  revalidatePath('/search')
+  revalidatePath(`/artist/${artist.slug}`)
+  revalidatePath('/dashboard')
 
   return { url: publicUrl }
 }

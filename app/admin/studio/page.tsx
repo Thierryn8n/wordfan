@@ -1,12 +1,13 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ArrowLeft, Palette } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
-import { createServiceClient, isServiceRoleConfigured } from '@/lib/supabase/admin'
-import type { Artist, GalleryItem, Live, Plan, Post, Show, Story, Video } from '@/lib/types'
+import { ArrowLeft, ArrowUpRight, BadgeCheck, Palette } from 'lucide-react'
 import { ContentManager } from '@/components/wordfan/content-manager'
-import { StudioEditor } from './studio-editor'
+import { createServiceClient, isServiceRoleConfigured } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
+import type { Artist, GalleryItem, Live, Plan, Post, Show, Story, Video } from '@/lib/types'
 import { ManagerSection, type ManagerRow } from './manager-section'
+import { StudioEditor } from './studio-editor'
 
 export const metadata = { title: 'Studio do Artista — ADM WordFan' }
 
@@ -24,15 +25,12 @@ export default async function StudioPage({
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') redirect('/home')
-
-  // Sem artista selecionado → vai para a lista de artistas
   if (!selectedSlug) redirect('/admin/artists')
 
   const { data: artistData } = await supabase.from('artists').select('*').eq('slug', selectedSlug).single()
   const selected = (artistData as Artist | null) ?? null
   if (!selected) redirect('/admin/artists')
 
-  // Conteúdo do artista para o CRUD
   const [
     { data: postsData },
     { data: showsData },
@@ -51,9 +49,6 @@ export default async function StudioPage({
     supabase.from('plans').select('*').eq('artist_id', selected.id).order('price_cents', { ascending: true }),
   ])
 
-  // Empresários vinculados a este artista (admin usa service client para ler emails).
-  // A service role key pode não estar configurada — nesse caso a seção degrada
-  // graciosamente em vez de derrubar a página inteira.
   const serviceKeyConfigured = isServiceRoleConfigured()
   let managers: ManagerRow[] = []
   if (serviceKeyConfigured) {
@@ -63,14 +58,15 @@ export default async function StudioPage({
       .select('user_id, created_at, profile:profiles(display_name)')
       .eq('artist_id', selected.id)
     managers = await Promise.all(
-      (managerLinks ?? []).map(async (m) => {
-        const { data: u } = await admin.auth.admin.getUserById((m as { user_id: string }).user_id)
+      (managerLinks ?? []).map(async (manager) => {
+        const userId = (manager as { user_id: string }).user_id
+        const { data: managedUser } = await admin.auth.admin.getUserById(userId)
         return {
-          userId: (m as { user_id: string }).user_id,
-          email: u?.user?.email ?? '—',
+          userId,
+          email: managedUser?.user?.email ?? '—',
           name:
-            ((m as { profile?: { display_name?: string } }).profile?.display_name) ||
-            (u?.user?.user_metadata?.display_name as string | undefined) ||
+            ((manager as { profile?: { display_name?: string } }).profile?.display_name) ||
+            (managedUser?.user?.user_metadata?.display_name as string | undefined) ||
             'Empresário',
         }
       }),
@@ -78,65 +74,89 @@ export default async function StudioPage({
   }
 
   return (
-    <div className="min-h-dvh bg-background pb-16">
-      <header className="border-b border-white/8 bg-card/50 px-6 py-6 md:px-10">
-        <div className="mx-auto flex max-w-6xl items-center gap-4">
+    <main className="px-6 pb-16 pt-8 xl:px-10">
+      <header className="flex flex-wrap items-center justify-between gap-5">
+        <div className="flex items-center gap-4">
           <Link
             href="/admin/artists"
             aria-label="Voltar para a lista de artistas"
-            className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/8 bg-card"
+            className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.035] text-zinc-400 transition-colors hover:text-white"
           >
-            <ArrowLeft className="size-5" aria-hidden="true" />
+            <ArrowLeft className="size-4" aria-hidden="true" />
           </Link>
-          <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-2 text-[9px] font-black tracking-[0.3em] text-primary">
+          <div>
+            <p className="flex items-center gap-2 text-[9px] font-black tracking-[0.22em] text-primary">
               <Palette className="size-3.5" aria-hidden="true" />
-              ADM — STUDIO DO ARTISTA
+              STUDIO DO ARTISTA
             </p>
-            <h1 className="mt-1 font-serif text-2xl font-black tracking-tight">
-              IDENTIDADE VISUAL E CONFIGURAÇÕES
+            <h1 className="mt-2 font-serif text-3xl font-black tracking-[-0.04em] text-white">
+              Perfil, identidade e conteúdo
             </h1>
           </div>
         </div>
+        <Link
+          href={`/artist/${selected.slug}`}
+          className="flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-4 text-[9px] font-black tracking-[0.13em] text-zinc-300 transition-colors hover:bg-white/[0.07] hover:text-white"
+        >
+          VER PERFIL PÚBLICO
+          <ArrowUpRight className="size-3.5 text-primary" aria-hidden="true" />
+        </Link>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 pt-8 md:px-10">
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm font-bold">
-            Editando: <span className="font-serif font-black text-primary">{selected.name}</span>
+      <section className="admin-panel mt-7 flex flex-wrap items-center gap-4 p-4">
+        <Image
+          src={selected.avatar_url || '/placeholder-user.jpg'}
+          alt=""
+          width={64}
+          height={64}
+          className="size-16 rounded-2xl border border-primary/25 object-cover"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-2 text-sm font-black text-white">
+            {selected.name}
+            <BadgeCheck className="size-4 text-primary" aria-hidden="true" />
           </p>
+          <p className="mt-1 text-[9px] font-bold text-zinc-500">
+            @{selected.slug} · {selected.genre || 'Gênero não informado'} ·{' '}
+            {selected.followers_count.toLocaleString('pt-BR')} seguidores
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2.5 text-[8px] font-black tracking-[0.13em] text-zinc-500">
+            PLANO {selected.tool_plan.toUpperCase()}
+          </span>
           <Link
             href="/admin/artists"
-            className="shrink-0 rounded-full border border-white/8 bg-card px-5 py-2.5 text-[9px] font-black tracking-[0.15em] text-muted-foreground transition-colors hover:text-foreground"
+            className="rounded-xl border border-primary/20 bg-primary/[0.06] px-4 py-2.5 text-[8px] font-black tracking-[0.13em] text-primary"
           >
             TROCAR ARTISTA
           </Link>
         </div>
+      </section>
 
-        <StudioEditor
-          key={selected.id}
-          artist={selected}
-          contentSlot={
-            <ContentManager
-              artistId={selected.id}
-              posts={(postsData as Post[]) ?? []}
-              shows={(showsData as Show[]) ?? []}
-              gallery={(galleryData as GalleryItem[]) ?? []}
-              videos={(videosData as Video[]) ?? []}
-              stories={(storiesData as Story[]) ?? []}
-              lives={(livesData as Live[]) ?? []}
-              plans={(plansData as Plan[]) ?? []}
-            />
-          }
-        />
+      <StudioEditor
+        key={selected.id}
+        artist={selected}
+        contentSlot={
+          <ContentManager
+            artistId={selected.id}
+            posts={(postsData as Post[]) ?? []}
+            shows={(showsData as Show[]) ?? []}
+            gallery={(galleryData as GalleryItem[]) ?? []}
+            videos={(videosData as Video[]) ?? []}
+            stories={(storiesData as Story[]) ?? []}
+            lives={(livesData as Live[]) ?? []}
+            plans={(plansData as Plan[]) ?? []}
+          />
+        }
+      />
 
-        <ManagerSection
-          artistId={selected.id}
-          artistName={selected.name}
-          managers={managers}
-          serviceKeyConfigured={serviceKeyConfigured}
-        />
-      </main>
-    </div>
+      <ManagerSection
+        artistId={selected.id}
+        artistName={selected.name}
+        managers={managers}
+        serviceKeyConfigured={serviceKeyConfigured}
+      />
+    </main>
   )
 }

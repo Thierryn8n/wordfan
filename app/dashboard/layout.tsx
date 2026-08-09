@@ -41,14 +41,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <DesktopOnly>
       <ArtistThemeScope theme={artist.theme}>
-        <div className="crm-scope mx-auto flex w-full max-w-[1500px] gap-5 px-4 pb-6">
+        <div className="crm-scope flex min-h-dvh w-full bg-[var(--artist-bg)]">
           <ArtistSidebar
             name={artist.name}
             slug={artist.slug}
             avatarUrl={artist.avatar_url}
             planLabel={planLabel}
           />
-          <main className="min-w-0 flex-1 py-4">{children}</main>
+          <main className="relative min-w-0 flex-1 overflow-hidden px-6 pb-12 pt-8 xl:px-10">
+            <div
+              className="pointer-events-none absolute -right-44 -top-56 size-[520px] rounded-full bg-[var(--artist-primary)]/[0.045] blur-[140px]"
+              aria-hidden="true"
+            />
+            <div className="relative mx-auto w-full max-w-[1280px]">{children}</div>
+          </main>
         </div>
       </ArtistThemeScope>
     </DesktopOnly>

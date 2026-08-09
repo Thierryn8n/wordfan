@@ -9,9 +9,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <DesktopOnly>
       {/* A sidebar vive no layout: permanece montada enquanto só o conteúdo troca. */}
-      <div className="flex min-h-dvh bg-background">
+      <div className="admin-scope flex min-h-dvh bg-[#050505]">
         <AdminSidebar />
-        <div className="min-w-0 flex-1">{children}</div>
+        <div className="relative min-w-0 flex-1 overflow-hidden">
+          <div
+            className="pointer-events-none absolute -right-40 -top-56 size-[520px] rounded-full bg-primary/[0.055] blur-[130px]"
+            aria-hidden="true"
+          />
+          <div className="relative min-h-dvh">{children}</div>
+        </div>
       </div>
     </DesktopOnly>
   )

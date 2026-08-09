@@ -1,19 +1,20 @@
 'use client'
 
-import Link from 'next/link'
 import Image from 'next/image'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard,
-  Clapperboard,
-  Wallet,
-  HeartHandshake,
-  ExternalLink,
-  ChevronLeft,
   BarChart3,
-  MessageSquare,
   Briefcase,
+  ChevronLeft,
+  Clapperboard,
+  ExternalLink,
+  HeartHandshake,
+  LayoutDashboard,
+  MessageSquare,
+  Wallet,
 } from 'lucide-react'
+import { Logo } from '@/components/wordfan/logo'
 import { cn } from '@/lib/utils'
 
 interface ArtistSidebarProps {
@@ -23,23 +24,20 @@ interface ArtistSidebarProps {
   planLabel: string
 }
 
-const NAV_GROUPS: {
-  title: string
-  items: { label: string; href: string; icon: typeof LayoutDashboard }[]
-}[] = [
+const NAV_GROUPS = [
   {
     title: 'Gestão',
     items: [
-      { label: 'Visão geral', href: '/dashboard', icon: LayoutDashboard },
-      { label: 'Estúdio', href: '/dashboard/estudio', icon: Clapperboard },
-      { label: 'Insights', href: '/dashboard/insights', icon: BarChart3 },
+      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Conteúdos', href: '/dashboard/estudio', icon: Clapperboard },
+      { label: 'Analytics', href: '/dashboard/insights', icon: BarChart3 },
     ],
   },
   {
-    title: 'Relacionamento',
+    title: 'Comunidade',
     items: [
-      { label: 'Fãs', href: '/dashboard/fas', icon: HeartHandshake },
-      { label: 'Comunidade', href: '/dashboard/comunidade', icon: MessageSquare },
+      { label: 'Fãs e assinaturas', href: '/dashboard/fas', icon: HeartHandshake },
+      { label: 'Moderação', href: '/dashboard/comunidade', icon: MessageSquare },
       { label: 'Propostas', href: '/dashboard/propostas', icon: Briefcase },
     ],
   },
@@ -47,103 +45,98 @@ const NAV_GROUPS: {
     title: 'Negócio',
     items: [{ label: 'Financeiro', href: '/dashboard/financeiro', icon: Wallet }],
   },
-]
+] as const
 
 export function ArtistSidebar({ name, slug, avatarUrl, planLabel }: ArtistSidebarProps) {
   const pathname = usePathname()
 
   return (
-    <aside className="crm-scope sticky top-4 z-20 hidden h-[calc(100dvh-2rem)] w-[236px] shrink-0 lg:block">
-      <div className="flex h-full flex-col overflow-hidden rounded-[14px] border border-white/10 bg-[var(--artist-surface)]">
-        {/* Cabeçalho neutro — identidade do artista como acento discreto */}
-        <div className="relative border-b border-white/8 px-4 pb-4 pt-4">
-          {/* Fina barra de acento na cor do artista */}
-          <span
-            className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-[var(--artist-primary)]"
-            aria-hidden="true"
-          />
-          <Link
-            href="/profile"
-            className="flex items-center gap-1.5 text-[8px] font-black tracking-[0.2em] text-[var(--artist-muted)] transition-colors hover:text-[var(--artist-text)]"
-          >
-            <ChevronLeft className="size-3" aria-hidden="true" />
+    <aside className="sticky top-0 z-20 hidden h-dvh w-72 shrink-0 border-r border-white/8 bg-[#050505] lg:block">
+      <div className="flex h-full flex-col">
+        <div className="border-b border-white/8 px-7 py-7">
+          <Logo href="/home" className="text-xl" />
+          <p className="mt-1 text-[8px] font-black tracking-[0.24em] text-[var(--artist-primary)]">
             PAINEL DO ARTISTA
-          </Link>
-          <div className="mt-3 flex items-center gap-3">
-            <Image
-              src={avatarUrl || '/placeholder.svg?height=44&width=44&query=artist avatar'}
-              alt=""
-              width={44}
-              height={44}
-              className="size-11 rounded-[10px] border border-[var(--artist-primary)]/40 object-cover"
-            />
-            <div className="min-w-0">
-              <p className="truncate font-serif text-sm font-black leading-tight text-[var(--artist-text)]">
-                {name}
-              </p>
-              <p className="mt-0.5 flex items-center gap-1 text-[8px] font-black tracking-[0.15em] text-[var(--artist-muted)]">
-                <span className="size-1.5 rounded-full bg-[var(--artist-primary)]" aria-hidden="true" />
-                PLANO {planLabel.toUpperCase()}
-              </p>
+          </p>
+        </div>
+
+        <div className="border-b border-white/8 px-5 py-5">
+          <div className="rounded-2xl border border-white/8 bg-white/[0.035] p-4">
+            <div className="flex items-center gap-3">
+              <Image
+                src={avatarUrl || '/placeholder-user.jpg'}
+                alt=""
+                width={48}
+                height={48}
+                className="size-12 rounded-xl border border-[var(--artist-primary)]/30 object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-serif text-sm font-black text-white">{name}</p>
+                <p className="mt-1 flex items-center gap-1.5 text-[8px] font-black tracking-[0.13em] text-zinc-500">
+                  <span className="size-1.5 rounded-full bg-[var(--artist-primary)]" aria-hidden="true" />
+                  PLANO {planLabel.toUpperCase()}
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Navegação */}
-        <nav
-          className="scrollbar-none flex flex-1 flex-col gap-3 overflow-y-auto p-2.5"
-          aria-label="Menu do painel do artista"
-        >
+        <nav className="scrollbar-none flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-6" aria-label="Menu do painel do artista">
           {NAV_GROUPS.map((group) => (
-            <div key={group.title} className="flex flex-col gap-0.5">
-              <p className="px-3 pb-1 text-[8px] font-black tracking-[0.22em] text-[var(--artist-muted)]/60">
+            <div key={group.title}>
+              <p className="px-3 pb-2 text-[9px] font-black tracking-[0.2em] text-zinc-600">
                 {group.title.toUpperCase()}
               </p>
-              {group.items.map(({ label, href, icon: Icon }) => {
-                const active =
-                  href === '/dashboard' ? pathname === href : pathname.startsWith(href)
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(
-                      'group relative flex items-center gap-2.5 rounded-[8px] px-3 py-2 text-[11px] font-bold tracking-[0.04em] transition-colors',
-                      active
-                        ? 'bg-[var(--artist-primary)]/10 text-[var(--artist-text)]'
-                        : 'text-[var(--artist-muted)] hover:bg-white/5 hover:text-[var(--artist-text)]',
-                    )}
-                  >
-                    {/* Indicador ativo: barra lateral discreta */}
-                    {active && (
-                      <span
-                        className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-[var(--artist-primary)]"
+              <div className="flex flex-col gap-1">
+                {group.items.map(({ label, href, icon: Icon }) => {
+                  const active = href === '/dashboard' ? pathname === href : pathname.startsWith(href)
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'group relative flex items-center gap-3 rounded-xl px-4 py-3 text-[11px] font-bold transition-colors',
+                        active
+                          ? 'bg-[var(--artist-primary)]/12 text-white'
+                          : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white',
+                      )}
+                    >
+                      {active && (
+                        <span className="absolute inset-y-2 right-0 w-0.5 rounded-full bg-[var(--artist-primary)]" aria-hidden="true" />
+                      )}
+                      <Icon
+                        className={cn(
+                          'size-4',
+                          active
+                            ? 'text-[var(--artist-primary)]'
+                            : 'text-zinc-500 group-hover:text-zinc-300',
+                        )}
                         aria-hidden="true"
                       />
-                    )}
-                    <Icon
-                      className={cn(
-                        'size-4 shrink-0',
-                        active ? 'text-[var(--artist-primary)]' : 'text-current',
-                      )}
-                      aria-hidden="true"
-                    />
-                    {label.toUpperCase()}
-                  </Link>
-                )
-              })}
+                      {label}
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
           ))}
         </nav>
 
-        {/* Rodapé */}
-        <div className="border-t border-white/8 p-2.5">
+        <div className="border-t border-white/8 p-4">
           <Link
             href={`/artist/${slug}`}
-            className="flex items-center justify-between gap-2 rounded-[8px] border border-white/10 px-3 py-2.5 text-[9px] font-black tracking-[0.12em] text-[var(--artist-muted)] transition-colors hover:bg-white/5 hover:text-[var(--artist-text)]"
+            className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.025] px-4 py-3 text-[9px] font-black tracking-[0.12em] text-zinc-500 transition-colors hover:bg-white/[0.05] hover:text-white"
           >
             VER PERFIL PÚBLICO
             <ExternalLink className="size-3.5 text-[var(--artist-primary)]" aria-hidden="true" />
+          </Link>
+          <Link
+            href="/profile"
+            className="mt-2 flex items-center gap-2 px-3 py-2 text-[8px] font-black tracking-[0.14em] text-zinc-600 transition-colors hover:text-white"
+          >
+            <ChevronLeft className="size-3" aria-hidden="true" />
+            VOLTAR AO APLICATIVO
           </Link>
         </div>
       </div>
