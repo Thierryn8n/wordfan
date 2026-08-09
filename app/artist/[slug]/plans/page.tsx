@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Check, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Check, ShieldCheck, Building2, ArrowRight } from 'lucide-react'
 import { getArtistBySlug, getArtistPlans, getUserSubscription } from '@/lib/data'
+import { getEnterprisePlan } from '@/lib/enterprise'
 import { formatPrice } from '@/lib/types'
 import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
 import { SubscribeButton } from './subscribe-button'
@@ -28,9 +29,10 @@ export default async function PlansPage({ params }: { params: Promise<{ slug: st
   const artist = await getArtistBySlug(slug)
   if (!artist) notFound()
 
-  const [plans, subscription] = await Promise.all([
+  const [plans, subscription, enterprise] = await Promise.all([
     getArtistPlans(artist.id),
     getUserSubscription(artist.id),
+    getEnterprisePlan(),
   ])
 
   const platinum = plans.find((p) => p.tier === 'platinum')
@@ -168,8 +170,60 @@ export default async function PlansPage({ params }: { params: Promise<{ slug: st
           <CompactCard key={p.id} plan={p} />
         ))}
 
+        {/* Plano Enterprise — global, gerido pelo admin, aparece em todos os artistas */}
+        {enterprise.active && (
+          <div className="relative mt-2">
+            <div className="holo-border overflow-hidden rounded-[40px] p-[2px]">
+              <div className="rounded-[38px] bg-card p-8">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-[8px] font-black tracking-[0.2em] text-muted-foreground">
+                      <Building2 className="size-3" aria-hidden="true" />
+                      PARA EMPRESAS
+                    </span>
+                    <h2 className="holo-text mt-3 font-serif text-3xl font-black tracking-tight">
+                      {enterprise.name.toUpperCase()}
+                    </h2>
+                    <p className="mt-1 max-w-[200px] text-[10px] font-bold leading-relaxed text-muted-foreground">
+                      {enterprise.tagline}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[8px] font-extrabold tracking-wide text-muted-foreground">
+                      ENTRADA
+                    </p>
+                    <p className="font-numeric text-2xl font-bold leading-tight">
+                      {formatPrice(enterprise.price_cents)}
+                    </p>
+                    <p className="text-[8px] font-bold tracking-wide text-muted-foreground">
+                      LISTA DE ESPERA
+                    </p>
+                  </div>
+                </div>
+
+                <ul className="mt-7 flex flex-col gap-4">
+                  {enterprise.benefits.map((b) => (
+                    <li key={b} className="flex items-center gap-3 text-xs font-bold">
+                      <Check className="holo-check size-4 shrink-0" aria-hidden="true" />
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href={`/enterprise/apply?artist=${slug}`}
+                  className="holo-fill mt-8 flex h-16 w-full items-center justify-center gap-2 rounded-2xl text-[11px] font-black tracking-[0.25em] text-black"
+                >
+                  QUERO CONTRATAR
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         <p className="flex items-center justify-center gap-1 text-center text-[10px] font-bold tracking-[0.1em] text-zinc-600">
-          PAGAMENTO SEGURO VIA STRIPE
+          PAGAMENTO SEGURO E CRIPTOGRAFADO
           <ShieldCheck className="size-3" aria-hidden="true" />
         </p>
       </main>

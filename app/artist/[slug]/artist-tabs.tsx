@@ -10,6 +10,7 @@ import {
   Gem,
   Heart,
   Lock,
+  LogIn,
   MapPin,
   MessageCircle,
   MoreHorizontal,
@@ -18,6 +19,7 @@ import {
   Ticket,
   Trophy,
   Disc3,
+  X,
 } from 'lucide-react'
 import type { Artist, GalleryItem, Post, Show, Video, ArtistAbout } from '@/lib/types'
 import { TIER_LABELS, VIDEO_CATEGORY_LABELS, formatPrice } from '@/lib/types'
@@ -54,6 +56,8 @@ function formatViews(n: number) {
   return String(n)
 }
 
+const LOGIN_GATED: TabKey[] = ['galeria', 'videos', 'fanclub']
+
 export function ArtistTabs({
   artist,
   posts,
@@ -61,6 +65,7 @@ export function ArtistTabs({
   gallery,
   videos,
   isSubscriber,
+  isLoggedIn,
   cheapestPriceCents,
 }: {
   artist: Artist
@@ -69,14 +74,24 @@ export function ArtistTabs({
   gallery: GalleryItem[]
   videos: Video[]
   isSubscriber: boolean
+  isLoggedIn: boolean
   cheapestPriceCents: number | null
 }) {
   const [tab, setTab] = useState<TabKey>('feed')
   const [videoFilter, setVideoFilter] = useState<Video['category'] | 'all'>('all')
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const about = (artist.about ?? {}) as ArtistAbout
 
   const filteredVideos =
     videoFilter === 'all' ? videos : videos.filter((v) => v.category === videoFilter)
+
+  const gateActive = LOGIN_GATED.includes(tab) && !isLoggedIn
+  const loginHref = `/auth/login?next=/artist/${artist.slug}`
+  const gateLabel: Record<string, string> = {
+    galeria: 'Entre para ver a galeria completa',
+    videos: 'Entre para assistir aos vídeos',
+    fanclub: 'Entre para acessar o Fan Club',
+  }
 
   return (
     <div>
@@ -105,8 +120,40 @@ export function ArtistTabs({
       </div>
 
       <main className="flex flex-col gap-8 px-6 pt-8">
+        {/* ============ GATE DE LOGIN ============ */}
+        {gateActive && (
+          <section
+            aria-label="Login necessário"
+            className="relative mt-6 overflow-hidden rounded-[40px] border border-white/10 bg-card p-10 text-center"
+          >
+            <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-club/15 text-club">
+              <Lock className="size-7" aria-hidden="true" />
+            </div>
+            <h2 className="mt-6 font-serif text-2xl font-extrabold tracking-tight text-balance">
+              {gateLabel[tab] ?? 'Entre para continuar'}
+            </h2>
+            <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground text-pretty">
+              Este conteúdo é reservado para membros. Faça login ou crie sua conta gratuita para
+              desbloquear.
+            </p>
+            <Link
+              href={loginHref}
+              className="mt-7 flex h-14 items-center justify-center gap-2 rounded-2xl bg-white text-[11px] font-extrabold tracking-[0.2em] text-black"
+            >
+              <LogIn className="size-4" aria-hidden="true" />
+              ENTRAR
+            </Link>
+            <Link
+              href={`/auth/sign-up?next=/artist/${artist.slug}`}
+              className="mt-3 inline-block text-[11px] font-extrabold tracking-[0.15em] text-club"
+            >
+              CRIAR CONTA GRÁTIS
+            </Link>
+          </section>
+        )}
+
         {/* ============ FEED ============ */}
-        {tab === 'feed' && (
+        {!gateActive && tab === 'feed' && (
           <>
             {!isSubscriber && (
               <section
@@ -250,7 +297,7 @@ export function ArtistTabs({
         )}
 
         {/* ============ AGENDA ============ */}
-        {tab === 'agenda' && (
+        {!gateActive && tab === 'agenda' && (
           <section aria-label="Agenda de shows">
             {shows.length === 0 ? (
               <p className="py-10 text-center text-sm font-bold text-muted-foreground">
@@ -306,59 +353,130 @@ export function ArtistTabs({
           </section>
         )}
 
-        {/* ============ GALERIA ============ */}
-        {tab === 'galeria' && (
-          <section aria-label="Galeria de fotos">
+        {/* ============ GALERIA (estilo Instagram) ============ */}
+        {!gateActive && tab === 'galeria' && (
+          <section aria-label="Galeria de fotos" className="-mx-6">
             {gallery.length === 0 ? (
               <p className="py-10 text-center text-sm font-bold text-muted-foreground">
                 A galeria ainda está vazia.
               </p>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-0.5">
                 {gallery.map((g, i) => {
-                  const isPremium = !isSubscriber && i >= 2
+                  const isPremium = !isSubscriber && i >= 6
+                  const isVideo = g.type === 'video'
                   return (
-                    <div
+                    <button
                       key={g.id}
-                      className="relative aspect-square overflow-hidden rounded-3xl border border-white/8"
+                      type="button"
+                      onClick={() =>
+                        isPremium ? undefined : setLightboxIndex(i)
+                      }
+                      className="group relative aspect-square overflow-hidden"
+                      aria-label={isPremium ? 'Desbloquear no Fan Club' : `Abrir foto ${i + 1}`}
                     >
                       <Image
-                        src={g.url || "/placeholder.svg"}
+                        src={g.url || '/placeholder.svg'}
                         alt={g.album ?? 'Foto da galeria'}
                         fill
-                        sizes="(max-width: 768px) 50vw, 220px"
-                        className={isPremium ? 'object-cover blur-lg brightness-50' : 'object-cover'}
+                        sizes="(max-width: 768px) 33vw, 150px"
+                        className={
+                          isPremium
+                            ? 'object-cover blur-lg brightness-50'
+                            : 'object-cover transition-transform duration-300 group-hover:scale-105'
+                        }
                       />
-                      {isPremium ? (
+                      {isPremium && (
                         <Link
                           href={`/artist/${artist.slug}/plans`}
-                          className="absolute inset-0 flex flex-col items-center justify-center gap-2"
+                          className="absolute inset-0 flex flex-col items-center justify-center gap-1.5"
                           aria-label="Desbloquear foto no Fan Club"
                         >
-                          <span className="flex size-11 items-center justify-center rounded-full bg-club">
-                            <Lock className="size-4 text-white" aria-hidden="true" />
+                          <span className="flex size-9 items-center justify-center rounded-full bg-club">
+                            <Lock className="size-3.5 text-white" aria-hidden="true" />
                           </span>
-                          <span className="text-[8px] font-black tracking-[0.2em] text-white">
+                          <span className="text-[7px] font-black tracking-[0.2em] text-white">
                             FAN CLUB
                           </span>
                         </Link>
-                      ) : (
-                        g.album && (
-                          <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-3 py-1 text-[8px] font-black tracking-[0.15em] backdrop-blur-sm">
-                            {g.album.toUpperCase()}
-                          </span>
-                        )
                       )}
-                    </div>
+                      {!isPremium && isVideo && (
+                        <span
+                          className="absolute right-2 top-2 flex size-6 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm"
+                          aria-hidden="true"
+                        >
+                          <Play className="size-3 fill-white text-white" />
+                        </span>
+                      )}
+                    </button>
                   )
                 })}
+              </div>
+            )}
+
+            {/* Lightbox */}
+            {lightboxIndex !== null && gallery[lightboxIndex] && (
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="Visualizador de foto"
+                className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 p-4"
+                onClick={() => setLightboxIndex(null)}
+              >
+                <button
+                  type="button"
+                  onClick={() => setLightboxIndex(null)}
+                  className="absolute right-4 top-4 flex size-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur"
+                  aria-label="Fechar"
+                >
+                  <X className="size-5" aria-hidden="true" />
+                </button>
+                <div
+                  className="relative w-full max-w-lg"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="relative aspect-square w-full overflow-hidden rounded-3xl">
+                    <Image
+                      src={gallery[lightboxIndex].url || '/placeholder.svg'}
+                      alt={gallery[lightboxIndex].album ?? 'Foto da galeria'}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 512px"
+                      className="object-contain"
+                    />
+                  </div>
+                  {gallery[lightboxIndex].album && (
+                    <p className="mt-4 text-center text-sm font-bold tracking-wide text-white/90">
+                      {gallery[lightboxIndex].album}
+                    </p>
+                  )}
+                  <div className="mt-4 flex items-center justify-center gap-6 text-white">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setLightboxIndex(
+                          (lightboxIndex - 1 + gallery.length) % gallery.length,
+                        )
+                      }
+                      className="rounded-full bg-white/10 px-5 py-2 text-[10px] font-black tracking-[0.2em]"
+                    >
+                      ANTERIOR
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLightboxIndex((lightboxIndex + 1) % gallery.length)}
+                      className="rounded-full bg-white/10 px-5 py-2 text-[10px] font-black tracking-[0.2em]"
+                    >
+                      PRÓXIMA
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </section>
         )}
 
         {/* ============ VÍDEOS ============ */}
-        {tab === 'videos' && (
+        {!gateActive && tab === 'videos' && (
           <section aria-label="Vídeos">
             <div className="scrollbar-none -mx-6 flex gap-2 overflow-x-auto px-6">
               <button
@@ -450,7 +568,7 @@ export function ArtistTabs({
         )}
 
         {/* ============ SOBRE ============ */}
-        {tab === 'sobre' && (
+        {!gateActive && tab === 'sobre' && (
           <section aria-label="Sobre o artista" className="flex flex-col gap-7">
             {about.history && (
               <div>
@@ -525,7 +643,7 @@ export function ArtistTabs({
         )}
 
         {/* ============ FAN CLUB ============ */}
-        {tab === 'fanclub' && (
+        {!gateActive && tab === 'fanclub' && (
           <section aria-label="Fan Club" className="flex flex-col items-center gap-6 text-center">
             <div className="gradient-club flex size-20 items-center justify-center rounded-full">
               <Star className="size-8 fill-white text-white" aria-hidden="true" />

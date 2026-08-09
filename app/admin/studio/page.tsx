@@ -2,10 +2,11 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ArrowLeft, Palette } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import type { Artist, GalleryItem, Plan, Post, Show, Video } from '@/lib/types'
+import { createServiceClient } from '@/lib/supabase/admin'
+import type { Artist, GalleryItem, Plan, Post, Show, Story, Video } from '@/lib/types'
 import { ContentManager } from '@/components/wordfan/content-manager'
-import { PlanEditor } from '@/app/dashboard/plan-editor'
 import { StudioEditor } from './studio-editor'
+import { ManagerSection, type ManagerRow } from './manager-section'
 
 export const metadata = { title: 'Studio do Artista — ADM WordFan' }
 
@@ -32,14 +33,41 @@ export default async function StudioPage({
   if (!selected) redirect('/admin/artists')
 
   // Conteúdo do artista para o CRUD
-  const [{ data: postsData }, { data: showsData }, { data: galleryData }, { data: videosData }, { data: plansData }] =
-    await Promise.all([
-      supabase.from('posts').select('*').eq('artist_id', selected.id).order('created_at', { ascending: false }),
-      supabase.from('shows').select('*').eq('artist_id', selected.id).order('starts_at', { ascending: true }),
-      supabase.from('gallery_items').select('*').eq('artist_id', selected.id).order('created_at', { ascending: false }),
-      supabase.from('videos').select('*').eq('artist_id', selected.id).order('created_at', { ascending: false }),
-      supabase.from('plans').select('*').eq('artist_id', selected.id).order('price_cents', { ascending: true }),
-    ])
+  const [
+    { data: postsData },
+    { data: showsData },
+    { data: galleryData },
+    { data: videosData },
+    { data: storiesData },
+    { data: plansData },
+  ] = await Promise.all([
+    supabase.from('posts').select('*').eq('artist_id', selected.id).order('created_at', { ascending: false }),
+    supabase.from('shows').select('*').eq('artist_id', selected.id).order('starts_at', { ascending: true }),
+    supabase.from('gallery_items').select('*').eq('artist_id', selected.id).order('created_at', { ascending: false }),
+    supabase.from('videos').select('*').eq('artist_id', selected.id).order('created_at', { ascending: false }),
+    supabase.from('stories').select('*').eq('artist_id', selected.id).order('created_at', { ascending: false }),
+    supabase.from('plans').select('*').eq('artist_id', selected.id).order('price_cents', { ascending: true }),
+  ])
+
+  // Empresários vinculados a este artista (admin usa service client para ler emails)
+  const admin = createServiceClient()
+  const { data: managerLinks } = await admin
+    .from('managers')
+    .select('user_id, created_at, profile:profiles(display_name)')
+    .eq('artist_id', selected.id)
+  const managers: ManagerRow[] = await Promise.all(
+    (managerLinks ?? []).map(async (m) => {
+      const { data: u } = await admin.auth.admin.getUserById((m as { user_id: string }).user_id)
+      return {
+        userId: (m as { user_id: string }).user_id,
+        email: u?.user?.email ?? '—',
+        name:
+          ((m as { profile?: { display_name?: string } }).profile?.display_name) ||
+          (u?.user?.user_metadata?.display_name as string | undefined) ||
+          'Empresário',
+      }
+    }),
+  )
 
   return (
     <div className="min-h-dvh bg-background pb-16">
@@ -77,7 +105,23 @@ export default async function StudioPage({
           </Link>
         </div>
 
-        <StudioEditor key={selected.id} artist={selected} />
+        <StudioEditor
+          key={selected.id}
+          artist={selected}
+          contentSlot={
+            <ContentManager
+              artistId={selected.id}
+              posts={(postsData as Post[]) ?? []}
+              shows={(showsData as Show[]) ?? []}
+              gallery={(galleryData as GalleryItem[]) ?? []}
+              videos={(videosData as Video[]) ?? []}
+              stories={(storiesData as Story[]) ?? []}
+              plans={(plansData as Plan[]) ?? []}
+            />
+          }
+        />
+
+        <ManagerSection artistId={selected.id} artistName={selected.name} managers={managers} />
       </main>
     </div>
   )

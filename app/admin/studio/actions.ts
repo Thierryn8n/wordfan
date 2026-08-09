@@ -91,12 +91,18 @@ async function requireManager(artistId?: string) {
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role === 'admin') return { supabase, error: null }
   if (artistId) {
-    const { data: artist } = await supabase.from('artists').select('owner_id').eq('id', artistId).single()
-    if (artist?.owner_id === user.id) return { supabase, error: null }
+    const [{ data: artist }, { data: manager }] = await Promise.all([
+      supabase.from('artists').select('owner_id').eq('id', artistId).single(),
+      supabase.from('managers').select('id').eq('user_id', user.id).eq('artist_id', artistId).maybeSingle(),
+    ])
+    if (artist?.owner_id === user.id || manager) return { supabase, error: null }
   } else {
-    // Sem artistId: permite se o usuário é dono de algum artista (para uploads)
-    const { data: owned } = await supabase.from('artists').select('id').eq('owner_id', user.id).limit(1)
-    if (owned && owned.length > 0) return { supabase, error: null }
+    // Sem artistId: permite se o usuário é dono OU empresário de algum artista (para uploads)
+    const [{ data: owned }, { data: managed }] = await Promise.all([
+      supabase.from('artists').select('id').eq('owner_id', user.id).limit(1),
+      supabase.from('managers').select('id').eq('user_id', user.id).limit(1),
+    ])
+    if ((owned && owned.length > 0) || (managed && managed.length > 0)) return { supabase, error: null }
   }
   return { supabase, error: 'Sem permissão para esta ação.' }
 }

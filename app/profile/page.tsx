@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { redirect } from 'next/navigation'
-import { LayoutDashboard, ShieldCheck, Sparkles, ChevronRight, Zap } from 'lucide-react'
+import { LayoutDashboard, ShieldCheck, Sparkles, ChevronRight, Zap, Briefcase, Building2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { BottomNav } from '@/components/wordfan/bottom-nav'
+import { HoloCrown } from '@/components/wordfan/holo-crown'
+import { HolographicCrown3D } from '@/components/wordfan/holo-crown-3d'
 import { SignOutButton } from './sign-out-button'
 import { TIER_LABELS } from '@/lib/types'
 import type { Profile, Subscription, Plan, Artist } from '@/lib/types'
@@ -17,17 +19,21 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login?next=/profile')
 
-  const [{ data: profileData }, { data: subsData }] = await Promise.all([
+  const [{ data: profileData }, { data: subsData }, { data: leadsData }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase
       .from('subscriptions')
       .select('*, plan:plans(*), artist:artists(*)')
       .eq('user_id', user.id)
       .eq('status', 'active'),
+    supabase.from('enterprise_leads').select('status').eq('user_id', user.id),
   ])
 
   const profile = profileData as Profile | null
   const subscriptions = (subsData ?? []) as (Subscription & { plan: Plan; artist: Artist })[]
+  const leadStatuses = (leadsData ?? []) as { status: string }[]
+  const isEnterprise = leadStatuses.some((l) => l.status === 'approved')
+  const hasAnyLead = leadStatuses.length > 0
   const displayName = profile?.display_name ?? user.email?.split('@')[0] ?? 'Fã'
   const initials = displayName
     .split(' ')
@@ -46,10 +52,23 @@ export default async function ProfilePage() {
         <div className="mt-6 overflow-hidden rounded-[32px] border border-white/8 bg-card">
           <div className="gradient-brand h-20" />
           <div className="-mt-9 px-6 pb-6">
-            <span className="flex size-18 items-center justify-center rounded-3xl border-4 border-card bg-background font-serif text-xl font-black">
-              {initials}
-            </span>
-            <p className="mt-3 truncate font-serif text-xl font-extrabold">{displayName}</p>
+            <div className="relative w-fit">
+              <span className="flex size-18 items-center justify-center rounded-3xl border-4 border-card bg-background font-serif text-xl font-black">
+                {initials}
+              </span>
+              {isEnterprise && (
+                <HolographicCrown3D
+                  size={72}
+                  className="pointer-events-none absolute -right-8 -top-12"
+                />
+              )}
+            </div>
+            <p className="mt-3 flex items-center gap-2 truncate font-serif text-xl font-extrabold">
+              {displayName}
+              {isEnterprise && (
+                <span className="holo-text text-[9px] font-black tracking-[0.2em]">ENTERPRISE</span>
+              )}
+            </p>
             <p className="truncate text-xs font-medium text-muted-foreground">{user.email}</p>
             <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1.5 font-numeric text-[10px] font-bold text-gold">
               <Zap className="size-3" aria-hidden="true" />
@@ -78,6 +97,33 @@ export default async function ProfilePage() {
                 <ChevronRight className="size-4 text-zinc-600" aria-hidden="true" />
               </Link>
             )}
+          </div>
+        )}
+
+        {profile?.role === 'empresario' && (
+          <div className="mt-4">
+            <Link
+              href="/manager"
+              className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-5 transition-colors hover:bg-secondary"
+            >
+              <Briefcase className="size-5 text-primary" aria-hidden="true" />
+              <span className="flex-1 text-xs font-extrabold tracking-[0.05em]">PAINEL DO EMPRESÁRIO</span>
+              <ChevronRight className="size-4 text-zinc-600" aria-hidden="true" />
+            </Link>
+          </div>
+        )}
+
+        {hasAnyLead && (
+          <div className="mt-4">
+            <Link
+              href="/enterprise/status"
+              className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-5 transition-colors hover:bg-secondary"
+            >
+              <Building2 className="size-5 text-primary" aria-hidden="true" />
+              <span className="flex-1 text-xs font-extrabold tracking-[0.05em]">MINHAS CONTRATAÇÕES</span>
+              {isEnterprise && <HoloCrown size={20} />}
+              <ChevronRight className="size-4 text-zinc-600" aria-hidden="true" />
+            </Link>
           </div>
         )}
 

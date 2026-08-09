@@ -22,12 +22,15 @@ import {
   getArtistGallery,
   getArtistLives,
   getArtistVideos,
+  getArtistStories,
   getArtistPlans,
   getUserSubscription,
+  getCurrentUser,
 } from '@/lib/data'
 import { BottomNav } from '@/components/wordfan/bottom-nav'
 import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
 import { ArtistTabs } from './artist-tabs'
+import { ArtistStories } from './artist-stories'
 
 function formatFans(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -76,15 +79,18 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   const artist = await getArtistBySlug(slug)
   if (!artist) notFound()
 
-  const [posts, shows, gallery, lives, videos, plans, subscription] = await Promise.all([
+  const [posts, shows, gallery, lives, videos, stories, plans, subscription, user] = await Promise.all([
     getArtistPosts(artist.id),
     getArtistShows(artist.id),
     getArtistGallery(artist.id),
     getArtistLives(artist.id),
     getArtistVideos(artist.id),
+    getArtistStories(artist.id),
     getArtistPlans(artist.id),
     getUserSubscription(artist.id),
+    getCurrentUser(),
   ])
+  const isLoggedIn = Boolean(user)
 
   const liveNow = lives.find((l) => l.status === 'live')
   const nextLive = lives.find((l) => l.status === 'scheduled')
@@ -186,6 +192,9 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         </div>
       </div>
 
+      {/* Stories (estilo Instagram) */}
+      {stories.length > 0 && <ArtistStories artist={artist} stories={stories} />}
+
       {/* Banner de live (dinâmico) */}
       {!liveNow && nextLive && (
         <Link
@@ -265,6 +274,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         gallery={gallery}
         videos={videos}
         isSubscriber={Boolean(subscription)}
+        isLoggedIn={isLoggedIn}
         cheapestPriceCents={cheapest}
       />
 

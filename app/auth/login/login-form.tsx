@@ -38,7 +38,20 @@ export function LoginForm() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
-      router.push(next)
+      let dest = next
+      // Sem destino específico: direciona pelo papel do usuário
+      if (!searchParams.get('next')) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (user) {
+          const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+          if (prof?.role === 'empresario') dest = '/manager'
+          else if (prof?.role === 'admin') dest = '/admin'
+          else if (prof?.role === 'artist') dest = '/dashboard'
+        }
+      }
+      router.push(dest)
       router.refresh()
     } catch (err: unknown) {
       setError(loginErrorMessage(err))
@@ -123,7 +136,10 @@ DE VOLTA</h1>
 
         <p className="mt-6 text-center text-xs font-bold text-muted-foreground">
           Ainda não tem conta?{' '}
-          <Link href="/auth/sign-up" className="font-black text-primary hover:underline">
+          <Link
+            href={next && next !== '/home' ? `/auth/sign-up?next=${encodeURIComponent(next)}` : '/auth/sign-up'}
+            className="font-black text-primary hover:underline"
+          >
             CRIAR CONTA
           </Link>
         </p>
