@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition, useRef } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import {
@@ -15,11 +15,14 @@ import {
   EyeOff,
   ExternalLink,
   MousePointerClick,
+  Upload,
+  ImageIcon,
 } from 'lucide-react'
 import type { Ad, AdPlacement } from '@/lib/types'
 import { AD_PLACEMENT_LABELS } from '@/lib/types'
 import { AdBanner } from '@/components/wordfan/ad-banner'
 import { saveAd, toggleAd, deleteAd } from '@/app/actions/ads'
+import { uploadContentImage } from '@/app/actions/content'
 
 const PLACEMENTS: AdPlacement[] = ['home_hero', 'home_inline', 'discover', 'events']
 
@@ -28,7 +31,7 @@ type FormState = {
   title: string
   subtitle: string
   description: string
-  imageUrl: string
+  imageUrls: string[]
   ctaLabel: string
   ctaUrl: string
   placement: AdPlacement
@@ -43,7 +46,7 @@ const EMPTY: FormState = {
   title: '',
   subtitle: '',
   description: '',
-  imageUrl: '',
+  imageUrls: [],
   ctaLabel: '',
   ctaUrl: '',
   placement: 'home_inline',
@@ -60,7 +63,7 @@ function toFormState(ad: Ad): FormState {
     title: ad.title,
     subtitle: ad.subtitle ?? '',
     description: ad.description ?? '',
-    imageUrl: ad.image_url ?? '',
+    imageUrls: ad.image_url ? [ad.image_url] : [],
     ctaLabel: ad.cta_label ?? '',
     ctaUrl: ad.cta_url ?? '',
     placement: ad.placement,
@@ -78,7 +81,7 @@ function previewAd(f: FormState): Ad {
     title: f.title || 'Título do anúncio',
     subtitle: f.subtitle || null,
     description: f.description || null,
-    image_url: f.imageUrl || null,
+    image_url: f.imageUrls[0] || null,
     cta_label: f.ctaLabel || null,
     cta_url: f.ctaUrl || null,
     placement: f.placement,
@@ -100,6 +103,28 @@ export function AdsManager({ ads, tableMissing }: { ads: Ad[]; tableMissing: boo
   const [confirmDelete, setConfirmDelete] = useState<Ad | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  async function handleImageUpload(file: File) {
+    setUploading(true)
+    setError(null)
+    const fd = new FormData()
+    fd.set('file', file)
+    fd.set('artistId', 'admin')
+    fd.set('kind', 'ad')
+    const res = await uploadContentImage(fd)
+    setUploading(false)
+    if (res.error) {
+      setError(res.error)
+    } else if (res.url) {
+      setForm((f) => f ? { ...f, imageUrls: [...f.imageUrls, res.url!] } : null)
+    }
+  }
+
+  function removeImage(index: number) {
+    setForm((f) => f ? { ...f, imageUrls: f.imageUrls.filter((_, i) => i !== index) } : null)
+  }
 
   const grouped = useMemo(() => {
     const map = new Map<AdPlacement, Ad[]>()
@@ -126,7 +151,7 @@ export function AdsManager({ ads, tableMissing }: { ads: Ad[]; tableMissing: boo
         title: form.title,
         subtitle: form.subtitle,
         description: form.description,
-        imageUrl: form.imageUrl,
+        imageUrl: form.imageUrls[0] || '',
         ctaLabel: form.ctaLabel,
         ctaUrl: form.ctaUrl,
         placement: form.placement,
@@ -369,13 +394,55 @@ export function AdsManager({ ads, tableMissing }: { ads: Ad[]; tableMissing: boo
                     placeholder="Texto de apoio (usado quando não há subtítulo)"
                   />
                 </Field>
-                <Field label="URL da imagem">
-                  <input
-                    value={form.imageUrl}
-                    onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                    className="ad-input"
-                    placeholder="https://..."
-                  />
+                <Field label="Imagens">
+                  <div className="flex flex-col gap-3">
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      disabled={uploading}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 bg-white/[0.02] px-4 py-3 text-xs font-bold text-muted-foreground transition-colors hover:bg-white/[0.05] disabled:opacity-50"
+                    >
+                      {uploading ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Upload className="size-4" />
+                      )}
+                      {uploading ? 'ENVIANDO...' : 'ENVIAR IMAGEM'}
+                    </button>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0]
+                        if (f) handleImageUpload(f)
+                        e.target.value = ''
+                      }}
+                    />
+                    {form.imageUrls.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {form.imageUrls.map((url, index) => (
+                          <div key={index} className="group relative aspect-video overflow-hidden rounded-lg border border-white/10">
+                            <Image
+                              src={url}
+                              alt={`Imagem ${index + 1}`}
+                              fill
+                              className="object-cover"
+                              sizes="100px"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeImage(index)}
+                              className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-red-500/80 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                            >
+                              <X className="size-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </Field>
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Texto do botão">
