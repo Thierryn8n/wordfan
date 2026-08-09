@@ -64,7 +64,7 @@ export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel, isAdm
       isCollapsed ? 'w-20' : 'w-72'
     )}>
       <div className="flex h-full flex-col">
-        <div className="border-b border-white/8 px-7 py-7">
+        <div className="border-b border-white/8 px-5 py-5">
           <div className="flex items-center gap-3">
             {!isCollapsed && (
               <div className="flex-1">
@@ -81,30 +81,25 @@ export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel, isAdm
               {isCollapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
             </button>
           </div>
-        </div>
-
-        {!isCollapsed && (
-          <div className="border-b border-white/8 px-5 py-5">
-            <div className="rounded-2xl border border-white/8 bg-white/[0.035] p-4">
-              <div className="flex items-center gap-3">
-                <Image
-                  src={avatarUrl || '/placeholder-user.jpg'}
-                  alt=""
-                  width={48}
-                  height={48}
-                  className="size-12 rounded-xl border border-[var(--artist-primary)]/30 object-cover"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-serif text-sm font-black text-white">{name}</p>
-                  <p className="mt-1 flex items-center gap-1.5 text-[8px] font-black tracking-[0.13em] text-zinc-500">
-                    <span className="size-1.5 rounded-full bg-[var(--artist-primary)]" aria-hidden="true" />
-                    PLANO {planLabel.toUpperCase()}
-                  </p>
-                </div>
+          {!isCollapsed && (
+            <div className="mt-4 flex items-center gap-3">
+              <Image
+                src={avatarUrl || '/placeholder-user.jpg'}
+                alt=""
+                width={48}
+                height={48}
+                className="size-12 rounded-xl border border-[var(--artist-primary)]/30 object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-serif text-sm font-black text-white">{name}</p>
+                <p className="mt-1 flex items-center gap-1.5 text-[8px] font-black tracking-[0.13em] text-zinc-500">
+                  <span className="size-1.5 rounded-full bg-[var(--artist-primary)]" aria-hidden="true" />
+                  PLANO {planLabel.toUpperCase()}
+                </p>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {!isCollapsed && isAdmin && allArtists.length > 0 && (
           <div className="border-b border-white/8 px-5 py-4">
