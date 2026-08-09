@@ -12,6 +12,7 @@ export function Logo({ className, href = '/home', imageUrl, isArtistLogo = false
           width={300}
           height={100}
           className={cn("object-contain", isArtistLogo ? "h-16 w-auto" : "h-20 w-auto")}
+          unoptimized
         />
       </Link>
     )
