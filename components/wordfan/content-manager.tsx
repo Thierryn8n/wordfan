@@ -40,6 +40,7 @@ import {
   deletePlan,
   uploadContentImage,
 } from '@/app/actions/content'
+import { StoryCanvasEditor } from './story-canvas-editor'
 
 type Section = 'feed' | 'stories' | 'agenda' | 'galeria' | 'videos' | 'lives' | 'fanclub'
 
@@ -224,6 +225,7 @@ export function ContentManager({
   const [editing, setEditing] = useState<string | 'new' | null>(null)
   const [status, setStatus] = useState<{ ok?: string; error?: string }>({})
   const [isPending, startTransition] = useTransition()
+  const [useCanvasEditor, setUseCanvasEditor] = useState(false)
 
   // Form states
   const [postForm, setPostForm] = useState({
@@ -916,13 +918,53 @@ export function ContentManager({
       {section === 'stories' && (
         <div className="mt-5">
           {editing === null && (
-            <button type="button" onClick={() => setEditing('new')} className={btnPrimary}>
-              <Plus className="size-3.5" aria-hidden="true" />
-              NOVO STORY
-            </button>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setEditing('new')} className={btnPrimary}>
+                <Plus className="size-3.5" aria-hidden="true" />
+                NOVO STORY
+              </button>
+              <button 
+                type="button" 
+                onClick={() => {
+                  setEditing('canvas')
+                  setUseCanvasEditor(true)
+                }} 
+                className="flex items-center gap-2 rounded-full border border-white/8 bg-background px-5 py-3 text-[9px] font-black tracking-[0.15em] text-muted-foreground hover:bg-white/[0.05]"
+              >
+                <Pencil className="size-3.5" aria-hidden="true" />
+                EDITOR AVANÇADO
+              </button>
+            </div>
           )}
 
-          {editing !== null && (
+          {editing === 'canvas' && useCanvasEditor && (
+            <div className="h-[600px]">
+              <StoryCanvasEditor
+                onSave={(canvasData) => {
+                  // Convert canvas to image URL and save as story
+                  // For now, we'll save the canvas data as a JSON string
+                  // In production, you'd want to convert to an actual image
+                  run(
+                    () =>
+                      saveStory({
+                        id: undefined,
+                        artistId,
+                        mediaUrl: `data:application/json;base64,${btoa(canvasData)}`,
+                        caption: storyForm.caption,
+                      }),
+                    'Story criado com editor avançado!',
+                  )
+                }}
+                onCancel={() => {
+                  setEditing(null)
+                  setUseCanvasEditor(false)
+                }}
+                backgroundImage={storyForm.mediaUrl}
+              />
+            </div>
+          )}
+
+          {editing !== null && editing !== 'canvas' && (
             <form
               className="flex flex-col gap-4 rounded-3xl border border-white/8 bg-background/50 p-5"
               onSubmit={(e) => {
