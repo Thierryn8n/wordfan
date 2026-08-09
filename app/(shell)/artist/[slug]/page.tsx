@@ -164,9 +164,9 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
               <Image
                 src={(artist as any).logo_url}
                 alt={`Logo de ${artist.name}`}
-                width={80}
-                height={80}
-                className="h-20 w-auto object-contain"
+                width={40}
+                height={40}
+                className="h-10 w-auto object-contain"
               />
             )}
           </div>
