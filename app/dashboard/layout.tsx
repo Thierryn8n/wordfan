@@ -3,15 +3,20 @@ import { headers } from 'next/headers'
 import { DesktopBlocker, DesktopOnly } from '@/components/wordfan/desktop-only'
 import { ArtistSidebar } from '@/components/wordfan/artist-sidebar'
 import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
-import { getDashboardArtist } from '@/lib/dashboard'
+import { getDashboardArtist, getAllArtists } from '@/lib/dashboard'
 import { TOOL_PLANS, type ToolPlan } from '@/lib/artist-theme'
 import { isMobileUserAgent } from '@/lib/is-mobile'
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ 
+  children,
+}: { 
+  children: React.ReactNode
+}) {
   const h = await headers()
-  if (isMobileUserAgent(h.get('user-agent'))) return <DesktopBlocker />
+  if (isMobileUserAgent(h.get('user-agent'))) return <DesktopBlocker>()
 
-  const { artist } = await getDashboardArtist('/dashboard')
+  const { artist, role } = await getDashboardArtist('/dashboard')
+  const allArtists = role === 'admin' ? await getAllArtists() : []
 
   // Conta ainda não vinculada a um artista.
   if (!artist) {
@@ -48,6 +53,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
             avatarUrl={artist.avatar_url}
             logoUrl={(artist as any).logo_url}
             planLabel={planLabel}
+            isAdmin={role === 'admin'}
+            allArtists={allArtists}
           />
           <main className="relative min-w-0 flex-1 overflow-hidden px-6 pb-12 pt-8 xl:px-10">
             <div

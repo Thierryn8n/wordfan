@@ -13,9 +13,11 @@ import {
   LayoutDashboard,
   MessageSquare,
   Wallet,
+  Users,
 } from 'lucide-react'
 import { Logo } from '@/components/wordfan/logo'
 import { cn } from '@/lib/utils'
+import type { Artist } from '@/lib/types'
 
 interface ArtistSidebarProps {
   name: string
@@ -23,6 +25,8 @@ interface ArtistSidebarProps {
   avatarUrl: string | null
   logoUrl: string | null
   planLabel: string
+  isAdmin?: boolean
+  allArtists?: Artist[]
 }
 
 const NAV_GROUPS = [
@@ -48,7 +52,7 @@ const NAV_GROUPS = [
   },
 ] as const
 
-export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel }: ArtistSidebarProps) {
+export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel, isAdmin = false, allArtists = [] }: ArtistSidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -57,9 +61,41 @@ export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel }: Art
         <div className="border-b border-white/8 px-7 py-7">
           <Logo href="/home" className="text-xl" imageUrl={logoUrl || undefined} />
           <p className="mt-1 text-[8px] font-black tracking-[0.24em] text-[var(--artist-primary)]">
-            PAINEL DO ARTISTA
+            {isAdmin ? 'PAINEL ADMIN' : 'PAINEL DO ARTISTA'}
           </p>
         </div>
+
+        {isAdmin && allArtists.length > 0 && (
+          <div className="border-b border-white/8 px-5 py-4">
+            <p className="mb-3 flex items-center gap-2 text-[9px] font-black tracking-[0.2em] text-zinc-600">
+              <Users className="size-3" />
+              SELECIONAR ARTISTA
+            </p>
+            <div className="scrollbar-none flex max-h-32 flex-col gap-2 overflow-y-auto">
+              {allArtists.map((artist) => (
+                <Link
+                  key={artist.id}
+                  href={`/dashboard?artist=${artist.slug}`}
+                  className={cn(
+                    'flex items-center gap-2 rounded-lg px-3 py-2 text-[10px] font-bold transition-colors',
+                    artist.slug === slug
+                      ? 'bg-[var(--artist-primary)]/12 text-white'
+                      : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white',
+                  )}
+                >
+                  <Image
+                    src={artist.avatar_url || '/placeholder-user.jpg'}
+                    alt=""
+                    width={24}
+                    height={24}
+                    className="size-6 rounded-lg object-cover"
+                  />
+                  <span className="truncate">{artist.name}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="border-b border-white/8 px-5 py-5">
           <div className="rounded-2xl border border-white/8 bg-white/[0.035] p-4">
