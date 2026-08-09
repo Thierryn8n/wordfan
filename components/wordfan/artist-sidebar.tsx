@@ -73,11 +73,13 @@ export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel, isAdm
             </p>
             <div className="scrollbar-none flex max-h-32 flex-col gap-2 overflow-y-auto">
               {allArtists.map((artist) => (
-                <Link
+                <button
                   key={artist.id}
-                  href={`/dashboard?artist=${artist.slug}`}
+                  onClick={() => {
+                    window.location.href = `/dashboard?artist=${artist.slug}`
+                  }}
                   className={cn(
-                    'flex items-center gap-2 rounded-lg px-3 py-2 text-[10px] font-bold transition-colors',
+                    'flex items-center gap-2 rounded-lg px-3 py-2 text-[10px] font-bold transition-colors w-full text-left',
                     artist.slug === slug
                       ? 'bg-[var(--artist-primary)]/12 text-white'
                       : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white',
@@ -91,7 +93,7 @@ export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel, isAdm
                     className="size-6 rounded-lg object-cover"
                   />
                   <span className="truncate">{artist.name}</span>
-                </Link>
+                </button>
               ))}
             </div>
           </div>

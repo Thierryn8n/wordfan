@@ -9,16 +9,13 @@ import { isMobileUserAgent } from '@/lib/is-mobile'
 
 export default async function DashboardLayout({ 
   children,
-  searchParams,
 }: { 
   children: React.ReactNode
-  searchParams: Promise<{ artist?: string }>
 }) {
   const h = await headers()
   if (isMobileUserAgent(h.get('user-agent'))) return <DesktopBlocker />
 
-  const { artist: artistSlug } = await searchParams
-  const { artist, role } = await getDashboardArtist('/dashboard', artistSlug)
+  const { artist, role } = await getDashboardArtist('/dashboard')
   const allArtists = role === 'admin' ? await getAllArtists() : []
 
   // Conta ainda não vinculada a um artista.
