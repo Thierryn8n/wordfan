@@ -13,7 +13,6 @@ import {
   Mic2,
   Palette,
   Settings2,
-  ShieldCheck,
   Users,
 } from 'lucide-react'
 import { Logo } from '@/components/wordfan/logo'
@@ -54,15 +53,7 @@ export function AdminSidebar({ siteLogoUrl }: { siteLogoUrl?: string }) {
     <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 flex-col border-r border-white/8 bg-[#050505] lg:flex">
       <div className="border-b border-white/8 px-7 py-7">
         <div className="flex items-center gap-3">
-          <span className="gradient-brand flex size-10 items-center justify-center rounded-xl shadow-[0_10px_30px_-12px_rgba(255,106,0,.8)]">
-            <ShieldCheck className="size-5 text-white" aria-hidden="true" />
-          </span>
-          <div>
-            <Logo href="/admin" className="text-lg" imageUrl={siteLogoUrl || undefined} />
-            <p className="mt-0.5 text-[8px] font-black tracking-[0.24em] text-primary">
-              ADMIN CORE
-            </p>
-          </div>
+          <Logo href="/admin" className="text-2xl" imageUrl={siteLogoUrl || undefined} />
         </div>
       </div>
 
