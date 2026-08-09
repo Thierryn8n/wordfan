@@ -28,6 +28,7 @@ import {
   getCurrentUser,
 } from '@/lib/data'
 import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
+import { BioText } from '@/components/wordfan/bio-text'
 import { ArtistTabs } from './artist-tabs'
 import { ArtistStories } from './artist-stories'
 
@@ -174,7 +175,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
             <BadgeCheck className="size-7 text-club" aria-hidden="true" />
           </h1>
           {artist.bio && (
-            <p className="mt-2 max-w-xs text-sm leading-relaxed text-foreground/80">{artist.bio}</p>
+            <BioText bio={artist.bio} />
           )}
           <p className="mt-2 text-sm">
             <span className="text-muted-foreground">
