@@ -57,7 +57,7 @@ export function AdminSidebar({ siteLogoUrl }: { siteLogoUrl?: string }) {
   const pathname = usePathname()
 
   return (
-    <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 flex-col border-r border-white/8 bg-[#050505] lg:flex">
+    <aside className="sticky top-0 hidden h-dvh w-96 shrink-0 flex-col border-r border-white/8 bg-[#050505] lg:flex">
       <div className="border-b border-white/8 px-7 py-7">
         <div className="flex items-center gap-3">
           <Logo href="/admin" className="text-12xl" imageUrl={siteLogoUrl || undefined} />

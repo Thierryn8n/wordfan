@@ -56,7 +56,7 @@ export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel, isAdm
   const pathname = usePathname()
 
   return (
-    <aside className="sticky top-0 z-20 hidden h-dvh w-72 shrink-0 border-r border-white/8 bg-[#050505] lg:block">
+    <aside className="sticky top-0 z-20 hidden h-dvh w-96 shrink-0 border-r border-white/8 bg-[#050505] lg:block">
       <div className="flex h-full flex-col">
         <div className="border-b border-white/8 px-7 py-7">
           <Logo href="/home" className="text-xl" imageUrl={logoUrl || undefined} />
