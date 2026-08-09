@@ -143,20 +143,31 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
 
         {/* Identidade */}
         <div className="absolute inset-x-0 bottom-0 px-6 pb-6">
-          <div className="relative inline-block">
-            <Image
-              src={artist.avatar_url || '/placeholder.svg?height=96&width=96'}
-              alt={`Foto de ${artist.name}`}
-              width={96}
-              height={96}
-              className="size-24 rounded-full border-4 border-club object-cover"
-            />
-            <span
-              className="absolute -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full bg-club"
-              aria-hidden="true"
-            >
-              <Check className="size-4 text-white" />
-            </span>
+          <div className="flex items-center gap-4">
+            <div className="relative inline-block">
+              <Image
+                src={artist.avatar_url || '/placeholder.svg?height=96&width=96'}
+                alt={`Foto de ${artist.name}`}
+                width={96}
+                height={96}
+                className="size-24 rounded-full border-4 border-club object-cover"
+              />
+              <span
+                className="absolute -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full bg-club"
+                aria-hidden="true"
+              >
+                <Check className="size-4 text-white" />
+              </span>
+            </div>
+            {(artist as any).logo_url && (
+              <Image
+                src={(artist as any).logo_url}
+                alt={`Logo de ${artist.name}`}
+                width={80}
+                height={80}
+                className="h-20 w-auto object-contain"
+              />
+            )}
           </div>
           <h1 className="mt-4 flex items-center gap-2 font-serif text-[40px] font-extrabold leading-none tracking-tight">
             {artist.name.toUpperCase()}

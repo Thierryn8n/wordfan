@@ -43,9 +43,20 @@ export default async function LivePage({ params }: { params: Promise<{ slug: str
         </Link>
         <div className="min-w-0 flex-1">
           <p className="truncate font-serif text-sm font-extrabold leading-tight">{live.title}</p>
-          <p className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">
-            {artist.name.toUpperCase()}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">
+              {artist.name.toUpperCase()}
+            </p>
+            {(artist as any).logo_url && (
+              <Image
+                src={(artist as any).logo_url}
+                alt={`Logo de ${artist.name}`}
+                width={24}
+                height={24}
+                className="h-6 w-auto object-contain"
+              />
+            )}
+          </div>
         </div>
         {live.status === 'live' && (
           <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-destructive px-3 py-1.5 text-[9px] font-black tracking-[0.15em] text-white">

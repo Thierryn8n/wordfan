@@ -72,6 +72,15 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
             height={72}
             className="size-18 rounded-2xl border-2 border-club object-cover"
           />
+          {(artist as any).logo_url && (
+            <Image
+              src={(artist as any).logo_url}
+              alt={`Logo de ${artist.name}`}
+              width={60}
+              height={60}
+              className="h-16 w-auto object-contain"
+            />
+          )}
           <div className="pb-0.5">
             <p className="flex items-center gap-1.5 text-[9px] font-black tracking-[0.25em] text-club">
               <Sparkles className="size-3" aria-hidden="true" />

@@ -112,7 +112,8 @@ export async function saveSiteSettings({
 
   if (error) {
     console.log('[v0] save site settings error:', error.message)
-    return { error: 'Não foi possível salvar as configurações.' }
+    console.log('[v0] error details:', JSON.stringify(error))
+    return { error: `Não foi possível salvar as configurações: ${error.message}` }
   }
 
   revalidatePath('/admin/settings')

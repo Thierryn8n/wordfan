@@ -16,6 +16,7 @@ import { Logo } from '@/components/wordfan/logo'
 import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
 import { ContentManager } from '@/components/wordfan/content-manager'
 import { getManagedArtists } from '@/lib/enterprise'
+import { getSiteSettings } from '@/lib/site-settings'
 import {
   formatPrice,
   type Artist,
@@ -29,7 +30,10 @@ import {
   type Video,
 } from '@/lib/types'
 
-export const metadata = { title: 'Painel do Empresário — WordFan' }
+export async function generateMetadata() {
+  const { siteName } = await getSiteSettings()
+  return { title: `Painel do Empresário — ${siteName}` }
+}
 
 const LEAD_STATUS: Record<EnterpriseLead['status'], { label: string; cls: string }> = {
   pending_payment: { label: 'AGUARDANDO PAGAMENTO', cls: 'bg-amber-500/15 text-amber-400' },
@@ -44,6 +48,7 @@ export default async function ManagerPage({
   searchParams: Promise<{ artist?: string }>
 }) {
   const { artist: selectedSlug } = await searchParams
+  const { logoUrl } = await getSiteSettings()
   const supabase = await createClient()
   const {
     data: { user },
@@ -84,7 +89,7 @@ export default async function ManagerPage({
       <div className="crm-scope min-h-dvh bg-background pb-16">
         <header className="border-b border-white/8 bg-card/50 px-6 py-5 md:px-10">
           <div className="mx-auto flex max-w-5xl items-center gap-4">
-            <Logo href="/home" className="text-xl" />
+            <Logo href="/home" className="text-xl" imageUrl={logoUrl || undefined} />
             <div className="min-w-0 flex-1">
               <p className="flex items-center gap-1.5 text-[9px] font-black tracking-[0.28em] text-muted-foreground">
                 <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
@@ -103,13 +108,24 @@ export default async function ManagerPage({
                 href={`/manager?artist=${a.slug}`}
                 className="group flex items-center gap-4 rounded-[12px] border border-white/8 bg-card p-4 transition-colors hover:border-primary/40"
               >
-                <Image
-                  src={a.avatar_url || '/placeholder.svg?height=64&width=64'}
-                  alt=""
-                  width={56}
-                  height={56}
-                  className="size-14 rounded-[10px] object-cover"
-                />
+                <div className="flex items-center gap-3">
+                  <Image
+                    src={a.avatar_url || '/placeholder.svg?height=64&width=64'}
+                    alt=""
+                    width={56}
+                    height={56}
+                    className="size-14 rounded-[10px] object-cover"
+                  />
+                  {(a as any).logo_url && (
+                    <Image
+                      src={(a as any).logo_url}
+                      alt={`Logo de ${a.name}`}
+                      width={40}
+                      height={40}
+                      className="h-10 w-auto object-contain"
+                    />
+                  )}
+                </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-serif text-lg font-black">{a.name}</p>
                   <p className="mt-0.5 text-[10px] font-black tracking-[0.15em] text-muted-foreground">

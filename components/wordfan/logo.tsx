@@ -2,16 +2,16 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
-export function Logo({ className, href = '/home', imageUrl }: { className?: string; href?: string; imageUrl?: string }) {
+export function Logo({ className, href = '/home', imageUrl, isArtistLogo = false }: { className?: string; href?: string; imageUrl?: string; isArtistLogo?: boolean }) {
   if (imageUrl) {
     return (
       <Link href={href} className={cn('inline-flex items-center', className)}>
         <Image
           src={imageUrl}
-          alt="Logo"
+          alt={isArtistLogo ? "Logo do artista" : "Logo"}
           width={120}
           height={40}
-          className="h-8 w-auto object-contain"
+          className={cn("object-contain", isArtistLogo ? "h-10 w-auto" : "h-8 w-auto")}
         />
       </Link>
     )

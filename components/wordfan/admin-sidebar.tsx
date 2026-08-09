@@ -47,7 +47,7 @@ const NAV_GROUPS = [
   },
 ] as const
 
-export function AdminSidebar() {
+export function AdminSidebar({ siteLogoUrl }: { siteLogoUrl?: string }) {
   const pathname = usePathname()
 
   return (
@@ -58,7 +58,7 @@ export function AdminSidebar() {
             <ShieldCheck className="size-5 text-white" aria-hidden="true" />
           </span>
           <div>
-            <Logo href="/admin" className="text-lg" />
+            <Logo href="/admin" className="text-lg" imageUrl={siteLogoUrl || undefined} />
             <p className="mt-0.5 text-[8px] font-black tracking-[0.24em] text-primary">
               ADMIN CORE
             </p>
