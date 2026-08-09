@@ -62,7 +62,7 @@ export function AdminSidebar({ siteLogoUrl }: { siteLogoUrl?: string }) {
 
   return (
     <aside className={cn(
-      'sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-white/8 bg-[#050505] lg:flex transition-all duration-300',
+      'sticky top-4 hidden h-[calc(100vh-2rem)] shrink-0 flex-col rounded-2xl border border-white/8 bg-[#050505] shadow-xl lg:flex transition-all duration-300',
       isCollapsed ? 'w-20' : 'w-72'
     )}>
       <div className="border-b border-white/8 px-7 py-7">

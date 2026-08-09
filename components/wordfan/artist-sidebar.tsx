@@ -60,7 +60,7 @@ export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel, isAdm
 
   return (
     <aside className={cn(
-      'sticky top-0 z-20 hidden h-dvh shrink-0 border-r border-white/8 bg-[#050505] lg:block transition-all duration-300',
+      'sticky top-4 z-20 hidden h-[calc(100vh-2rem)] shrink-0 rounded-2xl border border-white/8 bg-[#050505] shadow-xl lg:block transition-all duration-300',
       isCollapsed ? 'w-20' : 'w-72'
     )}>
       <div className="flex h-full flex-col">
