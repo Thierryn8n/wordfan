@@ -411,7 +411,9 @@ export async function deletePlan(id: string, artistId: string) {
 
 // ============ UPLOAD DE MÍDIA (admin ou dono) ============
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
-const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime']
 
 export async function uploadContentImage(formData: FormData) {
   const artistId = String(formData.get('artistId') ?? '')
@@ -421,21 +423,51 @@ export async function uploadContentImage(formData: FormData) {
   const file = formData.get('file') as File | null
   const kind = String(formData.get('kind') ?? 'media').slice(0, 20)
 
-  if (!file || file.size === 0) return { error: 'Nenhum arquivo enviado.' }
-  if (file.size > MAX_IMAGE_BYTES) return { error: 'Imagem muito grande (máx. 5MB).' }
-  if (!ALLOWED_TYPES.includes(file.type)) return { error: 'Formato inválido (PNG, JPG, WebP ou GIF).' }
+  if (!file || file.size === 0) {
+    console.log('[upload] Nenhum arquivo enviado')
+    return { error: 'Nenhum arquivo enviado.' }
+  }
+
+  const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type)
+  const isImage = ALLOWED_IMAGE_TYPES.includes(file.type)
+
+  if (!isVideo && !isImage) {
+    console.log('[upload] Tipo de arquivo inválido:', file.type)
+    return { error: 'Formato inválido. Use PNG, JPG, WebP, GIF, MP4, WebM ou MOV.' }
+  }
+
+  const maxSize = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES
+  if (file.size > maxSize) {
+    const maxSizeMB = (maxSize / (1024 * 1024)).toFixed(0)
+    console.log('[upload] Arquivo muito grande:', file.size, 'máximo:', maxSize)
+    return { error: `Arquivo muito grande (máx. ${maxSizeMB}MB).` }
+  }
 
   const ext = file.type.split('/')[1] === 'jpeg' ? 'jpg' : file.type.split('/')[1]
   const path = `${slug}/${kind}-${Date.now()}.${ext}`
+
+  console.log('[upload] Iniciando upload:', { path, size: file.size, type: file.type })
 
   const { error: upError } = await supabase.storage.from('artist-media').upload(path, file, {
     contentType: file.type,
     upsert: false,
   })
+
   if (upError) {
-    console.log('[v0] upload error:', upError.message)
-    return { error: 'Falha no upload. Tente novamente.' }
+    console.log('[upload] Erro Supabase:', upError.message, upError)
+    if (upError.message.includes('Bucket not found')) {
+      return { error: 'Bucket de armazenamento não configurado no Supabase.' }
+    }
+    if (upError.message.includes('permission')) {
+      return { error: 'Sem permissão para fazer upload. Verifique as RLS policies.' }
+    }
+    if (upError.message.includes('quota')) {
+      return { error: 'Cota de armazenamento excedida.' }
+    }
+    return { error: `Falha no upload: ${upError.message}. Tente novamente.` }
   }
+
+  console.log('[upload] Upload concluído com sucesso:', path)
 
   const {
     data: { publicUrl },

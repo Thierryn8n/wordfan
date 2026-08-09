@@ -110,11 +110,13 @@ function MediaUpload({
   kind,
   value,
   onChange,
+  acceptVideo = false,
 }: {
   artistId: string
   kind: string
   value: string
   onChange: (url: string) => void
+  acceptVideo?: boolean
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -133,20 +135,30 @@ function MediaUpload({
     else if (res.url) onChange(res.url)
   }
 
+  const accept = acceptVideo 
+    ? 'image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime'
+    : 'image/png,image/jpeg,image/webp,image/gif'
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-3">
         {value ? (
-          <Image
-            src={value || "/placeholder.svg"}
-            alt=""
-            width={72}
-            height={72}
-            className="size-18 shrink-0 rounded-2xl border border-white/8 object-cover"
-          />
+          <div className="relative size-18 shrink-0 overflow-hidden rounded-2xl border border-white/8">
+            {value.match(/\.(mp4|webm|mov)$/i) ? (
+              <video src={value} className="size-full object-cover" controls />
+            ) : (
+              <Image
+                src={value || "/placeholder.svg"}
+                alt=""
+                width={72}
+                height={72}
+                className="size-full object-cover"
+              />
+            )}
+          </div>
         ) : (
           <span className="flex size-18 shrink-0 items-center justify-center rounded-2xl border border-dashed border-white/15 text-muted-foreground">
-            <ImageIcon className="size-5" aria-hidden="true" />
+            {acceptVideo ? <PlaySquare className="size-5" aria-hidden="true" /> : <ImageIcon className="size-5" aria-hidden="true" />}
           </span>
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -161,7 +173,7 @@ function MediaUpload({
             ) : (
               <Upload className="size-3" aria-hidden="true" />
             )}
-            {uploading ? 'ENVIANDO...' : 'ENVIAR IMAGEM'}
+            {uploading ? 'ENVIANDO...' : acceptVideo ? 'ENVIAR MÍDIA' : 'ENVIAR IMAGEM'}
           </button>
           <input
             type="url"
@@ -175,7 +187,7 @@ function MediaUpload({
       <input
         ref={fileRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp,image/gif"
+        accept={accept}
         className="sr-only"
         onChange={(e) => {
           const f = e.target.files?.[0]
@@ -291,9 +303,9 @@ export function ContentManager({
     'flex items-center gap-2 rounded-full border border-white/8 bg-background px-5 py-3 text-[9px] font-black tracking-[0.15em] text-muted-foreground'
 
   return (
-    <div className="rounded-[32px] border border-white/8 bg-card p-6">
+    <div className="rounded-[32px] border border-white/8 bg-card p-6 shadow-2xl">
       {/* Abas */}
-      <div className="scrollbar-none -mx-2 flex gap-2 overflow-x-auto px-2" role="tablist" aria-label="Gerenciar conteúdo">
+      <div className="scrollbar-none -mx-2 flex gap-2 overflow-x-auto px-2 pb-6" role="tablist" aria-label="Gerenciar conteúdo">
         {SECTIONS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
@@ -306,8 +318,8 @@ export function ContentManager({
             }}
             className={
               section === key
-                ? 'gradient-brand flex shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-[9px] font-black tracking-[0.2em] text-white'
-                : 'flex shrink-0 items-center gap-2 rounded-full border border-white/8 bg-background px-5 py-2.5 text-[9px] font-black tracking-[0.2em] text-muted-foreground'
+                ? 'gradient-brand flex shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-[9px] font-black tracking-[0.2em] text-white shadow-lg shadow-primary/20'
+                : 'flex shrink-0 items-center gap-2 rounded-full border border-white/8 bg-background px-5 py-2.5 text-[9px] font-black tracking-[0.2em] text-muted-foreground hover:bg-white/[0.05] hover:text-foreground transition-all duration-200'
             }
           >
             <Icon className="size-3.5" aria-hidden="true" />
@@ -935,12 +947,13 @@ export function ContentManager({
                 </button>
               </div>
               <div>
-                <span className={labelCls}>MÍDIA DO STORY *</span>
+                <span className={labelCls}>MÍDIA (IMAGEM OU VÍDEO) *</span>
                 <div className="mt-1.5">
                   <MediaUpload
                     artistId={artistId}
                     kind="story"
                     value={storyForm.mediaUrl}
+                    acceptVideo={true}
                     onChange={(url) => setStoryForm((f) => ({ ...f, mediaUrl: url }))}
                   />
                 </div>
