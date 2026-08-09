@@ -9,9 +9,9 @@ export function Logo({ className, href = '/home', imageUrl, isArtistLogo = false
         <Image
           src={imageUrl}
           alt={isArtistLogo ? "Logo do artista" : "Logo"}
-          width={120}
-          height={40}
-          className={cn("object-contain", isArtistLogo ? "h-10 w-auto" : "h-8 w-auto")}
+          width={300}
+          height={100}
+          className={cn("object-contain", isArtistLogo ? "h-16 w-auto" : "h-20 w-auto")}
         />
       </Link>
     )
