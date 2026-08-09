@@ -65,18 +65,18 @@ export function ArtistSidebar({ name, slug, avatarUrl, logoUrl, planLabel, isAdm
     )}>
       <div className="flex h-full flex-col">
         <div className="border-b border-white/8 px-7 py-7">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             {!isCollapsed && (
-              <>
+              <div className="flex-1">
                 <Logo href="/home" className="text-xl" imageUrl={logoUrl || undefined} />
                 <p className="mt-1 text-[8px] font-black tracking-[0.24em] text-[var(--artist-primary)]">
                   {isAdmin ? 'PAINEL ADMIN' : 'PAINEL DO ARTISTA'}
                 </p>
-              </>
+              </div>
             )}
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="flex size-8 items-center justify-center rounded-lg border border-white/8 bg-white/[0.025] text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-white"
+              className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-white/8 bg-white/[0.025] text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-white"
             >
               {isCollapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
             </button>
