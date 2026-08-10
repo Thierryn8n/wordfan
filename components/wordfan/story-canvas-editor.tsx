@@ -7,7 +7,7 @@ import {
   X, Type, ImageIcon, Smile, Square, Circle as CircleIcon,
   Trash2, Download, Undo2, Redo2, AlignLeft, AlignCenter,
   AlignRight, Bold, Italic, Layers, ZoomIn, ZoomOut,
-  Palette, Sparkles, Move,
+  Palette, Sparkles, Move, Film, Play, Pause,
 } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -18,7 +18,7 @@ interface StoryCanvasEditorProps {
   backgroundImage?: string
 }
 
-type BgType = 'solid' | 'gradient' | 'image'
+type BgType = 'solid' | 'gradient' | 'image' | 'video'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -106,6 +106,17 @@ export function StoryCanvasEditor({ onSave, onCancel, backgroundImage }: StoryCa
   const historyRef = useRef<string[]>([])
   const histIdxRef = useRef(-1)
   const fileRef = useRef<HTMLInputElement>(null)
+  const videoFileRef = useRef<HTMLInputElement>(null)
+
+  // video background
+  const bgVideoRef = useRef<HTMLVideoElement | null>(null)
+  const bgVideoRafRef = useRef<number>(0)
+  const [bgVideoSrc, setBgVideoSrc] = useState<string | null>(null)
+  const [bgVideoPlaying, setBgVideoPlaying] = useState(true)
+
+  // video objects on canvas (RAF loop per element)
+  const videoObjectsRef = useRef<Map<fabric.Image, HTMLVideoElement>>(new Map())
+  const videoObjectsRafRef = useRef<number>(0)
 
   // sidebar panel
   const [panel, setPanel] = useState<'bg' | 'text' | 'stickers' | 'shapes' | null>('bg')
@@ -251,6 +262,17 @@ export function StoryCanvasEditor({ onSave, onCancel, backgroundImage }: StoryCa
 
     return () => {
       window.removeEventListener('keydown', onKey)
+      stopBgVideoLoop()
+      stopVideoObjectsLoop()
+      if (bgVideoRef.current) {
+        bgVideoRef.current.pause()
+        if (document.body.contains(bgVideoRef.current)) document.body.removeChild(bgVideoRef.current)
+      }
+      videoObjectsRef.current.forEach((v) => {
+        v.pause()
+        if (document.body.contains(v)) document.body.removeChild(v)
+      })
+      videoObjectsRef.current.clear()
       canvas.dispose()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -259,11 +281,170 @@ export function StoryCanvasEditor({ onSave, onCancel, backgroundImage }: StoryCa
   // re-apply background when settings change (not on mount — handled above)
   useEffect(() => {
     if (!fc.current) return
-    if (bgType !== 'image') applyBackground()
+    if (bgType === 'video') return // handled by applyBgVideo
+    stopBgVideoLoop()
+    if (bgVideoRef.current) {
+      bgVideoRef.current.pause()
+    }
+    applyBackground()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bgType, bgSolid, bgGrad, customGradA, customGradB])
 
-  // ── Canvas actions ──────────────────────────────────────────────────────────
+  // ── Video background loop ───────────────────────────────────────────────────
+  const startBgVideoLoop = useCallback(() => {
+    const canvas = fc.current
+    const video = bgVideoRef.current
+    if (!canvas || !video) return
+
+    function tick() {
+      if (!canvas || !video) return
+      if (!video.paused && !video.ended) {
+        // draw current video frame as background
+        const ctx = (canvas as unknown as { contextContainer: CanvasRenderingContext2D }).contextContainer
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, CANVAS_W, CANVAS_H)
+          canvas.renderAll()
+        }
+      }
+      bgVideoRafRef.current = requestAnimationFrame(tick)
+    }
+    bgVideoRafRef.current = requestAnimationFrame(tick)
+  }, [])
+
+  const stopBgVideoLoop = useCallback(() => {
+    cancelAnimationFrame(bgVideoRafRef.current)
+  }, [])
+
+  // ── Video object loop (objects placed on canvas) ─────────────────────────────
+  const startVideoObjectsLoop = useCallback(() => {
+    const canvas = fc.current
+    if (!canvas) return
+
+    function tick() {
+      videoObjectsRef.current.forEach((videoEl, fabricImg) => {
+        if (!videoEl.paused && !videoEl.ended) {
+          fabricImg.setElement(videoEl as unknown as HTMLImageElement)
+          fabricImg.dirty = true
+        }
+      })
+      if (videoObjectsRef.current.size > 0 && fc.current) {
+        fc.current.renderAll()
+      }
+      videoObjectsRafRef.current = requestAnimationFrame(tick)
+    }
+    videoObjectsRafRef.current = requestAnimationFrame(tick)
+  }, [])
+
+  const stopVideoObjectsLoop = useCallback(() => {
+    cancelAnimationFrame(videoObjectsRafRef.current)
+  }, [])
+
+  // ── Set video as background ──────────────────────────────────────────────────
+  const applyBgVideo = useCallback((src: string) => {
+    stopBgVideoLoop()
+    const canvas = fc.current
+    if (!canvas) return
+
+    // clear fabric background image so we can draw manually
+    canvas.setBackgroundImage('', canvas.renderAll.bind(canvas))
+    canvas.setBackgroundColor('', canvas.renderAll.bind(canvas))
+
+    if (bgVideoRef.current) {
+      bgVideoRef.current.pause()
+      bgVideoRef.current.src = ''
+    }
+
+    const video = document.createElement('video')
+    video.src = src
+    video.loop = true
+    video.muted = true
+    video.playsInline = true
+    video.crossOrigin = 'anonymous'
+    video.style.display = 'none'
+    document.body.appendChild(video)
+    bgVideoRef.current = video
+
+    video.addEventListener('loadeddata', () => {
+      video.play().then(() => {
+        setBgVideoPlaying(true)
+        startBgVideoLoop()
+      }).catch(() => {})
+    }, { once: true })
+  }, [startBgVideoLoop, stopBgVideoLoop])
+
+  // ── Toggle play/pause bg video ───────────────────────────────────────────────
+  function toggleBgVideo() {
+    const v = bgVideoRef.current
+    if (!v) return
+    if (v.paused) { v.play(); setBgVideoPlaying(true) }
+    else { v.pause(); setBgVideoPlaying(false) }
+  }
+
+  // ── Add video as an object on canvas ────────────────────────────────────────
+  function addVideoObject(src: string) {
+    const canvas = fc.current
+    if (!canvas) return
+
+    const video = document.createElement('video')
+    video.src = src
+    video.loop = true
+    video.muted = true
+    video.playsInline = true
+    video.crossOrigin = 'anonymous'
+    video.style.display = 'none'
+    document.body.appendChild(video)
+
+    video.addEventListener('loadeddata', () => {
+      video.play().catch(() => {})
+
+      const fImg = new fabric.Image(video as unknown as HTMLImageElement, {
+        left: CANVAS_W / 2,
+        top: CANVAS_H / 2,
+        originX: 'center',
+        originY: 'center',
+        objectCaching: false,
+      })
+
+      const maxW = 800
+      if ((video.videoWidth || 800) > maxW) fImg.scaleToWidth(maxW)
+
+      canvas.add(fImg)
+      canvas.setActiveObject(fImg)
+      canvas.requestRenderAll()
+
+      videoObjectsRef.current.set(fImg, video)
+
+      // start loop if not already running
+      if (videoObjectsRef.current.size === 1) startVideoObjectsLoop()
+
+      // clean up when object is removed
+      canvas.on('object:removed', (e) => {
+        if (e.target === fImg) {
+          videoObjectsRef.current.delete(fImg)
+          video.pause()
+          document.body.removeChild(video)
+          if (videoObjectsRef.current.size === 0) stopVideoObjectsLoop()
+        }
+      })
+    }, { once: true })
+  }
+
+  // ── Handle video file upload ─────────────────────────────────────────────────
+  function handleVideoUpload(e: React.ChangeEvent<HTMLInputElement>, mode: 'bg' | 'object') {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const src = URL.createObjectURL(file)
+    if (mode === 'bg') {
+      setBgVideoSrc(src)
+      setBgType('video')
+      applyBgVideo(src)
+    } else {
+      addVideoObject(src)
+    }
+    e.target.value = ''
+  }
+
+
 
   function addText() {
     if (!fc.current) return
@@ -429,6 +610,10 @@ export function StoryCanvasEditor({ onSave, onCancel, backgroundImage }: StoryCa
             <input ref={fileRef} type="file" accept="image/*" onChange={handleImageUpload} className="sr-only" />
             <ImageIcon className="size-4" />
           </label>
+          <label className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-zinc-400 transition-colors hover:bg-white/[0.07] hover:text-white" title="Adicionar vídeo ao canvas">
+            <input ref={videoFileRef} type="file" accept="video/mp4,video/webm,video/quicktime" onChange={(e) => handleVideoUpload(e, 'object')} className="sr-only" />
+            <Film className="size-4" />
+          </label>
           <Divider />
           {activeObj && (
             <>
@@ -462,10 +647,10 @@ export function StoryCanvasEditor({ onSave, onCancel, backgroundImage }: StoryCa
               <div className="flex flex-col gap-4">
                 <SectionLabel>FUNDO</SectionLabel>
                 <div className="flex gap-1.5">
-                  {(['solid', 'gradient'] as BgType[]).map((t) => (
-                    <button key={t} type="button" onClick={() => setBgType(t)}
+                  {(['solid', 'gradient', 'video'] as BgType[]).map((t) => (
+                    <button key={t} type="button" onClick={() => { if (t !== 'video') setBgType(t) }}
                       className={`flex-1 rounded-xl py-2 text-[8px] font-black tracking-[0.1em] transition-colors ${bgType === t ? 'bg-primary/20 text-primary' : 'border border-white/8 text-zinc-500 hover:bg-white/[0.05]'}`}>
-                      {t === 'solid' ? 'SÓLIDO' : 'GRADIENTE'}
+                      {t === 'solid' ? 'SÓLIDO' : t === 'gradient' ? 'GRADIENTE' : 'VÍDEO'}
                     </button>
                   ))}
                 </div>
@@ -504,6 +689,53 @@ export function StoryCanvasEditor({ onSave, onCancel, backgroundImage }: StoryCa
                         className="size-9 cursor-pointer rounded-lg border border-white/10 bg-transparent p-0.5" />
                     </div>
                   </>
+                )}
+
+                {/* VIDEO BACKGROUND */}
+                {bgType === 'video' && (
+                  <div className="flex flex-col gap-3">
+                    <SectionLabel>VÍDEO DE FUNDO</SectionLabel>
+                    <label className="flex cursor-pointer flex-col items-center gap-3 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-5 transition-colors hover:bg-primary/10">
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        onChange={(e) => handleVideoUpload(e, 'bg')}
+                        className="sr-only"
+                      />
+                      <Film className="size-8 text-primary" />
+                      <div className="text-center">
+                        <p className="text-[10px] font-black tracking-[0.1em] text-primary">
+                          {bgVideoSrc ? 'TROCAR VÍDEO' : 'SELECIONAR VÍDEO'}
+                        </p>
+                        <p className="mt-1 text-[8px] font-bold text-zinc-500">
+                          MP4, WebM ou MOV
+                        </p>
+                      </div>
+                    </label>
+
+                    {bgVideoSrc && (
+                      <>
+                        <div className="flex items-center gap-2 rounded-xl border border-white/8 bg-black/20 p-3">
+                          <button
+                            type="button"
+                            onClick={toggleBgVideo}
+                            className="flex size-9 items-center justify-center rounded-xl bg-primary/15 text-primary transition-colors hover:bg-primary/25"
+                          >
+                            {bgVideoPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
+                          </button>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[9px] font-black text-white">Vídeo de fundo ativo</p>
+                            <p className="text-[8px] font-bold text-zinc-500">
+                              {bgVideoPlaying ? 'Reproduzindo…' : 'Pausado'}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-[8px] font-bold leading-relaxed text-amber-300">
+                          💡 Ao salvar, o frame atual do vídeo é capturado como imagem do story.
+                        </p>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -635,8 +867,26 @@ export function StoryCanvasEditor({ onSave, onCancel, backgroundImage }: StoryCa
                     </button>
                   ))}
                 </div>
+
+                <div className="mt-1">
+                  <SectionLabel>INSERIR VÍDEO NO CANVAS</SectionLabel>
+                  <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-white/15 bg-black/20 p-4 transition-colors hover:border-primary/40 hover:bg-primary/5">
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime"
+                      onChange={(e) => handleVideoUpload(e, 'object')}
+                      className="sr-only"
+                    />
+                    <Film className="size-5 text-zinc-400" />
+                    <div>
+                      <p className="text-[9px] font-black tracking-[0.1em] text-zinc-300">VÍDEO COMO OBJETO</p>
+                      <p className="text-[8px] font-bold text-zinc-500">MP4, WebM ou MOV</p>
+                    </div>
+                  </label>
+                </div>
+
                 <div>
-                  <SectionLabel>COR DO TEXTO</SectionLabel>
+                  <SectionLabel>FORMATAÇÃO DO TEXTO</SectionLabel>
                   <div className="flex items-center gap-2 rounded-xl border border-white/8 bg-black/20 p-3">
                     <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)}
                       className="size-8 cursor-pointer rounded-lg border-0 bg-transparent p-0" />
