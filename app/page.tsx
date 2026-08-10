@@ -1,9 +1,17 @@
 import { getCurrentUser } from '@/lib/data'
+import { getSiteSettings } from '@/lib/site-settings'
 import { OnboardingSlides } from './onboarding-slides'
 
 export default async function OnboardingPage() {
-  const user = await getCurrentUser()
-  // Não redirecionamos no servidor: o cliente decide via localStorage.
-  // Usuários logados ou que já viram o onboarding vão direto para /home.
-  return <OnboardingSlides isLoggedIn={Boolean(user)} />
+  const [user, { logoUrl, siteName }] = await Promise.all([
+    getCurrentUser(),
+    getSiteSettings(),
+  ])
+  return (
+    <OnboardingSlides
+      isLoggedIn={Boolean(user)}
+      logoUrl={logoUrl}
+      siteName={siteName}
+    />
+  )
 }

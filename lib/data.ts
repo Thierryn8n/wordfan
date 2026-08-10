@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Artist, Live, Plan, Post, Show, Subscription, GalleryItem, Story, Tier, Video } from '@/lib/types'
+import type { Ad, Artist, Live, Plan, Post, Show, Subscription, GalleryItem, Story, Tier, Video } from '@/lib/types'
 import { TIER_ORDER } from '@/lib/types'
 
 export async function getArtists() {
@@ -97,6 +97,67 @@ export async function getArtistLives(artistId: string) {
   return (data ?? []) as Live[]
 }
 
+export async function getUpcomingShows(limit = 50) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('shows')
+    .select('*, artist:artists(*)')
+    .eq('status', 'scheduled')
+    .gte('starts_at', new Date().toISOString())
+    .order('starts_at', { ascending: true })
+    .limit(limit)
+  return (data ?? []) as (Show & { artist: Artist })[]
+}
+
+export async function getLiveNow() {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('lives')
+    .select('*, artist:artists(*)')
+    .eq('status', 'live')
+    .order('scheduled_at', { ascending: true })
+  return (data ?? []) as (Live & { artist: Artist })[]
+}
+
+export async function getUpcomingLives(limit = 20) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('lives')
+    .select('*, artist:artists(*)')
+    .in('status', ['scheduled', 'live'])
+    .order('scheduled_at', { ascending: true })
+    .limit(limit)
+  return (data ?? []) as (Live & { artist: Artist })[]
+}
+
+export async function getActiveAds(placement?: Ad['placement']) {
+  const supabase = await createClient()
+  const nowIso = new Date().toISOString()
+  let query = supabase.from('ad_banners').select('*').eq('is_active', true)
+  if (placement) query = query.eq('placement', placement)
+  const { data, error } = await query.order('sort_order', { ascending: true })
+  if (error) {
+    console.log('[v0] getActiveAds error:', error.message)
+    return [] as Ad[]
+  }
+  const ads = (data ?? []) as Ad[]
+  return ads.filter((a) => {
+    const startsOk = !a.starts_at || a.starts_at <= nowIso
+    const endsOk = !a.ends_at || a.ends_at >= nowIso
+    return startsOk && endsOk
+  })
+}
+
+export async function getAllLives(limit = 100) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('lives')
+    .select('*, artist:artists(*)')
+    .order('scheduled_at', { ascending: false })
+    .limit(limit)
+  return (data ?? []) as (Live & { artist: Artist })[]
+}
+
 export async function getCurrentUser() {
   const supabase = await createClient()
   const {
@@ -119,6 +180,24 @@ export async function getUserSubscription(artistId: string): Promise<(Subscripti
     .eq('status', 'active')
     .maybeSingle()
   return (data as (Subscription & { plan: Plan }) | null) ?? null
+}
+
+/** Todas as assinaturas ativas do usuário logado, já com artista e plano. */
+export async function getMySubscriptions(): Promise<
+  (Subscription & { plan: Plan; artist: Artist })[]
+> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+  const { data } = await supabase
+    .from('subscriptions')
+    .select('*, plan:plans(*), artist:artists(*)')
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+  return (data ?? []) as (Subscription & { plan: Plan; artist: Artist })[]
 }
 
 export function tierRank(tier: Tier | null | undefined) {

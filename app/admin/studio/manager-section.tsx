@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Briefcase, Plus, Mail, Copy, Check, Trash2, Loader2, X } from 'lucide-react'
+import { Briefcase, Plus, Mail, Copy, Check, Trash2, Loader2, X, AlertTriangle } from 'lucide-react'
 import { inviteManager, removeManager } from './manager-actions'
 
 export type ManagerRow = { userId: string; email: string; name: string }
@@ -10,10 +10,12 @@ export function ManagerSection({
   artistId,
   artistName,
   managers,
+  serviceKeyConfigured = true,
 }: {
   artistId: string
   artistName: string
   managers: ManagerRow[]
+  serviceKeyConfigured?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
@@ -74,16 +76,28 @@ export function ManagerSection({
         </div>
         <button
           type="button"
+          disabled={!serviceKeyConfigured}
           onClick={() => {
             setOpen(true)
             setError(null)
           }}
-          className="gradient-brand flex items-center gap-2 rounded-2xl px-5 py-3 text-[10px] font-black tracking-[0.2em] text-white"
+          className="gradient-brand flex items-center gap-2 rounded-2xl px-5 py-3 text-[10px] font-black tracking-[0.2em] text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus className="size-4" aria-hidden="true" />
           ADICIONAR EMPRESÁRIO
         </button>
       </div>
+
+      {!serviceKeyConfigured && (
+        <div className="mt-5 flex items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" aria-hidden="true" />
+          <p className="text-[11px] font-bold leading-relaxed text-amber-200">
+            A gestão de empresários precisa da variável{' '}
+            <span className="font-mono">SUPABASE_SERVICE_ROLE_KEY</span> configurada no projeto. Adicione-a
+            nas variáveis de ambiente para convidar e listar empresários.
+          </p>
+        </div>
+      )}
 
       {/* Lista */}
       <ul className="mt-6 flex flex-col gap-2">

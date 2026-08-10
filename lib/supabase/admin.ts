@@ -2,6 +2,15 @@ import 'server-only'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 /**
+ * Indica se a service role key está configurada no ambiente. Use isto antes
+ * de chamar createServiceClient() em código que precisa degradar graciosamente
+ * (páginas/listas) em vez de derrubar a página inteira.
+ */
+export function isServiceRoleConfigured() {
+  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
+}
+
+/**
  * Service-role client. NUNCA importar em código client-side.
  * Usa a service role key para operações administrativas (criar usuários,
  * enviar convites, ajustar roles). Ignora RLS — use apenas em Server Actions

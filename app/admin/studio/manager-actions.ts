@@ -2,9 +2,10 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { createServiceClient } from '@/lib/supabase/admin'
+import { createServiceClient, isServiceRoleConfigured } from '@/lib/supabase/admin'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const SERVICE_KEY_ERROR = 'Configure a variável SUPABASE_SERVICE_ROLE_KEY no projeto para usar este recurso.'
 
 async function requireAdmin() {
   const supabase = await createClient()
@@ -32,6 +33,7 @@ export async function inviteManager({
 }) {
   const { error: authError } = await requireAdmin()
   if (authError) return { error: authError }
+  if (!isServiceRoleConfigured()) return { error: SERVICE_KEY_ERROR }
 
   const cleanEmail = email.trim().toLowerCase()
   const cleanName = name.trim().slice(0, 80)
@@ -115,6 +117,7 @@ export async function inviteManager({
 export async function removeManager({ artistId, userId }: { artistId: string; userId: string }) {
   const { error: authError } = await requireAdmin()
   if (authError) return { error: authError }
+  if (!isServiceRoleConfigured()) return { error: SERVICE_KEY_ERROR }
   const admin = createServiceClient()
   const { error } = await admin.from('managers').delete().eq('artist_id', artistId).eq('user_id', userId)
   if (error) return { error: 'Não foi possível remover o empresário.' }

@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
-import { Upload, Plus, X } from 'lucide-react'
+import { CheckCircle2, ImagePlus, Plus, Upload, X } from 'lucide-react'
 import type { Artist, ArtistAbout } from '@/lib/types'
 import { saveArtistProfile, uploadArtistImage } from './actions'
 
@@ -54,43 +54,68 @@ function Field({
 function ImageUploader({
   label,
   url,
-  slug,
+  artistId,
   kind,
   onUploaded,
 }: {
   label: string
   url: string
-  slug: string
-  kind: 'avatar' | 'banner'
+  artistId: string
+  kind: 'avatar' | 'banner' | 'logo'
   onUploaded: (url: string) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
   async function handleFile(file: File) {
     setError(null)
+    setSuccess(false)
     setUploading(true)
-    const fd = new FormData()
-    fd.set('file', file)
-    fd.set('slug', slug)
-    fd.set('kind', kind)
-    const res = await uploadArtistImage(fd)
-    setUploading(false)
-    if (res.error) setError(res.error)
-    else if (res.url) onUploaded(res.url)
+
+    try {
+      const fd = new FormData()
+      fd.set('file', file)
+      fd.set('artistId', artistId)
+      fd.set('kind', kind)
+      const res = await uploadArtistImage(fd)
+
+      if (res.error) setError(res.error)
+      else if (res.url) {
+        onUploaded(res.url)
+        setSuccess(true)
+      }
+    } catch {
+      setError('Não foi possível enviar a imagem. Tente novamente.')
+    } finally {
+      setUploading(false)
+    }
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="rounded-3xl border border-white/8 bg-white/[0.025] p-4">
       <span className="text-[9px] font-black tracking-[0.15em] text-zinc-500">{label}</span>
-      <div className="flex items-center gap-3">
-        <div className="relative size-16 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-card">
+      <div className={kind === 'banner' ? 'mt-3 flex flex-col gap-3' : 'mt-3 flex items-center gap-4'}>
+        <div
+          className={
+            kind === 'banner'
+              ? 'relative aspect-[16/6] w-full overflow-hidden rounded-2xl border border-white/10 bg-black/30'
+              : 'relative size-24 shrink-0 overflow-hidden rounded-full border-2 border-primary/40 bg-black/30'
+          }
+        >
           {url ? (
-            <Image src={url || "/placeholder.svg"} alt="" fill sizes="64px" className="object-cover" />
+            <Image
+              src={url || '/placeholder.svg'}
+              alt=""
+              fill
+              sizes={kind === 'banner' ? '(max-width: 768px) 100vw, 560px' : '96px'}
+              className="object-cover"
+            />
           ) : (
-            <span className="flex h-full items-center justify-center text-[8px] font-black text-zinc-600">
-              VAZIO
+            <span className="flex h-full flex-col items-center justify-center gap-2 text-[8px] font-black tracking-[0.12em] text-zinc-600">
+              <ImagePlus className="size-5" aria-hidden="true" />
+              SEM IMAGEM
             </span>
           )}
         </div>
@@ -106,7 +131,7 @@ function ImageUploader({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="flex h-10 items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 bg-white/5 text-[9px] font-black tracking-[0.15em] text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+            className="flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 text-[9px] font-black tracking-[0.15em] text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
           >
             <Upload className="size-3.5" aria-hidden="true" />
             {uploading ? 'ENVIANDO...' : 'ENVIAR ARQUIVO'}
@@ -126,8 +151,14 @@ function ImageUploader({
         </div>
       </div>
       {error && (
-        <p role="alert" className="text-[10px] font-bold text-destructive">
+        <p role="alert" className="mt-2 text-[10px] font-bold text-destructive">
           {error}
+        </p>
+      )}
+      {success && (
+        <p role="status" className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-emerald-400">
+          <CheckCircle2 className="size-3.5" aria-hidden="true" />
+          Imagem enviada e salva no perfil.
         </p>
       )}
     </div>
@@ -205,14 +236,18 @@ export function ProfileEditor({
   artist,
   avatarUrl,
   bannerUrl,
+  logoUrl,
   onAvatarChange,
   onBannerChange,
+  onLogoChange,
 }: {
   artist: Artist
   avatarUrl: string
   bannerUrl: string
+  logoUrl: string
   onAvatarChange: (url: string) => void
   onBannerChange: (url: string) => void
+  onLogoChange: (url: string) => void
 }) {
   const about = (artist.about ?? {}) as ArtistAbout
   const [name, setName] = useState(artist.name)
@@ -244,6 +279,9 @@ export function ProfileEditor({
         state,
         socialLinks: socials,
         about: { history, influences, discography, awards },
+        avatarUrl,
+        bannerUrl,
+        logoUrl,
       })
       if (res?.error) setStatus({ error: res.error })
       else setStatus({ ok: 'Perfil salvo! Páginas públicas atualizadas.' })
@@ -251,8 +289,8 @@ export function ProfileEditor({
   }
 
   return (
-    <div className="flex flex-col gap-7">
-      <section aria-labelledby="fotos-h">
+    <div className="flex flex-col gap-5">
+      <section aria-labelledby="fotos-h" className="admin-editor-section">
         <h2 id="fotos-h" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
           FOTOS DO ARTISTA
         </h2>
@@ -260,24 +298,32 @@ export function ProfileEditor({
           <ImageUploader
             label="FOTO DE PERFIL (AVATAR)"
             url={avatarUrl}
-            slug={artist.slug}
+            artistId={artist.id}
             kind="avatar"
             onUploaded={onAvatarChange}
           />
           <ImageUploader
             label="BANNER / CAPA"
             url={bannerUrl}
-            slug={artist.slug}
+            artistId={artist.id}
             kind="banner"
             onUploaded={onBannerChange}
           />
+          <ImageUploader
+            label="LOGO DO ARTISTA"
+            url={logoUrl}
+            artistId={artist.id}
+            kind="logo"
+            onUploaded={onLogoChange}
+          />
         </div>
-        <p className="mt-2 text-[9px] font-bold text-zinc-600">
-          O upload salva no Supabase Storage. As fotos são aplicadas ao clicar em SALVAR IDENTIDADE.
+        <p className="mt-3 flex items-center gap-2 rounded-2xl border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-[9px] font-bold text-emerald-300/80">
+          <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
+          Arquivos enviados são aplicados imediatamente. URLs digitadas são gravadas ao salvar o perfil.
         </p>
       </section>
 
-      <section aria-labelledby="dados-h">
+      <section aria-labelledby="dados-h" className="admin-editor-section">
         <h2 id="dados-h" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
           DADOS DO ARTISTA
         </h2>
@@ -292,7 +338,7 @@ export function ProfileEditor({
         </div>
       </section>
 
-      <section aria-labelledby="social-h">
+      <section aria-labelledby="social-h" className="admin-editor-section">
         <h2 id="social-h" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
           REDES SOCIAIS
         </h2>
@@ -309,7 +355,7 @@ export function ProfileEditor({
         </div>
       </section>
 
-      <section aria-labelledby="sobre-h">
+      <section aria-labelledby="sobre-h" className="admin-editor-section">
         <h2 id="sobre-h" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
           SOBRE O ARTISTA
         </h2>

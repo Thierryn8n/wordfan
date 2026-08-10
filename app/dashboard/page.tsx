@@ -1,387 +1,312 @@
-import Link from 'next/link'
 import Image from 'next/image'
-import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import {
-  ArrowLeft,
-  Users,
-  TrendingUp,
-  FileText,
-  Radio,
-  LayoutDashboard,
-  ImageIcon,
+  ArrowUpRight,
   CalendarDays,
-  Star,
-  ExternalLink,
-  Lock,
-  Wallet,
-  Landmark,
+  Crown,
+  FileText,
+  Heart,
+  Radio,
   Sparkles,
+  TrendingUp,
+  Users,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
-import { Logo } from '@/components/wordfan/logo'
-import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
-import { TOOL_PLANS, hasEntitlement, type ToolPlan } from '@/lib/artist-theme'
+import {
+  RevenueAreaChart,
+  TierDonutChart,
+} from '@/components/wordfan/dashboard-charts'
+import { bucketByMonth, getDashboardArtist } from '@/lib/dashboard'
+import { TOOL_PLANS, type ToolPlan } from '@/lib/artist-theme'
 import {
   formatPrice,
   TIER_LABELS,
-  type Artist,
-  type GalleryItem,
+  TIER_ORDER,
+  type Live,
   type Plan,
   type Post,
   type Show,
-  type Story,
   type Subscription,
   type Tier,
   type Transaction,
-  type Video,
 } from '@/lib/types'
-import { ContentManager } from '@/components/wordfan/content-manager'
 
-export const metadata = { title: 'Dashboard do artista — WordFan' }
+export const metadata = { title: 'Visão geral — Painel do artista' }
 
-const tierBar: Record<Tier, string> = {
-  bronze: 'bg-[#cd7f32]',
-  silver: 'bg-[#c0c0c8]',
-  gold: 'bg-[#ffd700]',
-  platinum: 'bg-club',
+const TIER_COLORS: Record<Tier, string> = {
+  bronze: '#b7793b',
+  silver: '#71717a',
+  gold: '#ff8a00',
+  platinum: '#a855f7',
 }
 
-export default async function DashboardPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login?next=/dashboard')
-
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-
-  let artistQuery = supabase.from('artists').select('*')
-  if (profile?.role !== 'admin') {
-    artistQuery = artistQuery.eq('owner_id', user.id)
-  }
-  const { data: artistData } = await artistQuery.limit(1).maybeSingle()
-  const artist = artistData as Artist | null
-
-  if (!artist) {
-    return (
-      <main className="flex min-h-dvh items-center justify-center bg-background px-6">
-        <div className="max-w-sm rounded-[32px] border border-white/8 bg-card p-8 text-center">
-          <h1 className="font-serif text-xl font-black tracking-tight">ÁREA DO ARTISTA</h1>
-          <p className="mt-3 text-xs font-bold leading-relaxed text-muted-foreground text-pretty">
-            Sua conta ainda não está vinculada a um perfil de artista. Fale com a equipe WordFan
-            para ativar seu dashboard.
-          </p>
-          <Link
-            href="/home"
-            className="gradient-brand mt-6 inline-block rounded-full px-7 py-3 text-[10px] font-black tracking-[0.2em] text-white"
-          >
-            VOLTAR PARA A HOME
-          </Link>
-        </div>
-      </main>
-    )
-  }
+export default async function OverviewPage() {
+  const { artist, supabase } = await getDashboardArtist('/dashboard')
+  if (!artist) notFound()
 
   const [
-    { data: subsData },
+    { data: subscriptionsData },
     { data: postsData },
-    { data: txData },
+    { data: transactionsData },
     { data: showsData },
-    { data: galleryData },
-    { data: videosData },
-    { data: storiesData },
-    { data: plansData },
+    { data: livesData },
   ] = await Promise.all([
     supabase
       .from('subscriptions')
       .select('*, plan:plans(*)')
       .eq('artist_id', artist.id)
       .eq('status', 'active'),
-    supabase.from('posts').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
     supabase
-      .from('transactions')
+      .from('posts')
       .select('*')
       .eq('artist_id', artist.id)
       .order('created_at', { ascending: false }),
-    supabase.from('shows').select('*').eq('artist_id', artist.id).order('starts_at', { ascending: true }),
-    supabase.from('gallery_items').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
-    supabase.from('videos').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
-    supabase.from('stories').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
-    supabase.from('plans').select('*').eq('artist_id', artist.id).order('price_cents', { ascending: true }),
+    supabase.from('transactions').select('*').eq('artist_id', artist.id),
+    supabase
+      .from('shows')
+      .select('*')
+      .eq('artist_id', artist.id)
+      .eq('status', 'scheduled')
+      .order('starts_at', { ascending: true })
+      .limit(4),
+    supabase
+      .from('lives')
+      .select('*')
+      .eq('artist_id', artist.id)
+      .in('status', ['scheduled', 'live'])
+      .order('scheduled_at', { ascending: true })
+      .limit(4),
   ])
 
-  const subs = (subsData ?? []) as (Subscription & { plan: Plan })[]
+  const subscriptions = (subscriptionsData ?? []) as (Subscription & { plan: Plan | null })[]
   const posts = (postsData ?? []) as Post[]
-  const txs = (txData ?? []) as Transaction[]
+  const transactions = (transactionsData ?? []) as Transaction[]
   const shows = (showsData ?? []) as Show[]
-  const gallery = (galleryData ?? []) as GalleryItem[]
-  const videos = (videosData ?? []) as Video[]
-  const stories = (storiesData ?? []) as Story[]
-  const plans = (plansData ?? []) as Plan[]
+  const lives = (livesData ?? []) as Live[]
+  const revenueSeries = bucketByMonth(transactions, 'created_at', (transaction) => transaction.amount_cents, 6)
 
-  const gross = txs.reduce((acc, t) => acc + t.amount_cents, 0)
-  const fees = txs.reduce((acc, t) => acc + t.platform_fee_cents, 0)
-  const net = txs.reduce((acc, t) => acc + t.artist_net_cents, 0)
+  const monthStart = new Date()
+  monthStart.setDate(1)
+  monthStart.setHours(0, 0, 0, 0)
+  const monthlyNet = transactions
+    .filter((transaction) => new Date(transaction.created_at) >= monthStart)
+    .reduce((sum, transaction) => sum + transaction.artist_net_cents, 0)
+  const totalLikes = posts.reduce((sum, post) => sum + post.likes_count, 0)
+  const planInfo = TOOL_PLANS[(artist.tool_plan ?? 'basic') as ToolPlan]
 
-  const tierCounts = subs.reduce<Record<string, number>>((acc, s) => {
-    const t = s.plan?.tier
-    if (t) acc[t] = (acc[t] ?? 0) + 1
-    return acc
-  }, {})
+  const tierData = TIER_ORDER.map((tier) => ({
+    tier,
+    label: TIER_LABELS[tier],
+    value: subscriptions.filter((subscription) => subscription.plan?.tier === tier).length,
+    color: TIER_COLORS[tier],
+  }))
 
-  const toolPlan = (artist.tool_plan ?? 'basic') as ToolPlan
-  const toolInfo = TOOL_PLANS[toolPlan]
-
-  const NAV_ITEMS = [
-    { label: 'DASHBOARD', icon: LayoutDashboard, enabled: true, active: true },
-    { label: 'CONTEÚDO', icon: FileText, enabled: true, active: false },
-    { label: 'GALERIA', icon: ImageIcon, enabled: hasEntitlement(toolPlan, 'gallery'), active: false },
-    { label: 'LIVES', icon: Radio, enabled: hasEntitlement(toolPlan, 'lives'), active: false },
-    { label: 'AGENDA', icon: CalendarDays, enabled: true, active: false },
-    { label: 'FAN CLUB', icon: Star, enabled: hasEntitlement(toolPlan, 'club'), active: false },
+  const events = [
+    ...lives.map((live) => ({
+      id: `live-${live.id}`,
+      title: live.title,
+      date: live.scheduled_at,
+      meta: live.status === 'live' ? 'Transmitindo agora' : 'Live agendada',
+      live: live.status === 'live',
+    })),
+    ...shows.map((show) => ({
+      id: `show-${show.id}`,
+      title: show.title,
+      date: show.starts_at,
+      meta: [show.venue, show.city, show.state].filter(Boolean).join(' · '),
+      live: false,
+    })),
   ]
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 4)
 
   const stats = [
-    { label: 'ASSINANTES ATIVOS', value: subs.length.toLocaleString('pt-BR'), icon: Users },
-    { label: 'RECEITA BRUTA', value: formatPrice(gross), icon: TrendingUp },
-    { label: 'PUBLICAÇÕES', value: posts.length.toLocaleString('pt-BR'), icon: FileText },
-    { label: 'SEGUIDORES', value: artist.followers_count.toLocaleString('pt-BR'), icon: Radio },
+    {
+      label: 'TOTAL DE FÃS',
+      value: artist.followers_count.toLocaleString('pt-BR'),
+      icon: Users,
+      tone: 'text-[var(--artist-primary)] bg-[var(--artist-primary)]/10',
+    },
+    {
+      label: 'MEMBROS VIP',
+      value: subscriptions.length.toLocaleString('pt-BR'),
+      icon: Crown,
+      tone: 'text-violet-400 bg-violet-500/10',
+    },
+    {
+      label: 'RECEITA NO MÊS',
+      value: formatPrice(monthlyNet),
+      icon: TrendingUp,
+      tone: 'text-sky-400 bg-sky-500/10',
+    },
+    {
+      label: 'INTERAÇÕES',
+      value: totalLikes.toLocaleString('pt-BR'),
+      icon: Heart,
+      tone: 'text-emerald-400 bg-emerald-500/10',
+    },
   ]
 
   return (
-    <ArtistThemeScope theme={artist.theme}>
-    <div className="flex min-h-dvh bg-background">
-      {/* Sidebar (desktop) */}
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-white/8 bg-card px-5 py-7 lg:flex">
-        <Logo href="/home" className="px-2 text-xl" />
-        <p className="mt-1 px-2 text-[8px] font-black tracking-[0.3em] text-muted-foreground">
-          PAINEL DO ARTISTA
-        </p>
-        <nav className="mt-8 flex flex-col gap-1" aria-label="Menu do painel">
-          {NAV_ITEMS.map(({ label, icon: Icon, enabled, active }) => (
-            <span
-              key={label}
-              className={
-                active
-                  ? 'gradient-brand flex items-center gap-3 rounded-2xl px-4 py-3 text-[10px] font-black tracking-[0.15em] text-white'
-                  : enabled
-                    ? 'flex items-center gap-3 rounded-2xl px-4 py-3 text-[10px] font-black tracking-[0.15em] text-muted-foreground'
-                    : 'flex items-center gap-3 rounded-2xl px-4 py-3 text-[10px] font-black tracking-[0.15em] text-muted-foreground/40'
-              }
-            >
-              <Icon className="size-4" aria-hidden="true" />
-              {label}
-              {!enabled && <Lock className="ml-auto size-3" aria-hidden="true" />}
-            </span>
-          ))}
-        </nav>
-        <div className="mt-auto flex items-center gap-3 rounded-2xl border border-white/8 bg-background p-3">
-          <Image
-            src={artist.avatar_url || '/placeholder.svg?height=36&width=36'}
-            alt=""
-            width={36}
-            height={36}
-            className="size-9 rounded-xl object-cover"
-          />
-          <div className="min-w-0">
-            <p className="truncate text-[11px] font-extrabold">{artist.name}</p>
-            <p className="text-[8px] font-black tracking-[0.15em] text-primary">ARTISTA</p>
-          </div>
+    <div className="flex flex-col gap-6">
+      <header className="flex flex-wrap items-center justify-between gap-5">
+        <div>
+          <p className="flex items-center gap-2 text-[9px] font-black tracking-[0.22em] text-[var(--artist-primary)]">
+            <span className="size-1.5 rounded-full bg-[var(--artist-primary)]" aria-hidden="true" />
+            DASHBOARD DO ARTISTA
+          </p>
+          <h1 className="mt-2 font-serif text-3xl font-black tracking-[-0.04em] text-[var(--artist-text)]">
+            Olá, {artist.name}
+          </h1>
+          <p className="mt-2 text-xs font-medium text-[var(--artist-muted)]">
+            Acompanhe sua audiência, conteúdos e resultados em um só lugar.
+          </p>
         </div>
-      </aside>
-
-      {/* Conteúdo */}
-      <div className="min-w-0 flex-1 px-5 pb-16 pt-6 md:px-8">
-        <header className="flex flex-wrap items-center gap-4">
-          <Link
-            href="/profile"
-            aria-label="Voltar para o perfil"
-            className="flex size-10 items-center justify-center rounded-full border border-white/8 bg-card lg:hidden"
-          >
-            <ArrowLeft className="size-5" aria-hidden="true" />
-          </Link>
-          <div className="min-w-0 flex-1">
-            <p className="text-[9px] font-black tracking-[0.3em] text-primary">VISÃO GERAL</p>
-            <h1 className="mt-0.5 truncate font-serif text-2xl font-black tracking-tight">
-              DASHBOARD — {artist.name.toUpperCase()}
-            </h1>
-          </div>
-          <Link
-            href={`/artist/${artist.slug}`}
-            className="flex items-center gap-2 rounded-full border border-white/8 bg-card px-5 py-2.5 text-[9px] font-black tracking-[0.15em] transition-colors hover:bg-secondary"
-          >
-            VER PERFIL PÚBLICO
-            <ExternalLink className="size-3" aria-hidden="true" />
-          </Link>
-        </header>
-
-        {/* Banner do plano de ferramenta */}
-        <section
-          aria-label="Seu plano WordFan"
-          className="mt-6 flex flex-wrap items-center gap-4 rounded-3xl border border-primary/25 bg-primary/5 p-5"
-        >
-          <span className="gradient-brand flex size-11 shrink-0 items-center justify-center rounded-2xl">
-            <Sparkles className="size-5 text-white" aria-hidden="true" />
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 items-center gap-2 rounded-xl border border-white/8 bg-white/[0.035] px-4 text-[9px] font-black tracking-[0.12em] text-[var(--artist-muted)]">
+            <Sparkles className="size-3.5 text-[var(--artist-primary)]" aria-hidden="true" />
+            PLANO {planInfo.label.toUpperCase()}
           </span>
-          <div className="shrink-0">
-            <p className="whitespace-nowrap text-[9px] font-black tracking-[0.2em] text-muted-foreground">
-              SEU PLANO WORDFAN
-            </p>
-            <p className="mt-0.5 whitespace-nowrap font-serif text-lg font-black text-primary">
-              {toolInfo.label.toUpperCase()}{' '}
-              <span className="font-numeric text-xs font-bold text-muted-foreground">
-                • {toolInfo.price}
-              </span>
-            </p>
+          <Link
+            href="/dashboard/estudio"
+            className="artist-gradient flex h-11 items-center gap-2 rounded-xl px-5 text-[9px] font-black tracking-[0.13em] text-white shadow-[0_12px_30px_-16px_rgba(0,0,0,.9)]"
+          >
+            <FileText className="size-3.5" aria-hidden="true" />
+            NOVO CONTEÚDO
+          </Link>
+        </div>
+      </header>
+
+      <section aria-label="Métricas principais" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {stats.map(({ label, value, icon: Icon, tone }) => (
+          <article key={label} className="artist-dashboard-panel p-5">
+            <span className={`flex size-10 items-center justify-center rounded-xl ${tone}`}>
+              <Icon className="size-4" aria-hidden="true" />
+            </span>
+            <p className="mt-5 text-[9px] font-black tracking-[0.16em] text-[var(--artist-muted)]">{label}</p>
+            <p className="mt-1 font-numeric text-2xl font-bold tracking-tight text-[var(--artist-text)]">{value}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(320px,.8fr)]">
+        <article className="artist-dashboard-panel p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="artist-dashboard-eyebrow">RESULTADOS</p>
+              <h2 className="mt-1.5 text-lg font-black text-[var(--artist-text)]">Crescimento de receita</h2>
+            </div>
+            <span className="rounded-xl border border-white/8 bg-black/20 px-3 py-2 text-[8px] font-black tracking-[0.12em] text-[var(--artist-muted)]">
+              ÚLTIMOS 6 MESES
+            </span>
           </div>
-          <div className="flex min-w-0 flex-1 flex-wrap justify-end gap-2">
-            {toolInfo.features.map((f) => (
-              <span
-                key={f}
-                className="rounded-full bg-white/5 px-3 py-1 text-[8px] font-black tracking-[0.1em] text-muted-foreground uppercase"
-              >
-                {f}
-              </span>
+          <div className="mt-5">
+            <RevenueAreaChart data={revenueSeries} currency />
+          </div>
+        </article>
+
+        <article className="artist-dashboard-panel p-6">
+          <p className="artist-dashboard-eyebrow">AUDIÊNCIA</p>
+          <h2 className="mt-1.5 text-lg font-black text-[var(--artist-text)]">Distribuição de planos</h2>
+          <TierDonutChart data={tierData} />
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {tierData.map((item) => (
+              <div key={item.tier} className="flex items-center gap-2 text-[9px] font-bold text-[var(--artist-muted)]">
+                <span className="size-2 rounded-sm" style={{ backgroundColor: item.color }} aria-hidden="true" />
+                <span className="flex-1">{item.label}</span>
+                <span className="font-numeric text-[var(--artist-text)]">{item.value}</span>
+              </div>
             ))}
           </div>
-        </section>
+        </article>
+      </section>
 
-        <section aria-label="Métricas" className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {stats.map(({ label, value, icon: Icon }) => (
-            <div key={label} className="rounded-3xl border border-white/8 bg-card p-5">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-primary/10">
-                <Icon className="size-4 text-primary" aria-hidden="true" />
-              </span>
-              <p className="mt-4 font-numeric text-2xl font-bold">{value}</p>
-              <p className="mt-1 text-[8px] font-black tracking-[0.2em] text-muted-foreground">{label}</p>
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,.7fr)]">
+        <article className="artist-dashboard-panel p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="artist-dashboard-eyebrow">CONTEÚDO</p>
+              <h2 className="mt-1.5 text-lg font-black text-[var(--artist-text)]">Publicações recentes</h2>
             </div>
-          ))}
-        </section>
-
-        {/* Receita com split */}
-        <section aria-labelledby="revenue-heading" className="mt-6">
-          <h2
-            id="revenue-heading"
-            className="text-[10px] font-black tracking-[0.25em] text-muted-foreground"
-          >
-            RECEITA E REPASSE
-          </h2>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-3xl border border-white/8 bg-card p-5">
-              <p className="flex items-center gap-2 text-[8px] font-black tracking-[0.2em] text-muted-foreground">
-                <TrendingUp className="size-3.5" aria-hidden="true" />
-                BRUTO (ASSINATURAS)
-              </p>
-              <p className="mt-3 font-numeric text-2xl font-bold">{formatPrice(gross)}</p>
-            </div>
-            <div className="rounded-3xl border border-white/8 bg-card p-5">
-              <p className="flex items-center gap-2 text-[8px] font-black tracking-[0.2em] text-muted-foreground">
-                <Landmark className="size-3.5" aria-hidden="true" />
-                TAXA WORDFAN ({Number(artist.commission_pct ?? 20)}%)
-              </p>
-              <p className="mt-3 font-numeric text-2xl font-bold text-muted-foreground">
-                −{formatPrice(fees)}
-              </p>
-            </div>
-            <div className="rounded-3xl border border-primary/30 bg-primary/5 p-5">
-              <p className="flex items-center gap-2 text-[8px] font-black tracking-[0.2em] text-primary">
-                <Wallet className="size-3.5" aria-hidden="true" />
-                SEU LÍQUIDO
-              </p>
-              <p className="mt-3 font-numeric text-2xl font-bold text-primary">{formatPrice(net)}</p>
-            </div>
+            <Link href="/dashboard/estudio" className="flex items-center gap-1 text-[8px] font-black tracking-[0.13em] text-[var(--artist-primary)]">
+              GERENCIAR
+              <ArrowUpRight className="size-3" aria-hidden="true" />
+            </Link>
           </div>
-        </section>
-
-        <div className="mt-8 grid gap-6 lg:grid-cols-5">
-          {/* Gerenciar conteúdo (CRUD completo) */}
-          <section aria-labelledby="manage-heading" className="lg:col-span-3">
-            <h2 id="manage-heading" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
-              GERENCIAR CONTEÚDO
-            </h2>
-            <p className="mt-1 text-[10px] font-bold text-muted-foreground/70">
-              Feed, Stories, Agenda, Galeria, Vídeos e Fan Club — tudo que aparece no seu perfil público.
-            </p>
-            <div className="mt-3">
-              <ContentManager
-                artistId={artist.id}
-                posts={posts}
-                shows={shows}
-                gallery={gallery}
-                videos={videos}
-                stories={stories}
-                plans={plans}
-              />
-            </div>
-          </section>
-
-          {/* Resumo de assinantes */}
-          <section aria-labelledby="subs-heading" className="lg:col-span-2">
-            <h2 id="subs-heading" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
-              ASSINANTES POR PLANO
-            </h2>
-            <div className="mt-3 flex flex-col gap-4 rounded-3xl border border-white/8 bg-card p-5">
-              {(['bronze', 'silver', 'gold', 'platinum'] as Tier[]).map((tier) => {
-                const count = tierCounts[tier] ?? 0
-                const pct = subs.length > 0 ? Math.round((count / subs.length) * 100) : 0
-                return (
-                  <div key={tier}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-black tracking-[0.15em]">
-                        {TIER_LABELS[tier].toUpperCase()}
-                      </span>
-                      <span className="font-numeric text-[10px] font-bold text-muted-foreground">
-                        {count} ({pct}%)
-                      </span>
-                    </div>
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/5">
-                      <div
-                        className={`h-full rounded-full ${tierBar[tier]}`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            <h2 className="mt-8 text-[10px] font-black tracking-[0.25em] text-muted-foreground">
-              PUBLICAÇÕES RECENTES
-            </h2>
-            <ul className="mt-3 flex flex-col gap-2.5">
-              {posts.slice(0, 6).map((p) => (
-                <li
-                  key={p.id}
-                  className="flex items-center gap-4 rounded-3xl border border-white/8 bg-card p-4"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-extrabold">{p.title ?? 'Sem título'}</p>
-                    <p className="mt-1 font-numeric text-[9px] font-bold tracking-[0.1em] text-zinc-500">
-                      {new Date(p.created_at).toLocaleDateString('pt-BR')} ·{' '}
-                      {p.likes_count.toLocaleString('pt-BR')} CURTIDAS
-                    </p>
-                  </div>
-                  {p.is_exclusive && p.min_tier ? (
-                    <span className="shrink-0 rounded-full bg-club/10 px-3 py-1.5 text-[8px] font-black tracking-[0.15em] text-club">
-                      {TIER_LABELS[p.min_tier].toUpperCase()}+
-                    </span>
+          <div className="mt-5 flex flex-col gap-2.5">
+            {posts.slice(0, 4).map((post) => (
+              <Link
+                key={post.id}
+                href="/dashboard/estudio"
+                className="group flex items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3.5 transition-colors hover:border-[var(--artist-primary)]/20 hover:bg-[var(--artist-primary)]/[0.035]"
+              >
+                <div className="relative size-12 shrink-0 overflow-hidden rounded-xl bg-white/5">
+                  {post.media_url ? (
+                    <Image src={post.media_url} alt="" fill sizes="48px" className="object-cover" />
                   ) : (
-                    <span className="shrink-0 rounded-full bg-white/5 px-3 py-1.5 text-[8px] font-black tracking-[0.15em] text-muted-foreground">
-                      PÚBLICO
+                    <span className="flex h-full items-center justify-center">
+                      <FileText className="size-4 text-[var(--artist-muted)]" aria-hidden="true" />
                     </span>
                   )}
-                </li>
-              ))}
-              {posts.length === 0 && (
-                <li className="rounded-3xl border border-dashed border-white/10 p-6 text-center text-[10px] font-bold text-muted-foreground">
-                  Nenhuma publicação ainda.
-                </li>
-              )}
-            </ul>
-          </section>
-        </div>
-      </div>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[11px] font-black text-[var(--artist-text)]">{post.title || 'Publicação sem título'}</p>
+                  <p className="mt-1 text-[8px] font-bold text-[var(--artist-muted)]">
+                    {new Date(post.created_at).toLocaleDateString('pt-BR')} · {post.likes_count.toLocaleString('pt-BR')} curtidas
+                  </p>
+                </div>
+                <span className="rounded-lg bg-white/5 px-2.5 py-1.5 text-[7px] font-black tracking-[0.12em] text-[var(--artist-muted)]">
+                  {post.is_exclusive ? 'EXCLUSIVO' : 'PÚBLICO'}
+                </span>
+              </Link>
+            ))}
+            {posts.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center">
+                <FileText className="mx-auto size-5 text-[var(--artist-muted)]" aria-hidden="true" />
+                <p className="mt-3 text-[10px] font-bold text-[var(--artist-muted)]">Nenhuma publicação criada ainda.</p>
+              </div>
+            )}
+          </div>
+        </article>
+
+        <article className="artist-dashboard-panel p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="artist-dashboard-eyebrow">AGENDA</p>
+              <h2 className="mt-1.5 text-lg font-black text-[var(--artist-text)]">Próximos eventos</h2>
+            </div>
+            <CalendarDays className="size-5 text-[var(--artist-primary)]" aria-hidden="true" />
+          </div>
+          <div className="mt-5 flex flex-col gap-2.5">
+            {events.map((event) => (
+              <div key={event.id} className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+                <div className="flex items-start gap-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--artist-primary)]/10">
+                    {event.live ? (
+                      <Radio className="size-4 text-red-400" aria-hidden="true" />
+                    ) : (
+                      <CalendarDays className="size-4 text-[var(--artist-primary)]" aria-hidden="true" />
+                    )}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-black leading-snug text-[var(--artist-text)]">{event.title}</p>
+                    <p className="mt-1 text-[8px] font-bold text-[var(--artist-muted)]">{event.meta || 'Evento do artista'}</p>
+                    <p className="mt-2 font-numeric text-[8px] font-black tracking-[0.1em] text-[var(--artist-primary)]">
+                      {new Date(event.date).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {events.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center">
+                <CalendarDays className="mx-auto size-5 text-[var(--artist-muted)]" aria-hidden="true" />
+                <p className="mt-3 text-[10px] font-bold text-[var(--artist-muted)]">Nenhum evento agendado.</p>
+              </div>
+            )}
+          </div>
+        </article>
+      </section>
     </div>
-    </ArtistThemeScope>
   )
 }

@@ -21,7 +21,13 @@ function loginErrorMessage(error: unknown): string {
   return 'Algo deu errado. Tente novamente.'
 }
 
-export function LoginForm() {
+export function LoginForm({
+  logoUrl,
+  siteName = 'WordFan',
+}: {
+  logoUrl?: string | null
+  siteName?: string
+}) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -69,7 +75,7 @@ export function LoginForm() {
       />
       <div className="relative w-full max-w-sm">
         <div className="text-center">
-          <Logo href="/" className="text-3xl" />
+          <Logo href="/" imageUrl={logoUrl ?? undefined} className="text-3xl" />
           <p className="mt-3 text-[9px] font-black tracking-[0.35em] text-muted-foreground">
             ÁREA DE ACESSO
           </p>

@@ -184,6 +184,36 @@ export interface Story {
   created_at: string
 }
 
+export type AdPlacement = 'home_hero' | 'home_inline' | 'discover' | 'events'
+
+/** Espelha exatamente a tabela `public.ad_banners` do Supabase. */
+export interface Ad {
+  id: string
+  title: string
+  subtitle: string | null
+  description: string | null
+  image_url: string | null
+  cta_label: string | null
+  cta_url: string | null
+  placement: AdPlacement
+  accent_color: string | null
+  is_active: boolean
+  sort_order: number
+  starts_at: string | null
+  ends_at: string | null
+  impressions: number
+  clicks: number
+  created_at: string
+  updated_at: string | null
+}
+
+export const AD_PLACEMENT_LABELS: Record<AdPlacement, string> = {
+  home_hero: 'Home — Destaque',
+  home_inline: 'Home — Faixa',
+  discover: 'Descobrir',
+  events: 'Eventos',
+}
+
 export interface Notification {
   id: string
   user_id: string

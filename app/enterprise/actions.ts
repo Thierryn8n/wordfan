@@ -74,7 +74,11 @@ export async function applyEnterprise(input: ApplyInput) {
   return { success: true, leadId: lead.id }
 }
 
-/** Pagamento simulado (mock) dos R$50. Marca como pago e move para a lista de espera. */
+/**
+ * Pagamento simulado (mock) dos R$50. Confirma o pagamento e ATIVA o Enterprise
+ * na hora (status `approved`) — o selo holográfico aparece imediatamente no
+ * perfil, sem depender de aprovação manual da equipe.
+ */
 export async function payEnterpriseLead(leadId: string) {
   const supabase = await createClient()
   const {
@@ -93,9 +97,17 @@ export async function payEnterpriseLead(leadId: string) {
   if (!lead) return { error: 'Solicitação não encontrada.' }
   if (lead.paid) return { success: true, alreadyPaid: true }
 
+  const nowIso = new Date().toISOString()
   const { error } = await supabase
     .from('enterprise_leads')
-    .update({ paid: true, paid_at: new Date().toISOString(), status: 'waitlist' })
+    .update({
+      paid: true,
+      paid_at: nowIso,
+      // Ativação imediata: pagou, virou Enterprise.
+      status: 'approved',
+      reviewed_at: nowIso,
+      review_note: 'Ativado automaticamente após confirmação do pagamento.',
+    })
     .eq('id', leadId)
     .eq('user_id', user.id)
 
@@ -104,14 +116,15 @@ export async function payEnterpriseLead(leadId: string) {
     return { error: 'Não foi possível confirmar o pagamento.' }
   }
 
-  // Confirma ao contratante (in-app) que entrou na lista de espera
+  // Confirma ao contratante (in-app) que o Enterprise já está ativo
   await supabase.from('notifications').insert({
     user_id: user.id,
-    title: 'Pagamento confirmado',
-    body: 'Você entrou na lista de espera Enterprise. Aguarde a aprovação da equipe.',
+    title: 'Enterprise ativado',
+    body: 'Pagamento confirmado! Seu selo Enterprise já está ativo no seu perfil.',
   })
 
   revalidatePath('/enterprise/status')
+  revalidatePath('/profile')
   revalidatePath('/admin/enterprise')
   return { success: true }
 }

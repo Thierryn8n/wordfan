@@ -272,6 +272,85 @@ export async function deleteStory(id: string, artistId: string) {
   return { success: true }
 }
 
+// ============ LIVES ============
+const LIVE_STATUSES = ['scheduled', 'live', 'ended']
+
+export async function saveLive(input: {
+  id?: string
+  artistId: string
+  title: string
+  scheduledAt: string
+  status: 'scheduled' | 'live' | 'ended'
+  isExclusive: boolean
+  minTier: string
+}) {
+  const { supabase, error, slug } = await requireManager(input.artistId)
+  if (error) return { error }
+
+  const title = input.title.trim().slice(0, 140)
+  if (!title) return { error: 'Título obrigatório.' }
+  const scheduledAt = new Date(input.scheduledAt)
+  if (Number.isNaN(scheduledAt.getTime())) return { error: 'Data inválida.' }
+
+  const status = LIVE_STATUSES.includes(input.status) ? input.status : 'scheduled'
+  const minTier = input.isExclusive && TIERS.includes(input.minTier) ? input.minTier : null
+
+  const payload = {
+    artist_id: input.artistId,
+    title,
+    scheduled_at: scheduledAt.toISOString(),
+    status,
+    min_tier: minTier,
+  }
+
+  const q = input.id
+    ? supabase.from('lives').update(payload).eq('id', input.id).eq('artist_id', input.artistId)
+    : supabase.from('lives').insert(payload)
+  const { error: dbError } = await q
+  if (dbError) {
+    console.log('[v0] saveLive error:', dbError.message)
+    return { error: 'Não foi possível salvar a live.' }
+  }
+
+  // Mantém o selo "ao vivo" do artista coerente com as lives em andamento.
+  const { data: activeLives } = await supabase
+    .from('lives')
+    .select('id')
+    .eq('artist_id', input.artistId)
+    .eq('status', 'live')
+  await supabase
+    .from('artists')
+    .update({ is_live: (activeLives ?? []).length > 0 })
+    .eq('id', input.artistId)
+
+  revalidateArtist(slug!)
+  revalidatePath('/events')
+  revalidatePath('/home')
+  return { success: true }
+}
+
+export async function deleteLive(id: string, artistId: string) {
+  const { supabase, error, slug } = await requireManager(artistId)
+  if (error) return { error }
+  const { error: dbError } = await supabase.from('lives').delete().eq('id', id).eq('artist_id', artistId)
+  if (dbError) return { error: 'Não foi possível excluir.' }
+
+  const { data: activeLives } = await supabase
+    .from('lives')
+    .select('id')
+    .eq('artist_id', artistId)
+    .eq('status', 'live')
+  await supabase
+    .from('artists')
+    .update({ is_live: (activeLives ?? []).length > 0 })
+    .eq('id', artistId)
+
+  revalidateArtist(slug!)
+  revalidatePath('/events')
+  revalidatePath('/home')
+  return { success: true }
+}
+
 // ============ PLANOS (Fan Club) — CRUD completo ============
 export async function savePlan(input: {
   id?: string
@@ -332,7 +411,9 @@ export async function deletePlan(id: string, artistId: string) {
 
 // ============ UPLOAD DE MÍDIA (admin ou dono) ============
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
-const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+const MAX_VIDEO_BYTES = 200 * 1024 * 1024
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime']
 
 export async function uploadContentImage(formData: FormData) {
   const artistId = String(formData.get('artistId') ?? '')
@@ -342,24 +423,107 @@ export async function uploadContentImage(formData: FormData) {
   const file = formData.get('file') as File | null
   const kind = String(formData.get('kind') ?? 'media').slice(0, 20)
 
-  if (!file || file.size === 0) return { error: 'Nenhum arquivo enviado.' }
-  if (file.size > MAX_IMAGE_BYTES) return { error: 'Imagem muito grande (máx. 5MB).' }
-  if (!ALLOWED_TYPES.includes(file.type)) return { error: 'Formato inválido (PNG, JPG, WebP ou GIF).' }
+  if (!file || file.size === 0) {
+    console.log('[upload] Nenhum arquivo enviado')
+    return { error: 'Nenhum arquivo enviado.' }
+  }
+
+  const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type)
+  const isImage = ALLOWED_IMAGE_TYPES.includes(file.type)
+
+  if (!isVideo && !isImage) {
+    console.log('[upload] Tipo de arquivo inválido:', file.type)
+    return { error: 'Formato inválido. Use PNG, JPG, WebP, GIF, MP4, WebM ou MOV.' }
+  }
+
+  const maxSize = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES
+  if (file.size > maxSize) {
+    const maxSizeMB = (maxSize / (1024 * 1024)).toFixed(0)
+    console.log('[upload] Arquivo muito grande:', file.size, 'máximo:', maxSize)
+    return { error: `Arquivo muito grande (máx. ${maxSizeMB}MB).` }
+  }
 
   const ext = file.type.split('/')[1] === 'jpeg' ? 'jpg' : file.type.split('/')[1]
   const path = `${slug}/${kind}-${Date.now()}.${ext}`
+
+  console.log('[upload] Iniciando upload:', { path, size: file.size, type: file.type })
 
   const { error: upError } = await supabase.storage.from('artist-media').upload(path, file, {
     contentType: file.type,
     upsert: false,
   })
+
   if (upError) {
-    console.log('[v0] upload error:', upError.message)
-    return { error: 'Falha no upload. Tente novamente.' }
+    console.log('[upload] Erro Supabase:', upError.message, upError)
+    if (upError.message.includes('Bucket not found')) {
+      return { error: 'Bucket de armazenamento não configurado no Supabase.' }
+    }
+    if (upError.message.includes('permission')) {
+      return { error: 'Sem permissão para fazer upload. Verifique as RLS policies.' }
+    }
+    if (upError.message.includes('quota')) {
+      return { error: 'Cota de armazenamento excedida.' }
+    }
+    return { error: `Falha no upload: ${upError.message}. Tente novamente.` }
   }
+
+  console.log('[upload] Upload concluído com sucesso:', path)
 
   const {
     data: { publicUrl },
   } = supabase.storage.from('artist-media').getPublicUrl(path)
   return { url: publicUrl }
+}
+
+// ============ UPLOAD DIRETO (signed URL — cliente sobe direto ao Supabase) ============
+// Gera uma URL assinada para o cliente fazer upload direto ao bucket,
+// sem o arquivo passar pelo servidor Next.js — elimina a double-hop e é muito mais rápido.
+const ALLOWED_DIRECT_TYPES = [
+  'video/mp4', 'video/webm', 'video/quicktime',
+  'image/png', 'image/jpeg', 'image/webp', 'image/gif',
+]
+
+export async function createDirectUploadUrl(input: {
+  artistId: string
+  kind: string
+  fileType: string
+  fileSizeBytes: number
+}) {
+  const { supabase, error, slug } = await requireManager(input.artistId)
+  if (error) return { error }
+
+  if (!ALLOWED_DIRECT_TYPES.includes(input.fileType)) {
+    return { error: 'Tipo de arquivo não permitido.' }
+  }
+
+  const isVideo = input.fileType.startsWith('video/')
+  const maxBytes = isVideo ? 200 * 1024 * 1024 : 5 * 1024 * 1024
+  if (input.fileSizeBytes > maxBytes) {
+    const mb = (maxBytes / (1024 * 1024)).toFixed(0)
+    return { error: `Arquivo muito grande (máx. ${mb}MB).` }
+  }
+
+  const rawExt  = input.fileType.split('/')[1]
+  const ext     = rawExt === 'jpeg' ? 'jpg' : rawExt === 'quicktime' ? 'mov' : rawExt
+  const kind    = input.kind.slice(0, 20).replace(/[^a-z0-9-]/gi, '-')
+  const path    = `${slug}/${kind}-${Date.now()}.${ext}`
+
+  const { data, error: signErr } = await supabase.storage
+    .from('artist-media')
+    .createSignedUploadUrl(path)
+
+  if (signErr || !data) {
+    console.log('[signed-upload] error:', signErr?.message)
+    return { error: 'Não foi possível gerar o link de upload. Tente novamente.' }
+  }
+
+  // public URL que será salva no banco após o upload
+  const { data: { publicUrl } } = supabase.storage.from('artist-media').getPublicUrl(path)
+
+  return {
+    signedUrl: data.signedUrl,
+    token:     data.token,
+    path,
+    publicUrl,
+  }
 }

@@ -113,7 +113,7 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
     <div>
       {/* Busca + criar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex flex-1 items-center gap-3 rounded-2xl border border-white/8 bg-card px-4 py-3.5">
+        <div className="flex flex-1 items-center gap-3 rounded-xl border border-white/8 bg-black/25 px-4 py-3.5">
           <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <input
             type="search"
@@ -130,7 +130,7 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
             setError(null)
             setShowCreate(true)
           }}
-          className="gradient-brand flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-[10px] font-black tracking-[0.2em] text-white"
+          className="gradient-brand flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-[10px] font-black tracking-[0.16em] text-white shadow-[0_12px_30px_-16px_rgba(255,106,0,.8)]"
         >
           <Plus className="size-4" aria-hidden="true" />
           NOVO ARTISTA
@@ -155,7 +155,7 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
           return (
             <li
               key={a.id}
-              className="flex flex-col gap-4 rounded-3xl border border-white/8 bg-card p-4 sm:flex-row sm:items-center"
+              className="flex flex-col gap-4 rounded-2xl border border-white/[0.065] bg-white/[0.02] p-4 transition-colors hover:border-primary/15 hover:bg-primary/[0.025] sm:flex-row sm:items-center"
             >
               <Link href={`/admin/studio?artist=${a.slug}`} className="flex min-w-0 flex-1 items-center gap-4">
                 <span className="relative shrink-0">

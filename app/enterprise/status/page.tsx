@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Clock, Check, X, CreditCard } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { HolographicCrown3D } from '@/components/wordfan/holo-crown-3d'
+import { HoloCrown } from '@/components/wordfan/holo-crown'
 import type { EnterpriseLead } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -13,7 +13,7 @@ const STATUS_META: Record<
 > = {
   pending_payment: {
     label: 'AGUARDANDO PAGAMENTO',
-    hint: 'Finalize o pagamento da entrada para entrar na lista de espera.',
+    hint: 'Finalize o pagamento para ativar seu Enterprise na hora.',
     icon: CreditCard,
     tone: 'text-amber-400',
   },
@@ -24,8 +24,8 @@ const STATUS_META: Record<
     tone: 'text-sky-400',
   },
   approved: {
-    label: 'APROVADO',
-    hint: 'O empresário do artista vai entrar em contato. Seu perfil agora tem o selo Enterprise.',
+    label: 'ENTERPRISE ATIVO',
+    hint: 'Pagamento confirmado! Seu perfil já exibe o selo Enterprise.',
     icon: Check,
     tone: 'text-emerald-400',
   },
@@ -70,7 +70,7 @@ export default async function EnterpriseStatusPage() {
 
       {hasApproved && (
         <div className="mt-6 flex flex-col items-center">
-          <HolographicCrown3D size={180} label="Selo Enterprise ativo" />
+          <HoloCrown size={96} label="Selo Enterprise ativo" />
           <p className="holo-text mt-1 text-[11px] font-black tracking-[0.3em]">SELO ENTERPRISE ATIVO</p>
         </div>
       )}
@@ -97,7 +97,7 @@ export default async function EnterpriseStatusPage() {
                       </p>
                     )}
                   </div>
-                  {lead.status === 'approved' && <HolographicCrown3D size={56} />}
+                  {lead.status === 'approved' && <HoloCrown size={36} />}
                 </div>
 
                 <div className={`mt-4 flex items-center gap-2 ${meta.tone}`}>

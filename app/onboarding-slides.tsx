@@ -41,7 +41,15 @@ const SLIDES = [
   },
 ]
 
-export function OnboardingSlides({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
+export function OnboardingSlides({
+  isLoggedIn = false,
+  logoUrl,
+  siteName = 'WordFan',
+}: {
+  isLoggedIn?: boolean
+  logoUrl?: string | null
+  siteName?: string
+}) {
   const router = useRouter()
   const [index, setIndex] = useState(0)
   const [ready, setReady] = useState(false)
@@ -96,7 +104,11 @@ export function OnboardingSlides({ isLoggedIn = false }: { isLoggedIn?: boolean 
   if (!ready) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-background">
-        <Logo className="text-2xl opacity-40" />
+        <Logo
+          href="/home"
+          imageUrl={logoUrl ?? undefined}
+          className="text-3xl"
+        />
       </main>
     )
   }
@@ -123,7 +135,11 @@ export function OnboardingSlides({ isLoggedIn = false }: { isLoggedIn?: boolean 
       {/* Topo: logo + barras de progresso */}
       <div className="relative z-10 px-6 pt-8">
         <div className="flex items-center justify-between">
-          <Logo className="text-2xl" />
+          <Logo
+            href="/home"
+            imageUrl={logoUrl ?? undefined}
+            className="text-2xl"
+          />
           <button
             type="button"
             onClick={() => finish('/home')}

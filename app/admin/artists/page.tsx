@@ -1,21 +1,13 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { ArrowLeft, Mic2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/admin-guard'
 import type { Artist } from '@/lib/types'
 import { ArtistsManager } from './artists-manager'
 
 export const metadata = { title: 'Artistas — ADM WordFan' }
 
 export default async function AdminArtistsPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login?next=/admin/artists')
-
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') redirect('/home')
+  const { supabase } = await requireAdmin('/admin/artists')
 
   const { data: artistsData } = await supabase
     .from('artists')
@@ -31,31 +23,32 @@ export default async function AdminArtistsPage() {
   })
 
   return (
-    <div className="min-h-dvh bg-background pb-16">
-      <header className="border-b border-white/8 bg-card/50 px-6 py-6 md:px-10">
-        <div className="mx-auto flex max-w-6xl items-center gap-4">
+    <main className="px-6 pb-16 pt-8 xl:px-10">
+      <header className="flex items-center gap-4">
           <Link
             href="/admin"
             aria-label="Voltar para o painel admin"
-            className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/8 bg-card"
+            className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.035] text-zinc-400 transition-colors hover:text-white"
           >
             <ArrowLeft className="size-5" aria-hidden="true" />
           </Link>
           <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-2 text-[9px] font-black tracking-[0.3em] text-primary">
+            <p className="flex items-center gap-2 text-[9px] font-black tracking-[0.22em] text-primary">
               <Mic2 className="size-3.5" aria-hidden="true" />
               ADM — GESTÃO DE ARTISTAS
             </p>
-            <h1 className="mt-1 font-serif text-2xl font-black tracking-tight">
-              ARTISTAS DA PLATAFORMA
+            <h1 className="mt-2 font-serif text-3xl font-black tracking-[-0.04em] text-white">
+              Gestão de artistas
             </h1>
+            <p className="mt-2 text-xs font-medium text-zinc-500">
+              Cadastre, personalize e acompanhe toda a operação de cada artista.
+            </p>
           </div>
-        </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 pt-8 md:px-10">
+      <section className="admin-panel mt-7 p-5">
         <ArtistsManager artists={artists} />
-      </main>
-    </div>
+      </section>
+    </main>
   )
 }
