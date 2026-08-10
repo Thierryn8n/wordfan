@@ -4,27 +4,26 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import {
   ArrowLeft, Sparkles, Loader2, CheckCircle2,
-  Clock, ImageIcon, AlertCircle, Info,
+  AlertCircle, Film, ImageIcon, Pencil,
+  Upload, Info, Play,
 } from 'lucide-react'
 import { uploadContentImage, saveStory } from '@/app/actions/content'
 import type { Story } from '@/lib/types'
 
-// ── Lazy-load do editor (usa fabric.js, client-only) ─────────────────────────
+// ── Editor (fabric.js, client-only) ──────────────────────────────────────────
 const StoryCanvasEditor = dynamic(
   () => import('@/components/wordfan/story-canvas-editor').then((m) => ({ default: m.StoryCanvasEditor })),
   {
     ssr: false,
     loading: () => (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-[#090909]">
-        <div className="flex size-16 items-center justify-center rounded-2xl border border-white/8 bg-primary/10">
-          <Loader2 className="size-7 animate-spin text-primary" />
+      <div className="flex h-full flex-col items-center justify-center gap-4 bg-[#090909]">
+        <div className="flex size-14 items-center justify-center rounded-2xl border border-white/8 bg-primary/10">
+          <Loader2 className="size-6 animate-spin text-primary" />
         </div>
-        <p className="text-[10px] font-black tracking-[0.2em] text-zinc-500">
-          CARREGANDO EDITOR…
-        </p>
+        <p className="text-[10px] font-black tracking-[0.2em] text-zinc-500">CARREGANDO EDITOR…</p>
       </div>
     ),
   },
@@ -41,17 +40,15 @@ function dataUrlToFile(dataUrl: string, filename: string): File {
   return new File([buf], filename, { type: mime })
 }
 
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime()
-  const h = Math.floor(diff / 3_600_000)
-  if (h < 1) return 'agora há pouco'
-  if (h < 24) return `há ${h}h`
-  const d = Math.floor(h / 24)
-  if (d < 7) return `há ${d}d`
-  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+function fmtBytes(b: number) {
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)} KB`
+  return `${(b / (1024 * 1024)).toFixed(1)} MB`
 }
 
-// ── Props ─────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type Mode    = 'choose' | 'canvas' | 'video'
+type Phase   = 'editing' | 'uploading' | 'done' | 'error'
 
 interface Props {
   artistId: string
@@ -60,115 +57,165 @@ interface Props {
   existingStories: Story[]
 }
 
+const MAX_VIDEO_MB = 200
+const ACCEPTED_VIDEO = 'video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov'
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function StoryEditorPage({ artistId, artistName, artistSlug, existingStories }: Props) {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
-  const [caption, setCaption] = useState('')
-  const [phase, setPhase] = useState<'editing' | 'uploading' | 'done' | 'error'>('editing')
-  const [errorMsg, setErrorMsg] = useState('')
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+export function StoryEditorPage({ artistId, artistName, existingStories }: Props) {
+  const router   = useRouter()
+  const videoRef = useRef<HTMLInputElement>(null)
 
-  // ── onSave from canvas ────────────────────────────────────────────────────
-  function handleSave(imageDataUrl: string) {
+  const [, startTransition] = useTransition()
+  const [mode,      setMode]      = useState<Mode>('choose')
+  const [phase,     setPhase]     = useState<Phase>('editing')
+  const [caption,   setCaption]   = useState('')
+  const [errorMsg,  setErrorMsg]  = useState('')
+  const [previewUrl,setPreviewUrl]= useState<string | null>(null)
+
+  // video upload state
+  const [videoFile,    setVideoFile]    = useState<File | null>(null)
+  const [videoPreview, setVideoPreview] = useState<string | null>(null)
+  const [uploading,    setUploading]    = useState(false)
+  const [uploadPct,    setUploadPct]    = useState(0)
+  const [videoError,   setVideoError]   = useState('')
+
+  // ── Save from canvas ────────────────────────────────────────────────────
+  function handleCanvasSave(imageDataUrl: string) {
     setPreviewUrl(imageDataUrl)
     setPhase('uploading')
     startTransition(async () => {
-      // 1. convert dataURL → File
       const file = dataUrlToFile(imageDataUrl, `story-${Date.now()}.png`)
-
-      // 2. upload to Supabase Storage
-      const fd = new FormData()
+      const fd   = new FormData()
       fd.set('file', file)
       fd.set('artistId', artistId)
       fd.set('kind', 'story')
       const upload = await uploadContentImage(fd)
-      if (upload.error) {
-        setErrorMsg(upload.error)
-        setPhase('error')
-        return
-      }
+      if (upload.error) { setErrorMsg(upload.error); setPhase('error'); return }
 
-      // 3. save story record
-      const save = await saveStory({
-        artistId,
-        mediaUrl: upload.url!,
-        caption: caption.trim(),
-      })
-      if (save.error) {
-        setErrorMsg(save.error)
-        setPhase('error')
-        return
-      }
+      const save = await saveStory({ artistId, mediaUrl: upload.url!, caption: caption.trim() })
+      if (save.error) { setErrorMsg(save.error); setPhase('error'); return }
 
       setPhase('done')
-      // redirect after short delay so user sees the success state
-      setTimeout(() => router.push('/dashboard/estudio?tab=stories'), 1800)
+      setTimeout(() => router.push('/dashboard/estudio'), 1800)
     })
   }
 
-  // ── Uploading overlay ─────────────────────────────────────────────────────
+  // ── Video file selection ────────────────────────────────────────────────
+  function handleVideoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setVideoError('')
+
+    const isVideo = ['video/mp4', 'video/webm', 'video/quicktime'].includes(file.type)
+    if (!isVideo) {
+      setVideoError('Formato inválido. Use MP4, WebM ou MOV.')
+      return
+    }
+    if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
+      setVideoError(`Vídeo muito grande. Máximo: ${MAX_VIDEO_MB}MB. Seu arquivo: ${fmtBytes(file.size)}.`)
+      return
+    }
+
+    setVideoFile(file)
+    const url = URL.createObjectURL(file)
+    setVideoPreview(url)
+    e.target.value = ''
+  }
+
+  // ── Video publish ───────────────────────────────────────────────────────
+  async function handleVideoPublish() {
+    if (!videoFile) return
+    setUploading(true)
+    setUploadPct(10)
+    setVideoError('')
+
+    const fd = new FormData()
+    fd.set('file', videoFile)
+    fd.set('artistId', artistId)
+    fd.set('kind', 'story')
+
+    setUploadPct(30)
+    const upload = await uploadContentImage(fd)
+    setUploadPct(75)
+
+    if (upload.error) {
+      setVideoError(upload.error)
+      setUploading(false)
+      setUploadPct(0)
+      return
+    }
+
+    const save = await saveStory({ artistId, mediaUrl: upload.url!, caption: caption.trim() })
+    setUploadPct(100)
+
+    if (save.error) {
+      setVideoError(save.error)
+      setUploading(false)
+      setUploadPct(0)
+      return
+    }
+
+    setPhase('done')
+    setTimeout(() => router.push('/dashboard/estudio'), 1800)
+  }
+
+  // ── Status overlays ────────────────────────────────────────────────────
   if (phase === 'uploading' || phase === 'done' || phase === 'error') {
     return (
-      <div className="flex min-h-[calc(100vh-6rem)] flex-col items-center justify-center gap-6 px-6">
+      <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center gap-6 px-6">
         {phase === 'uploading' && (
           <>
-            <div className="relative">
-              {previewUrl && (
-                <Image
-                  src={previewUrl} alt="Preview do story"
-                  width={180} height={320}
-                  className="rounded-2xl object-cover opacity-40"
-                  style={{ aspectRatio: '9/16' }}
-                  unoptimized
-                />
-              )}
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                <div className="flex size-14 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10 backdrop-blur-sm">
-                  <Loader2 className="size-7 animate-spin text-primary" />
+            {previewUrl && (
+              <div className="relative h-40 w-24 overflow-hidden rounded-2xl border border-white/8">
+                <Image src={previewUrl} alt="" fill className="object-cover opacity-50" unoptimized />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="size-8 animate-spin text-primary" />
                 </div>
-                <p className="text-[10px] font-black tracking-[0.2em] text-white">PUBLICANDO…</p>
+              </div>
+            )}
+            <div className="w-full max-w-xs">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[10px] font-black tracking-[0.2em] text-white">PUBLICANDO STORY…</p>
+                <span className="font-numeric text-[9px] font-bold text-primary">100%</span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/8">
+                <div className="h-full animate-pulse rounded-full bg-primary" style={{ width: '100%' }} />
               </div>
             </div>
-            <p className="text-[9px] font-bold text-zinc-500">
-              Enviando imagem e salvando o story
-            </p>
           </>
         )}
 
         {phase === 'done' && (
-          <div className="flex flex-col items-center gap-4 text-center">
-            <div className="flex size-20 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10">
+          <div className="flex flex-col items-center gap-5 text-center">
+            <div className="flex size-20 items-center justify-center rounded-3xl border border-primary/30 bg-primary/10 shadow-[0_0_40px_-10px_rgba(255,106,0,0.4)]">
               <CheckCircle2 className="size-10 text-primary" />
             </div>
             <div>
               <p className="font-serif text-2xl font-black tracking-tight text-white">Story publicado!</p>
-              <p className="mt-1 text-xs font-bold text-zinc-500">
-                Já aparece no perfil de {artistName}.
+              <p className="mt-1.5 text-xs font-bold text-zinc-500">
+                Já aparece no perfil de <span className="text-zinc-300">{artistName}</span>.
               </p>
             </div>
             <p className="flex items-center gap-2 text-[9px] font-bold text-zinc-600">
               <Loader2 className="size-3 animate-spin" />
-              Redirecionando para o estúdio…
+              Voltando ao estúdio…
             </p>
           </div>
         )}
 
         {phase === 'error' && (
-          <div className="flex flex-col items-center gap-4 text-center">
-            <div className="flex size-20 items-center justify-center rounded-2xl border border-destructive/30 bg-destructive/10">
+          <div className="flex flex-col items-center gap-5 text-center">
+            <div className="flex size-20 items-center justify-center rounded-3xl border border-destructive/30 bg-destructive/10">
               <AlertCircle className="size-10 text-destructive" />
             </div>
             <div>
-              <p className="font-serif text-xl font-black tracking-tight text-white">Ops, algo deu errado</p>
-              <p className="mt-2 max-w-xs text-xs font-bold leading-relaxed text-zinc-500">{errorMsg}</p>
+              <p className="font-serif text-xl font-black tracking-tight text-white">Algo deu errado</p>
+              <p className="mt-2 max-w-sm text-xs font-bold leading-relaxed text-zinc-500">{errorMsg}</p>
             </div>
-            <button
-              type="button"
+            <button type="button"
               onClick={() => { setPhase('editing'); setErrorMsg('') }}
-              className="gradient-brand rounded-2xl px-8 py-3 text-[10px] font-black tracking-[0.2em] text-white shadow-[0_8px_20px_-8px_rgba(255,106,0,0.6)]"
-            >
+              className="gradient-brand rounded-2xl px-8 py-3 text-[10px] font-black tracking-[0.2em] text-white shadow-[0_8px_20px_-8px_rgba(255,106,0,0.6)]">
               TENTAR NOVAMENTE
             </button>
           </div>
@@ -177,164 +224,299 @@ export function StoryEditorPage({ artistId, artistName, artistSlug, existingStor
     )
   }
 
-  // ── Main editing view ─────────────────────────────────────────────────────
-  return (
-    <div className="flex h-[calc(100vh-2rem)] flex-col gap-0 overflow-hidden">
-
-      {/* ── Top bar ── */}
-      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-white/8 bg-[var(--artist-bg)] px-6 py-4">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard/estudio"
-            className="flex size-9 items-center justify-center rounded-xl border border-white/8 bg-white/[0.03] text-[var(--artist-muted)] transition-colors hover:border-white/15 hover:text-[var(--artist-text)]"
-            aria-label="Voltar ao estúdio"
-          >
-            <ArrowLeft className="size-4" />
-          </Link>
-          <div>
-            <p className="flex items-center gap-1.5 text-[8px] font-black tracking-[0.24em] text-[var(--artist-muted)]">
-              <span className="size-1.5 rounded-full bg-[var(--artist-primary)]" />
-              ESTÚDIO · STORIES
-            </p>
-            <h1 className="font-serif text-base font-black tracking-tight text-[var(--artist-text)]">
-              Criar novo story
-            </h1>
-          </div>
-        </div>
-
-        {/* Caption input — in topbar for easy access */}
-        <div className="hidden flex-1 items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-2.5 sm:flex">
-          <ImageIcon className="size-3.5 shrink-0 text-[var(--artist-muted)]" />
-          <input
-            type="text"
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Legenda do story (opcional) — aparece abaixo da imagem"
-            maxLength={140}
-            className="flex-1 bg-transparent text-[11px] font-medium text-[var(--artist-text)] outline-none placeholder:text-[var(--artist-muted)]/60"
-          />
-          <span className={`font-numeric shrink-0 text-[9px] font-bold ${caption.length > 120 ? 'text-amber-400' : 'text-[var(--artist-muted)]'}`}>
-            {caption.length}/140
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2 text-[8px] font-black tracking-[0.1em] text-zinc-500">
-            <Info className="size-3 text-[var(--artist-primary)]" />
-            1080×1920px
-          </div>
-        </div>
+  // ── Topbar (shared across modes) ─────────────────────────────────────────
+  const Topbar = (
+    <div className="flex shrink-0 items-center gap-3 border-b border-white/8 bg-[var(--artist-bg)] px-5 py-3">
+      <Link href="/dashboard/estudio"
+        className="flex size-8 items-center justify-center rounded-xl border border-white/8 bg-white/[0.03] text-[var(--artist-muted)] transition-colors hover:border-white/15 hover:text-[var(--artist-text)]"
+        aria-label="Voltar">
+        <ArrowLeft className="size-3.5" />
+      </Link>
+      <div className="flex-1">
+        <p className="flex items-center gap-1.5 text-[7px] font-black tracking-[0.25em] text-[var(--artist-muted)]">
+          <span className="size-1 rounded-full bg-[var(--artist-primary)]" />
+          ESTÚDIO · STORIES
+        </p>
+        <h1 className="font-serif text-sm font-black tracking-tight text-[var(--artist-text)]">
+          {mode === 'canvas' ? 'Editor visual' : mode === 'video' ? 'Upload de vídeo' : 'Criar novo story'}
+        </h1>
       </div>
 
-      {/* Caption mobile */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-white/8 bg-[var(--artist-bg)] px-4 py-2.5 sm:hidden">
+      {/* Caption — always visible in topbar */}
+      <div className="hidden flex-1 items-center gap-2 rounded-xl border border-white/8 bg-white/[0.025] px-3 py-2 sm:flex">
+        <Pencil className="size-3 shrink-0 text-zinc-600" />
         <input
-          type="text"
-          value={caption}
+          type="text" value={caption}
           onChange={(e) => setCaption(e.target.value)}
-          placeholder="Legenda (opcional)"
+          placeholder="Legenda do story (opcional)"
           maxLength={140}
-          className="flex-1 bg-transparent text-[11px] font-medium text-[var(--artist-text)] outline-none placeholder:text-[var(--artist-muted)]/60"
+          className="flex-1 bg-transparent text-[10px] font-medium text-[var(--artist-text)] outline-none placeholder:text-zinc-600"
         />
-        <span className="font-numeric text-[9px] font-bold text-zinc-600">{caption.length}/140</span>
+        <span className={`font-numeric shrink-0 text-[8px] font-bold ${caption.length > 120 ? 'text-amber-400' : 'text-zinc-600'}`}>
+          {caption.length}/140
+        </span>
       </div>
 
-      {/* ── Editor + sidebar ── */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      {mode !== 'choose' && (
+        <button type="button" onClick={() => setMode('choose')}
+          className="rounded-xl border border-white/8 px-3 py-2 text-[8px] font-black tracking-[0.1em] text-zinc-500 transition-colors hover:border-white/15 hover:text-white">
+          TROCAR MODO
+        </button>
+      )}
+    </div>
+  )
 
-        {/* Editor — takes all available space */}
-        <div className="min-w-0 flex-1 overflow-hidden">
-          <StoryCanvasEditor
-            onSave={handleSave}
-            onCancel={() => router.push('/dashboard/estudio')}
-          />
-        </div>
+  // ── MODE: choose ─────────────────────────────────────────────────────────
+  if (mode === 'choose') {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
+        {Topbar}
+        <div className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-10">
 
-        {/* Right sidebar — tips + existing stories */}
-        <aside className="scrollbar-none hidden w-64 shrink-0 overflow-y-auto border-l border-white/8 bg-[var(--artist-bg)] p-4 xl:flex xl:flex-col xl:gap-5">
-
-          {/* Tips */}
-          <div className="rounded-2xl border border-white/8 bg-white/[0.025] p-4">
-            <p className="mb-3 flex items-center gap-2 text-[8px] font-black tracking-[0.18em] text-[var(--artist-primary)]">
-              <Sparkles className="size-3" />
-              DICAS DE CRIAÇÃO
+          <div className="text-center">
+            <p className="font-serif text-2xl font-black tracking-tight text-white">
+              Como você quer criar o story?
             </p>
-            <ul className="flex flex-col gap-2.5">
-              {[
-                { icon: '🎨', text: 'Escolha um gradiente vibrante para chamar atenção' },
-                { icon: '✍️', text: 'Use texto grande com sombra para melhor legibilidade' },
-                { icon: '⚡', text: 'Emojis e stickers aumentam o engajamento' },
-                { icon: '📐', text: 'Formato 9:16 — ideal para celulares' },
-                { icon: '🎬', text: 'Vídeo de fundo cria stories dinâmicos' },
-                { icon: '💾', text: 'Ctrl+Z desfaz, Delete remove objetos' },
-              ].map((tip) => (
-                <li key={tip.icon} className="flex items-start gap-2 text-[9px] font-bold leading-relaxed text-zinc-500">
-                  <span className="mt-0.5 shrink-0 text-base leading-none">{tip.icon}</span>
-                  {tip.text}
-                </li>
-              ))}
-            </ul>
+            <p className="mt-2 text-sm font-bold text-zinc-500">
+              Escolha o modo de criação abaixo.
+            </p>
           </div>
 
-          {/* Existing stories */}
+          <div className="grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-2">
+
+            {/* Canvas editor */}
+            <button type="button" onClick={() => setMode('canvas')}
+              className="group relative overflow-hidden rounded-3xl border border-white/8 bg-white/[0.025] p-7 text-left transition-all hover:border-primary/40 hover:bg-primary/[0.06] hover:shadow-[0_0_30px_-8px_rgba(255,106,0,0.3)]">
+              <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-primary/10 blur-2xl transition-all group-hover:bg-primary/20" />
+              <div className="relative">
+                <div className="mb-5 flex size-14 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10">
+                  <Sparkles className="size-7 text-primary" />
+                </div>
+                <p className="font-serif text-lg font-black tracking-tight text-white">Editor Visual</p>
+                <p className="mt-1.5 text-[11px] font-bold leading-relaxed text-zinc-500">
+                  Crie do zero com gradientes, textos, fontes, emojis, stickers, formas e vídeo no canvas.
+                </p>
+                <ul className="mt-4 flex flex-col gap-1.5">
+                  {['Fundos gradientes (12 presets)', 'Textos com 6 fontes + estilos', 'Stickers e emojis', 'Formas e linhas', 'Vídeo de fundo (loop)', 'Undo/redo ilimitado'].map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-[9px] font-bold text-zinc-400">
+                      <span className="size-1.5 rounded-full bg-primary/60" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-5 flex items-center justify-between">
+                  <span className="rounded-full border border-primary/20 bg-primary/8 px-3 py-1 text-[8px] font-black tracking-[0.1em] text-primary">
+                    RECOMENDADO
+                  </span>
+                  <span className="text-[8px] font-bold text-zinc-600">Exporta PNG 1080×1920</span>
+                </div>
+              </div>
+            </button>
+
+            {/* Video upload */}
+            <button type="button" onClick={() => setMode('video')}
+              className="group relative overflow-hidden rounded-3xl border border-white/8 bg-white/[0.025] p-7 text-left transition-all hover:border-blue-500/40 hover:bg-blue-500/[0.05] hover:shadow-[0_0_30px_-8px_rgba(59,130,246,0.25)]">
+              <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-blue-500/10 blur-2xl transition-all group-hover:bg-blue-500/20" />
+              <div className="relative">
+                <div className="mb-5 flex size-14 items-center justify-center rounded-2xl border border-blue-500/30 bg-blue-500/10">
+                  <Film className="size-7 text-blue-400" />
+                </div>
+                <p className="font-serif text-lg font-black tracking-tight text-white">Upload de Vídeo</p>
+                <p className="mt-1.5 text-[11px] font-bold leading-relaxed text-zinc-500">
+                  Envie um vídeo diretamente do seu computador. Ideal para clipes e trechos de shows.
+                </p>
+                <ul className="mt-4 flex flex-col gap-1.5">
+                  {['MP4, WebM e MOV aceitos', `Até ${MAX_VIDEO_MB}MB por arquivo`, 'Vídeo nativo — sem conversão', 'Publicação direta e rápida', 'Legenda opcional'].map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-[9px] font-bold text-zinc-400">
+                      <span className="size-1.5 rounded-full bg-blue-400/60" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-5 flex items-center justify-between">
+                  <span className="rounded-full border border-blue-500/20 bg-blue-500/8 px-3 py-1 text-[8px] font-black tracking-[0.1em] text-blue-400">
+                    MP4 · WEBM · MOV
+                  </span>
+                  <span className="text-[8px] font-bold text-zinc-600">Máx. {MAX_VIDEO_MB}MB</span>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {/* existing count */}
           {existingStories.length > 0 && (
-            <div>
-              <p className="mb-3 flex items-center gap-2 text-[8px] font-black tracking-[0.18em] text-zinc-500">
-                <Clock className="size-3" />
-                STORIES ATIVOS ({existingStories.length})
-              </p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {existingStories.slice(0, 9).map((s) => (
-                  <div key={s.id} className="group relative aspect-[9/16] overflow-hidden rounded-xl">
-                    <Image
-                      src={s.media_url || '/placeholder.svg'}
-                      alt={s.caption ?? 'Story'}
-                      fill
-                      sizes="80px"
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1">
-                      <p className="text-[6px] font-black text-white/80">{timeAgo(s.created_at)}</p>
+            <p className="text-[9px] font-bold text-zinc-600">
+              {existingStories.length} {existingStories.length === 1 ? 'story ativo' : 'stories ativos'} no perfil de {artistName}
+            </p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── MODE: video upload ───────────────────────────────────────────────────
+  if (mode === 'video') {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
+        {Topbar}
+
+        <div className="flex flex-1 flex-col items-center justify-center gap-6 overflow-y-auto px-6 py-8">
+          <div className="w-full max-w-lg">
+
+            {/* Info banner */}
+            <div className="mb-5 flex items-start gap-3 rounded-2xl border border-blue-500/20 bg-blue-500/[0.07] p-4">
+              <Info className="mt-0.5 size-4 shrink-0 text-blue-400" />
+              <div>
+                <p className="text-[10px] font-black tracking-[0.1em] text-blue-300">UPLOAD DIRETO DE VÍDEO</p>
+                <p className="mt-1 text-[9px] font-bold leading-relaxed text-blue-300/70">
+                  Formatos aceitos: <strong>MP4, WebM, MOV</strong>.
+                  Tamanho máximo: <strong>{MAX_VIDEO_MB}MB</strong>.
+                  O vídeo será publicado como story no seu perfil.
+                </p>
+              </div>
+            </div>
+
+            {/* Drop zone / preview */}
+            {!videoFile ? (
+              <label
+                className="flex cursor-pointer flex-col items-center gap-5 rounded-3xl border-2 border-dashed border-white/15 bg-white/[0.02] px-8 py-14 text-center transition-all hover:border-blue-500/40 hover:bg-blue-500/[0.04]"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  const f = e.dataTransfer.files[0]
+                  if (f) {
+                    const synth = { target: { files: e.dataTransfer.files, value: '' } } as unknown as React.ChangeEvent<HTMLInputElement>
+                    handleVideoSelect(synth)
+                  }
+                }}
+              >
+                <input
+                  ref={videoRef}
+                  type="file"
+                  accept={ACCEPTED_VIDEO}
+                  onChange={handleVideoSelect}
+                  className="sr-only"
+                />
+                <div className="flex size-16 items-center justify-center rounded-2xl border border-blue-500/30 bg-blue-500/10">
+                  <Upload className="size-8 text-blue-400" />
+                </div>
+                <div>
+                  <p className="font-serif text-base font-black text-white">
+                    Clique ou arraste o vídeo aqui
+                  </p>
+                  <p className="mt-1.5 text-[10px] font-bold text-zinc-500">
+                    MP4 · WebM · MOV — máximo <strong className="text-zinc-300">{MAX_VIDEO_MB}MB</strong>
+                  </p>
+                </div>
+                <span className="rounded-2xl border border-blue-500/30 bg-blue-500/10 px-6 py-3 text-[10px] font-black tracking-[0.15em] text-blue-300 transition-colors hover:bg-blue-500/20">
+                  ESCOLHER ARQUIVO
+                </span>
+              </label>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {/* Video preview */}
+                <div className="overflow-hidden rounded-2xl border border-white/8 bg-black">
+                  <video
+                    src={videoPreview!}
+                    controls
+                    className="max-h-72 w-full object-contain"
+                    playsInline
+                  />
+                </div>
+
+                {/* File info */}
+                <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.025] px-4 py-3">
+                  <Film className="size-5 shrink-0 text-blue-400" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[10px] font-black text-white">{videoFile.name}</p>
+                    <p className="text-[8px] font-bold text-zinc-500">{fmtBytes(videoFile.size)}</p>
+                  </div>
+                  <button type="button"
+                    onClick={() => { setVideoFile(null); setVideoPreview(null); setVideoError('') }}
+                    className="text-[8px] font-black tracking-[0.1em] text-zinc-500 transition-colors hover:text-destructive">
+                    TROCAR
+                  </button>
+                </div>
+
+                {/* Caption mobile */}
+                <div className="flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.025] px-3 py-2.5 sm:hidden">
+                  <Pencil className="size-3 shrink-0 text-zinc-600" />
+                  <input type="text" value={caption}
+                    onChange={(e) => setCaption(e.target.value)}
+                    placeholder="Legenda (opcional)"
+                    maxLength={140}
+                    className="flex-1 bg-transparent text-[10px] font-medium text-white outline-none placeholder:text-zinc-600"
+                  />
+                </div>
+
+                {/* Progress bar during upload */}
+                {uploading && (
+                  <div>
+                    <div className="mb-1 flex items-center justify-between">
+                      <p className="text-[9px] font-black tracking-[0.1em] text-white">ENVIANDO…</p>
+                      <span className="font-numeric text-[9px] font-bold text-primary">{uploadPct}%</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-white/8">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all duration-500"
+                        style={{ width: `${uploadPct}%` }}
+                      />
                     </div>
                   </div>
-                ))}
+                )}
+
+                {videoError && (
+                  <div className="flex items-start gap-2 rounded-xl border border-destructive/20 bg-destructive/8 px-4 py-3">
+                    <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" />
+                    <p className="text-[10px] font-bold leading-relaxed text-destructive">{videoError}</p>
+                  </div>
+                )}
+
+                <button type="button"
+                  onClick={handleVideoPublish}
+                  disabled={uploading}
+                  className="gradient-brand flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl text-[10px] font-black tracking-[0.18em] text-white shadow-[0_8px_24px_-8px_rgba(255,106,0,0.6)] disabled:opacity-60">
+                  {uploading
+                    ? <><Loader2 className="size-4 animate-spin" />ENVIANDO…</>
+                    : <><Play className="size-4 fill-white" />PUBLICAR STORY EM VÍDEO</>
+                  }
+                </button>
               </div>
-              {existingStories.length > 9 && (
-                <p className="mt-2 text-center text-[8px] font-bold text-zinc-600">
-                  +{existingStories.length - 9} mais
-                </p>
-              )}
-            </div>
-          )}
+            )}
 
-          {existingStories.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-white/8 p-5 text-center">
-              <p className="text-[8px] font-black tracking-[0.12em] text-zinc-600">NENHUM STORY ATIVO</p>
-              <p className="mt-1 text-[8px] font-bold leading-relaxed text-zinc-700">
-                Este será o primeiro story de {artistName}!
-              </p>
-            </div>
-          )}
+            {videoError && !videoFile && (
+              <div className="mt-4 flex items-start gap-2 rounded-xl border border-destructive/20 bg-destructive/8 px-4 py-3">
+                <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" />
+                <p className="text-[10px] font-bold leading-relaxed text-destructive">{videoError}</p>
+              </div>
+            )}
 
-          {/* Format info */}
-          <div className="rounded-2xl border border-white/8 bg-white/[0.015] p-4">
-            <p className="mb-2 text-[8px] font-black tracking-[0.15em] text-zinc-600">ESPECIFICAÇÕES</p>
-            <dl className="flex flex-col gap-1.5">
-              {[
-                ['Formato', '1080 × 1920 px'],
-                ['Proporção', '9:16 (vertical)'],
-                ['Exportação', 'PNG de alta qualidade'],
-                ['Duração', '24h após publicação'],
-              ].map(([k, v]) => (
-                <div key={k} className="flex items-center justify-between">
-                  <dt className="text-[8px] font-bold text-zinc-600">{k}</dt>
-                  <dd className="font-numeric text-[8px] font-bold text-zinc-400">{v}</dd>
-                </div>
-              ))}
-            </dl>
           </div>
+        </div>
+      </div>
+    )
+  }
 
-        </aside>
+  // ── MODE: canvas editor ──────────────────────────────────────────────────
+  return (
+    <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
+      {Topbar}
+      {/* Caption mobile strip */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-white/8 bg-[var(--artist-bg)] px-4 py-2 sm:hidden">
+        <ImageIcon className="size-3 shrink-0 text-zinc-600" />
+        <input type="text" value={caption}
+          onChange={(e) => setCaption(e.target.value)}
+          placeholder="Legenda (opcional)" maxLength={140}
+          className="flex-1 bg-transparent text-[10px] font-medium text-[var(--artist-text)] outline-none placeholder:text-zinc-600"
+        />
+        <span className="font-numeric text-[8px] font-bold text-zinc-600">{caption.length}/140</span>
+      </div>
+      {/* Editor takes 100% remaining height — no sidebar */}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <StoryCanvasEditor
+          onSave={handleCanvasSave}
+          onCancel={() => router.push('/dashboard/estudio')}
+        />
       </div>
     </div>
   )

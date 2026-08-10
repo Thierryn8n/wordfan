@@ -411,7 +411,7 @@ export async function deletePlan(id: string, artistId: string) {
 
 // ============ UPLOAD DE MÍDIA (admin ou dono) ============
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
-const MAX_VIDEO_BYTES = 50 * 1024 * 1024
+const MAX_VIDEO_BYTES = 200 * 1024 * 1024
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime']
 
