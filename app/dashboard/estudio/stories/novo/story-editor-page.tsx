@@ -160,8 +160,18 @@ export function StoryEditorPage({ artistId, artistName, existingStories }: Props
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve(signed.publicUrl!)
         } else {
+          // tenta extrair mensagem do Supabase
+          let detail = ''
+          try {
+            const body = JSON.parse(xhr.responseText)
+            if (body.error === 'EntityTooLarge' || body.code === 'EntityTooLarge') {
+              detail = 'TAMANHO_EXCEDIDO'
+            } else {
+              detail = body.message ?? body.error ?? ''
+            }
+          } catch { /* ignore */ }
           console.log('[xhr-upload] status:', xhr.status, xhr.responseText)
-          resolve(null)
+          resolve(detail === 'TAMANHO_EXCEDIDO' ? 'TAMANHO_EXCEDIDO' : null)
         }
       }
 
@@ -173,8 +183,13 @@ export function StoryEditorPage({ artistId, artistName, existingStories }: Props
       xhr.send(videoFile)
     })
 
-    if (!publicUrl) {
-      setVideoError('Falha no envio do vídeo. Verifique sua conexão e tente novamente.')
+    if (!publicUrl || publicUrl === 'TAMANHO_EXCEDIDO') {
+      const isTooLarge = publicUrl === 'TAMANHO_EXCEDIDO'
+      setVideoError(
+        isTooLarge
+          ? `O Supabase Storage rejeitou o arquivo por exceder o limite configurado no bucket "artist-media".\n\nPara resolver: acesse o painel Supabase → Storage → Buckets → artist-media → Edit → aumente o "Max file size" para pelo menos ${MAX_VIDEO_MB}MB (${MAX_VIDEO_MB * 1024 * 1024} bytes).`
+          : 'Falha no envio do vídeo. Verifique sua conexão e tente novamente.',
+      )
       setUploading(false)
       setUploadPct(0)
       return
@@ -510,9 +525,15 @@ export function StoryEditorPage({ artistId, artistName, existingStories }: Props
                 )}
 
                 {videoError && (
-                  <div className="flex items-start gap-2 rounded-xl border border-destructive/20 bg-destructive/8 px-4 py-3">
+                  <div className="flex items-start gap-3 rounded-2xl border border-destructive/20 bg-destructive/8 p-4">
                     <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" />
-                    <p className="text-[10px] font-bold leading-relaxed text-destructive">{videoError}</p>
+                    <div className="flex flex-col gap-1.5">
+                      {videoError.split('\n\n').map((line, i) => (
+                        <p key={i} className={`text-[10px] font-bold leading-relaxed ${i === 0 ? 'text-destructive' : 'text-zinc-400'}`}>
+                          {line}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 )}
 
