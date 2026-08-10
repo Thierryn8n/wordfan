@@ -1,7 +1,11 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ArrowLeft, ArrowUpRight, BadgeCheck, Palette } from 'lucide-react'
+import {
+  ArrowLeft, ArrowUpRight, BadgeCheck, Palette,
+  FileText, Image as ImageIcon, PlaySquare, Users,
+  Calendar, Radio, Star, TrendingUp,
+} from 'lucide-react'
 import { ContentManager } from '@/components/wordfan/content-manager'
 import { createServiceClient, isServiceRoleConfigured } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -9,7 +13,7 @@ import type { Artist, GalleryItem, Live, Plan, Post, Show, Story, Video } from '
 import { ManagerSection, type ManagerRow } from './manager-section'
 import { StudioEditor } from './studio-editor'
 
-export const metadata = { title: 'Studio do Artista — ADM WordFan' }
+export const metadata = { title: 'Studio — ADM WordFan' }
 
 export default async function StudioPage({
   searchParams,
@@ -18,9 +22,7 @@ export default async function StudioPage({
 }) {
   const { artist: selectedSlug } = await searchParams
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login?next=/admin/studio')
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
@@ -49,6 +51,14 @@ export default async function StudioPage({
     supabase.from('plans').select('*').eq('artist_id', selected.id).order('price_cents', { ascending: true }),
   ])
 
+  const posts = (postsData as Post[]) ?? []
+  const shows = (showsData as Show[]) ?? []
+  const gallery = (galleryData as GalleryItem[]) ?? []
+  const videos = (videosData as Video[]) ?? []
+  const stories = (storiesData as Story[]) ?? []
+  const lives = (livesData as Live[]) ?? []
+  const plans = (plansData as Plan[]) ?? []
+
   const serviceKeyConfigured = isServiceRoleConfigured()
   let managers: ManagerRow[] = []
   if (serviceKeyConfigured) {
@@ -73,84 +83,151 @@ export default async function StudioPage({
     )
   }
 
+  // stats cards
+  const stats = [
+    { label: 'Posts', value: posts.length, icon: FileText, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+    { label: 'Stories', value: stories.length, icon: ImageIcon, color: 'text-pink-400', bg: 'bg-pink-400/10' },
+    { label: 'Vídeos', value: videos.length, icon: PlaySquare, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+    { label: 'Galeria', value: gallery.length, icon: ImageIcon, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+    { label: 'Shows', value: shows.length, icon: Calendar, color: 'text-green-400', bg: 'bg-green-400/10' },
+    { label: 'Lives', value: lives.length, icon: Radio, color: 'text-red-400', bg: 'bg-red-400/10' },
+    { label: 'Planos', value: plans.length, icon: Star, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+    { label: 'Seguidores', value: selected.followers_count, icon: Users, color: 'text-primary', bg: 'bg-primary/10' },
+  ]
+
   return (
-    <main className="px-6 pb-16 pt-8 xl:px-10">
-      <header className="flex flex-wrap items-center justify-between gap-5">
-        <div className="flex items-center gap-4">
+    <main className="min-h-screen px-6 pb-20 pt-0 xl:px-10">
+
+      {/* ── Hero banner ── */}
+      <div className="relative -mx-6 mb-8 h-52 overflow-hidden xl:-mx-10">
+        {selected.banner_url ? (
+          <Image
+            src={selected.banner_url}
+            alt=""
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-primary/10 to-transparent" />
+        )}
+        {/* overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/80 to-transparent" />
+
+        {/* back button */}
+        <div className="absolute left-6 top-6 xl:left-10">
           <Link
             href="/admin/artists"
-            aria-label="Voltar para a lista de artistas"
-            className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.035] text-zinc-400 transition-colors hover:text-white"
+            className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/40 px-4 py-2 text-[9px] font-black tracking-[0.15em] text-zinc-300 backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white"
           >
-            <ArrowLeft className="size-4" aria-hidden="true" />
+            <ArrowLeft className="size-3.5" />
+            ARTISTAS
           </Link>
-          <div>
-            <p className="flex items-center gap-2 text-[9px] font-black tracking-[0.22em] text-primary">
-              <Palette className="size-3.5" aria-hidden="true" />
-              STUDIO DO ARTISTA
+        </div>
+
+        {/* Artist identity over banner */}
+        <div className="absolute bottom-0 left-0 right-0 flex items-end gap-5 px-6 pb-6 xl:px-10">
+          <div className="relative shrink-0">
+            <Image
+              src={selected.avatar_url || '/placeholder-user.jpg'}
+              alt={selected.name}
+              width={72}
+              height={72}
+              className="size-18 rounded-2xl border-2 border-white/20 object-cover shadow-xl"
+            />
+            {selected.is_live && (
+              <span className="absolute -bottom-1 -right-1 flex items-center gap-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[7px] font-black text-white shadow">
+                <span className="size-1.5 animate-pulse rounded-full bg-white" />
+                AO VIVO
+              </span>
+            )}
+          </div>
+          <div className="mb-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="font-serif text-2xl font-black tracking-tight text-white drop-shadow-lg">
+                {selected.name}
+              </h1>
+              <BadgeCheck className="size-5 shrink-0 text-primary" />
+            </div>
+            <p className="mt-0.5 text-[9px] font-bold text-zinc-400">
+              @{selected.slug}
+              {selected.genre ? ` · ${selected.genre}` : ''}
+              {selected.city ? ` · ${selected.city}${selected.state ? `/${selected.state}` : ''}` : ''}
             </p>
-            <h1 className="mt-2 font-serif text-3xl font-black tracking-[-0.04em] text-white">
-              Perfil, identidade e conteúdo
-            </h1>
+          </div>
+          <div className="ml-auto flex shrink-0 items-center gap-2 pb-1">
+            <span className="rounded-xl border border-white/10 bg-black/40 px-3 py-1.5 text-[8px] font-black tracking-[0.12em] text-zinc-400 backdrop-blur-sm">
+              PLANO {selected.tool_plan.toUpperCase()}
+            </span>
+            <Link
+              href={`/artist/${selected.slug}`}
+              target="_blank"
+              className="flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/[0.12] px-3 py-1.5 text-[8px] font-black tracking-[0.12em] text-primary backdrop-blur-sm transition-colors hover:bg-primary/20"
+            >
+              VER PERFIL
+              <ArrowUpRight className="size-3" />
+            </Link>
           </div>
         </div>
-        <Link
-          href={`/artist/${selected.slug}`}
-          className="flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-4 text-[9px] font-black tracking-[0.13em] text-zinc-300 transition-colors hover:bg-white/[0.07] hover:text-white"
-        >
-          VER PERFIL PÚBLICO
-          <ArrowUpRight className="size-3.5 text-primary" aria-hidden="true" />
-        </Link>
-      </header>
+      </div>
 
-      <section className="admin-panel mt-7 flex flex-wrap items-center gap-4 p-4">
-        <Image
-          src={selected.avatar_url || '/placeholder-user.jpg'}
-          alt=""
-          width={64}
-          height={64}
-          className="size-16 rounded-2xl border border-primary/25 object-cover"
-        />
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 text-sm font-black text-white">
-            {selected.name}
-            <BadgeCheck className="size-4 text-primary" aria-hidden="true" />
-          </p>
-          <p className="mt-1 text-[9px] font-bold text-zinc-500">
-            @{selected.slug} · {selected.genre || 'Gênero não informado'} ·{' '}
-            {selected.followers_count.toLocaleString('pt-BR')} seguidores
-          </p>
-        </div>
+      {/* ── Stats row ── */}
+      <div className="mb-8 grid grid-cols-4 gap-3 xl:grid-cols-8">
+        {stats.map(({ label, value, icon: Icon, color, bg }) => (
+          <div key={label} className="admin-panel flex flex-col gap-2 p-4">
+            <div className={`flex size-8 items-center justify-center rounded-xl ${bg}`}>
+              <Icon className={`size-4 ${color}`} />
+            </div>
+            <p className="font-numeric text-xl font-black text-white leading-none">
+              {value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value}
+            </p>
+            <p className="text-[8px] font-black tracking-[0.12em] text-zinc-500">{label.toUpperCase()}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Eyebrow ── */}
+      <div className="mb-6 flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2.5 text-[8px] font-black tracking-[0.13em] text-zinc-500">
-            PLANO {selected.tool_plan.toUpperCase()}
-          </span>
-          <Link
-            href="/admin/artists"
-            className="rounded-xl border border-primary/20 bg-primary/[0.06] px-4 py-2.5 text-[8px] font-black tracking-[0.13em] text-primary"
-          >
-            TROCAR ARTISTA
-          </Link>
+          <div className="flex size-9 items-center justify-center rounded-xl bg-primary/15">
+            <Palette className="size-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-[8px] font-black tracking-[0.2em] text-primary">ESTÚDIO DO ARTISTA</p>
+            <p className="text-sm font-black text-white">Identidade visual, perfil e conteúdo</p>
+          </div>
         </div>
-      </section>
+        <div className="ml-auto">
+          <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-3 py-1.5">
+            <TrendingUp className="size-3 text-emerald-400" />
+            <span className="text-[8px] font-black tracking-[0.1em] text-emerald-400">
+              {selected.followers_count.toLocaleString('pt-BR')} SEGUIDORES
+            </span>
+          </div>
+        </div>
+      </div>
 
+      {/* ── Studio editor ── */}
       <StudioEditor
         key={selected.id}
         artist={selected}
         contentSlot={
           <ContentManager
             artistId={selected.id}
-            posts={(postsData as Post[]) ?? []}
-            shows={(showsData as Show[]) ?? []}
-            gallery={(galleryData as GalleryItem[]) ?? []}
-            videos={(videosData as Video[]) ?? []}
-            stories={(storiesData as Story[]) ?? []}
-            lives={(livesData as Live[]) ?? []}
-            plans={(plansData as Plan[]) ?? []}
+            posts={posts}
+            shows={shows}
+            gallery={gallery}
+            videos={videos}
+            stories={stories}
+            lives={lives}
+            plans={plans}
           />
         }
       />
 
+      {/* ── Manager section ── */}
       <ManagerSection
         artistId={selected.id}
         artistName={selected.name}
