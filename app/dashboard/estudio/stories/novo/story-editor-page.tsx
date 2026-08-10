@@ -10,7 +10,7 @@ import {
   AlertCircle, Film, ImageIcon, Pencil,
   Upload, Info, Play,
 } from 'lucide-react'
-import { uploadContentImage, saveStory } from '@/app/actions/content'
+import { uploadContentImage, saveStory, createDirectUploadUrl } from '@/app/actions/content'
 import type { Story } from '@/lib/types'
 
 // ── Editor (fabric.js, client-only) ──────────────────────────────────────────
@@ -123,30 +123,66 @@ export function StoryEditorPage({ artistId, artistName, existingStories }: Props
     e.target.value = ''
   }
 
-  // ── Video publish ───────────────────────────────────────────────────────
+  // ── Video publish — upload direto ao Supabase (sem passar pelo servidor) ──
   async function handleVideoPublish() {
     if (!videoFile) return
     setUploading(true)
-    setUploadPct(10)
+    setUploadPct(0)
     setVideoError('')
 
-    const fd = new FormData()
-    fd.set('file', videoFile)
-    fd.set('artistId', artistId)
-    fd.set('kind', 'story')
+    // 1. Pede ao servidor uma URL assinada — só metadados, sem o arquivo
+    const signed = await createDirectUploadUrl({
+      artistId,
+      kind:          'story',
+      fileType:      videoFile.type,
+      fileSizeBytes: videoFile.size,
+    })
 
-    setUploadPct(30)
-    const upload = await uploadContentImage(fd)
-    setUploadPct(75)
-
-    if (upload.error) {
-      setVideoError(upload.error)
+    if (signed.error || !signed.signedUrl) {
+      setVideoError(signed.error ?? 'Erro ao gerar link de upload.')
       setUploading(false)
       setUploadPct(0)
       return
     }
 
-    const save = await saveStory({ artistId, mediaUrl: upload.url!, caption: caption.trim() })
+    // 2. Upload direto do browser para o Supabase usando XHR (tem onprogress)
+    const publicUrl = await new Promise<string | null>((resolve) => {
+      const xhr = new XMLHttpRequest()
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          // reservamos 0–90% para o upload, 90–100% para salvar no banco
+          setUploadPct(Math.round((e.loaded / e.total) * 90))
+        }
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(signed.publicUrl!)
+        } else {
+          console.log('[xhr-upload] status:', xhr.status, xhr.responseText)
+          resolve(null)
+        }
+      }
+
+      xhr.onerror = () => resolve(null)
+
+      // Supabase signed upload endpoint
+      xhr.open('PUT', signed.signedUrl)
+      xhr.setRequestHeader('Content-Type', videoFile.type)
+      xhr.send(videoFile)
+    })
+
+    if (!publicUrl) {
+      setVideoError('Falha no envio do vídeo. Verifique sua conexão e tente novamente.')
+      setUploading(false)
+      setUploadPct(0)
+      return
+    }
+
+    // 3. Salvar registro no banco — arquivo já está no Supabase
+    setUploadPct(95)
+    const save = await saveStory({ artistId, mediaUrl: publicUrl, caption: caption.trim() })
     setUploadPct(100)
 
     if (save.error) {
@@ -451,17 +487,25 @@ export function StoryEditorPage({ artistId, artistName, existingStories }: Props
 
                 {/* Progress bar during upload */}
                 {uploading && (
-                  <div>
-                    <div className="mb-1 flex items-center justify-between">
-                      <p className="text-[9px] font-black tracking-[0.1em] text-white">ENVIANDO…</p>
-                      <span className="font-numeric text-[9px] font-bold text-primary">{uploadPct}%</span>
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.025] p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-[9px] font-black tracking-[0.12em] text-white">
+                        {uploadPct < 90 ? 'ENVIANDO VÍDEO…' : uploadPct < 100 ? 'SALVANDO…' : 'CONCLUÍDO'}
+                      </p>
+                      <span className="font-numeric text-[10px] font-bold text-primary">{uploadPct}%</span>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-white/8">
+                    <div className="h-2.5 overflow-hidden rounded-full bg-white/8">
                       <div
-                        className="h-full rounded-full bg-primary transition-all duration-500"
+                        className="h-full rounded-full bg-primary transition-all duration-300"
                         style={{ width: `${uploadPct}%` }}
                       />
                     </div>
+                    <p className="mt-2 text-[8px] font-bold text-zinc-600">
+                      {uploadPct < 90
+                        ? `Enviando diretamente para o servidor de mídia — ${fmtBytes(Math.round(videoFile.size * uploadPct / 100))} de ${fmtBytes(videoFile.size)}`
+                        : 'Registrando story no seu perfil…'
+                      }
+                    </p>
                   </div>
                 )}
 

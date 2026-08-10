@@ -474,3 +474,56 @@ export async function uploadContentImage(formData: FormData) {
   } = supabase.storage.from('artist-media').getPublicUrl(path)
   return { url: publicUrl }
 }
+
+// ============ UPLOAD DIRETO (signed URL — cliente sobe direto ao Supabase) ============
+// Gera uma URL assinada para o cliente fazer upload direto ao bucket,
+// sem o arquivo passar pelo servidor Next.js — elimina a double-hop e é muito mais rápido.
+const ALLOWED_DIRECT_TYPES = [
+  'video/mp4', 'video/webm', 'video/quicktime',
+  'image/png', 'image/jpeg', 'image/webp', 'image/gif',
+]
+
+export async function createDirectUploadUrl(input: {
+  artistId: string
+  kind: string
+  fileType: string
+  fileSizeBytes: number
+}) {
+  const { supabase, error, slug } = await requireManager(input.artistId)
+  if (error) return { error }
+
+  if (!ALLOWED_DIRECT_TYPES.includes(input.fileType)) {
+    return { error: 'Tipo de arquivo não permitido.' }
+  }
+
+  const isVideo = input.fileType.startsWith('video/')
+  const maxBytes = isVideo ? 200 * 1024 * 1024 : 5 * 1024 * 1024
+  if (input.fileSizeBytes > maxBytes) {
+    const mb = (maxBytes / (1024 * 1024)).toFixed(0)
+    return { error: `Arquivo muito grande (máx. ${mb}MB).` }
+  }
+
+  const rawExt  = input.fileType.split('/')[1]
+  const ext     = rawExt === 'jpeg' ? 'jpg' : rawExt === 'quicktime' ? 'mov' : rawExt
+  const kind    = input.kind.slice(0, 20).replace(/[^a-z0-9-]/gi, '-')
+  const path    = `${slug}/${kind}-${Date.now()}.${ext}`
+
+  const { data, error: signErr } = await supabase.storage
+    .from('artist-media')
+    .createSignedUploadUrl(path)
+
+  if (signErr || !data) {
+    console.log('[signed-upload] error:', signErr?.message)
+    return { error: 'Não foi possível gerar o link de upload. Tente novamente.' }
+  }
+
+  // public URL que será salva no banco após o upload
+  const { data: { publicUrl } } = supabase.storage.from('artist-media').getPublicUrl(path)
+
+  return {
+    signedUrl: data.signedUrl,
+    token:     data.token,
+    path,
+    publicUrl,
+  }
+}
