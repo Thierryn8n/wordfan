@@ -1,5 +1,6 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -40,7 +41,27 @@ import {
   deletePlan,
   uploadContentImage,
 } from '@/app/actions/content'
-import { StoryCanvasEditor } from './story-canvas-editor'
+
+const StoryCanvasEditor = dynamic(
+  () => import('./story-canvas-editor').then((m) => ({ default: m.StoryCanvasEditor })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[600px] items-center justify-center rounded-3xl border border-white/8 bg-background/50">
+        <Loader2 className="size-6 animate-spin text-primary" aria-hidden="true" />
+      </div>
+    ),
+  },
+)
+
+function dataUrlToFile(dataUrl: string, filename: string) {
+  const [header, base64] = dataUrl.split(',')
+  const mime = header.match(/:(.*?);/)?.[1] ?? 'image/png'
+  const bytes = atob(base64)
+  const buffer = new Uint8Array(bytes.length)
+  for (let i = 0; i < bytes.length; i++) buffer[i] = bytes.charCodeAt(i)
+  return new File([buffer], filename, { type: mime })
+}
 
 type Section = 'feed' | 'stories' | 'agenda' | 'galeria' | 'videos' | 'lives' | 'fanclub'
 
@@ -277,6 +298,7 @@ export function ContentManager({
     setLiveForm({ title: '', scheduledAt: '', status: 'scheduled', isExclusive: false, minTier: 'bronze' })
     setPlanForm({ tier: 'bronze', name: '', priceReais: '', benefits: [''] })
     setEditing(null)
+    setUseCanvasEditor(false)
     setStatus({})
   }
 
@@ -918,49 +940,73 @@ export function ContentManager({
       {section === 'stories' && (
         <div className="mt-5">
           {editing === null && (
-            <div className="flex gap-3">
-              <button type="button" onClick={() => setEditing('new')} className={btnPrimary}>
-                <Plus className="size-3.5" aria-hidden="true" />
-                NOVO STORY
-              </button>
-              <button 
-                type="button" 
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
                 onClick={() => {
                   setEditing('canvas')
                   setUseCanvasEditor(true)
-                }} 
-                className="flex items-center gap-2 rounded-full border border-white/8 bg-background px-5 py-3 text-[9px] font-black tracking-[0.15em] text-muted-foreground hover:bg-white/[0.05]"
+                }}
+                className={btnPrimary}
               >
-                <Pencil className="size-3.5" aria-hidden="true" />
-                EDITOR AVANÇADO
+                <Plus className="size-3.5" aria-hidden="true" />
+                CRIAR STORY
+              </button>
+              <button type="button" onClick={() => setEditing('new')} className={btnGhost}>
+                <Upload className="size-3.5" aria-hidden="true" />
+                UPLOAD SIMPLES
               </button>
             </div>
           )}
 
           {editing === 'canvas' && useCanvasEditor && (
-            <div className="h-[600px]">
-              <StoryCanvasEditor
-                onSave={(canvasData) => {
-                  // Convert canvas to image URL and save as story
-                  // For now, we'll save the canvas data as a JSON string
-                  // In production, you'd want to convert to an actual image
-                  run(
-                    () =>
-                      saveStory({
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className={labelCls} htmlFor="cm-story-canvas-caption">
+                  LEGENDA (OPCIONAL)
+                </label>
+                <input
+                  id="cm-story-canvas-caption"
+                  className={`mt-1.5 ${inputCls}`}
+                  value={storyForm.caption}
+                  onChange={(e) => setStoryForm((f) => ({ ...f, caption: e.target.value }))}
+                  placeholder="Escreva algo (opcional)"
+                  maxLength={140}
+                />
+              </div>
+              <div className="h-[600px]">
+                <StoryCanvasEditor
+                  onSave={(imageDataUrl) => {
+                    startTransition(async () => {
+                      setStatus({})
+                      const file = dataUrlToFile(imageDataUrl, `story-${Date.now()}.png`)
+                      const fd = new FormData()
+                      fd.set('file', file)
+                      fd.set('artistId', artistId)
+                      fd.set('kind', 'story')
+                      const upload = await uploadContentImage(fd)
+                      if (upload.error) {
+                        setStatus({ error: upload.error })
+                        return
+                      }
+                      const res = await saveStory({
                         id: undefined,
                         artistId,
-                        mediaUrl: `data:application/json;base64,${btoa(canvasData)}`,
+                        mediaUrl: upload.url!,
                         caption: storyForm.caption,
-                      }),
-                    'Story criado com editor avançado!',
-                  )
-                }}
-                onCancel={() => {
-                  setEditing(null)
-                  setUseCanvasEditor(false)
-                }}
-                backgroundImage={storyForm.mediaUrl}
-              />
+                      })
+                      if (res.error) setStatus({ error: res.error })
+                      else {
+                        setStatus({ ok: 'Story publicado com o editor visual!' })
+                        resetForms()
+                        router.refresh()
+                      }
+                    })
+                  }}
+                  onCancel={resetForms}
+                  backgroundImage={storyForm.mediaUrl || undefined}
+                />
+              </div>
             </div>
           )}
 
@@ -982,7 +1028,7 @@ export function ContentManager({
             >
               <div className="flex items-center justify-between">
                 <p className="text-[9px] font-black tracking-[0.2em] text-primary">
-                  {editing === 'new' ? 'NOVO STORY' : 'EDITAR STORY'}
+                  {editing === 'new' ? 'UPLOAD SIMPLES DE STORY' : 'EDITAR STORY'}
                 </p>
                 <button type="button" onClick={resetForms} aria-label="Fechar formulário">
                   <X className="size-4 text-muted-foreground" aria-hidden="true" />

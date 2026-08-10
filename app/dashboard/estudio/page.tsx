@@ -40,8 +40,8 @@ export default async function StudioPage() {
     <div className="flex flex-col gap-6">
       <DashboardHeader eyebrow="CRIAÇÃO" title="Estúdio de conteúdo" />
       <p className="-mt-3 text-[10px] font-bold text-[var(--artist-muted)]">
-        Feed, Stories, Agenda, Galeria, Vídeos, Lives e Fan Club — tudo que aparece no seu perfil
-        público.
+        Feed, Stories (editor visual com textos, emojis e formas), Agenda, Galeria, Vídeos, Lives e
+        Fan Club — tudo que aparece no seu perfil público.
       </p>
       <ContentManager
         artistId={artist.id}

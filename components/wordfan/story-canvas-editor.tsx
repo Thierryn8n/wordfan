@@ -6,7 +6,7 @@ import EmojiPicker from 'emoji-picker-react'
 import { X, Type, Image as ImageIcon, Smile, Square, Circle, Layers, Trash2, Download } from 'lucide-react'
 
 interface StoryCanvasEditorProps {
-  onSave?: (canvasData: string) => void
+  onSave?: (imageDataUrl: string) => void
   onCancel?: () => void
   initialData?: string
   backgroundImage?: string
@@ -170,8 +170,12 @@ export function StoryCanvasEditor({ onSave, onCancel, initialData, backgroundIma
 
   const handleSave = () => {
     if (!fabricCanvasRef.current) return
-    const json = JSON.stringify(fabricCanvasRef.current.toJSON())
-    onSave?.(json)
+    const imageDataUrl = fabricCanvasRef.current.toDataURL({
+      format: 'png',
+      quality: 1,
+      multiplier: 1,
+    })
+    onSave?.(imageDataUrl)
   }
 
   const handleDownload = () => {
