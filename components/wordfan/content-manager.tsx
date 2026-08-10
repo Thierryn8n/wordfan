@@ -1,6 +1,6 @@
 'use client'
 
-import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import { useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -21,6 +21,9 @@ import {
   Star,
   Check,
   Radio,
+  Sparkles,
+  ExternalLink,
+  Clock,
 } from 'lucide-react'
 import type { GalleryItem, Live, Plan, Post, Show, Story, Video, Tier } from '@/lib/types'
 import { TIER_LABELS, TIER_ORDER, VIDEO_CATEGORY_LABELS, formatPrice } from '@/lib/types'
@@ -41,27 +44,6 @@ import {
   deletePlan,
   uploadContentImage,
 } from '@/app/actions/content'
-
-const StoryCanvasEditor = dynamic(
-  () => import('./story-canvas-editor').then((m) => ({ default: m.StoryCanvasEditor })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-[600px] items-center justify-center rounded-3xl border border-white/8 bg-background/50">
-        <Loader2 className="size-6 animate-spin text-primary" aria-hidden="true" />
-      </div>
-    ),
-  },
-)
-
-function dataUrlToFile(dataUrl: string, filename: string) {
-  const [header, base64] = dataUrl.split(',')
-  const mime = header.match(/:(.*?);/)?.[1] ?? 'image/png'
-  const bytes = atob(base64)
-  const buffer = new Uint8Array(bytes.length)
-  for (let i = 0; i < bytes.length; i++) buffer[i] = bytes.charCodeAt(i)
-  return new File([buffer], filename, { type: mime })
-}
 
 type Section = 'feed' | 'stories' | 'agenda' | 'galeria' | 'videos' | 'lives' | 'fanclub'
 
@@ -246,7 +228,6 @@ export function ContentManager({
   const [editing, setEditing] = useState<string | 'new' | null>(null)
   const [status, setStatus] = useState<{ ok?: string; error?: string }>({})
   const [isPending, startTransition] = useTransition()
-  const [useCanvasEditor, setUseCanvasEditor] = useState(false)
 
   // Form states
   const [postForm, setPostForm] = useState({
@@ -298,7 +279,6 @@ export function ContentManager({
     setLiveForm({ title: '', scheduledAt: '', status: 'scheduled', isExclusive: false, minTier: 'bronze' })
     setPlanForm({ tier: 'bronze', name: '', priceReais: '', benefits: [''] })
     setEditing(null)
-    setUseCanvasEditor(false)
     setStatus({})
   }
 
@@ -938,78 +918,58 @@ export function ContentManager({
 
       {/* ============ STORIES ============ */}
       {section === 'stories' && (
-        <div className="mt-5">
-          {editing === null && (
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setEditing('canvas')
-                  setUseCanvasEditor(true)
-                }}
-                className={btnPrimary}
-              >
-                <Plus className="size-3.5" aria-hidden="true" />
-                CRIAR STORY
-              </button>
-              <button type="button" onClick={() => setEditing('new')} className={btnGhost}>
-                <Upload className="size-3.5" aria-hidden="true" />
-                UPLOAD SIMPLES
-              </button>
-            </div>
-          )}
+        <div className="mt-5 flex flex-col gap-5">
 
-          {editing === 'canvas' && useCanvasEditor && (
-            <div className="flex flex-col gap-4">
-              <div>
-                <label className={labelCls} htmlFor="cm-story-canvas-caption">
-                  LEGENDA (OPCIONAL)
-                </label>
-                <input
-                  id="cm-story-canvas-caption"
-                  className={`mt-1.5 ${inputCls}`}
-                  value={storyForm.caption}
-                  onChange={(e) => setStoryForm((f) => ({ ...f, caption: e.target.value }))}
-                  placeholder="Escreva algo (opcional)"
-                  maxLength={140}
-                />
+          {/* CTA hero — navega para a página dedicada do editor */}
+          <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6">
+            {/* decorative glow */}
+            <div className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-primary/20 blur-[60px]" />
+            <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-4">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/15">
+                  <Sparkles className="size-6 text-primary" />
+                </span>
+                <div>
+                  <p className="font-serif text-base font-black tracking-tight text-foreground">
+                    Editor visual de stories
+                  </p>
+                  <p className="mt-0.5 text-[10px] font-bold leading-relaxed text-muted-foreground">
+                    Crie stories com gradientes, textos, emojis, stickers, formas e vídeo.
+                    Tudo em 1080×1920px, pronto para publicar.
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {['Gradientes', 'Textos & fontes', 'Stickers', 'Vídeo de fundo', 'Formas'].map((f) => (
+                      <span key={f} className="rounded-full border border-primary/20 bg-primary/8 px-2.5 py-0.5 text-[8px] font-black tracking-[0.1em] text-primary">
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="h-[600px]">
-                <StoryCanvasEditor
-                  onSave={(imageDataUrl) => {
-                    startTransition(async () => {
-                      setStatus({})
-                      const file = dataUrlToFile(imageDataUrl, `story-${Date.now()}.png`)
-                      const fd = new FormData()
-                      fd.set('file', file)
-                      fd.set('artistId', artistId)
-                      fd.set('kind', 'story')
-                      const upload = await uploadContentImage(fd)
-                      if (upload.error) {
-                        setStatus({ error: upload.error })
-                        return
-                      }
-                      const res = await saveStory({
-                        id: undefined,
-                        artistId,
-                        mediaUrl: upload.url!,
-                        caption: storyForm.caption,
-                      })
-                      if (res.error) setStatus({ error: res.error })
-                      else {
-                        setStatus({ ok: 'Story publicado com o editor visual!' })
-                        resetForms()
-                        router.refresh()
-                      }
-                    })
-                  }}
-                  onCancel={resetForms}
-                  backgroundImage={storyForm.mediaUrl || undefined}
-                />
+              <div className="flex shrink-0 flex-col gap-2">
+                <Link
+                  href="/dashboard/estudio/stories/novo"
+                  className="gradient-brand flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-[10px] font-black tracking-[0.18em] text-white shadow-[0_8px_24px_-8px_rgba(255,106,0,0.6)] transition-transform hover:scale-[1.02]"
+                >
+                  <Sparkles className="size-3.5" aria-hidden="true" />
+                  CRIAR STORY
+                  <ExternalLink className="size-3" aria-hidden="true" />
+                </Link>
+                {editing === null && (
+                  <button
+                    type="button"
+                    onClick={() => setEditing('new')}
+                    className={btnGhost}
+                  >
+                    <Upload className="size-3.5" aria-hidden="true" />
+                    UPLOAD DIRETO
+                  </button>
+                )}
               </div>
             </div>
-          )}
+          </div>
 
+          {/* Upload simples inline (mantido para quem só quer subir um arquivo) */}
           {editing !== null && editing !== 'canvas' && (
             <form
               className="flex flex-col gap-4 rounded-3xl border border-white/8 bg-background/50 p-5"
@@ -1028,7 +988,7 @@ export function ContentManager({
             >
               <div className="flex items-center justify-between">
                 <p className="text-[9px] font-black tracking-[0.2em] text-primary">
-                  {editing === 'new' ? 'UPLOAD SIMPLES DE STORY' : 'EDITAR STORY'}
+                  {editing === 'new' ? 'UPLOAD DIRETO DE STORY' : 'EDITAR STORY'}
                 </p>
                 <button type="button" onClick={resetForms} aria-label="Fechar formulário">
                   <X className="size-4 text-muted-foreground" aria-hidden="true" />
@@ -1064,48 +1024,98 @@ export function ContentManager({
             </form>
           )}
 
-          <div className="mt-4 flex flex-wrap gap-3">
-            {stories.map((s) => (
-              <div key={s.id} className="group relative">
-                <span className="gradient-brand block rounded-full p-[3px]">
-                  <span className="block rounded-full border-2 border-card">
-                    <Image
-                      src={s.media_url || '/placeholder.svg'}
-                      alt={s.caption ?? 'Story'}
-                      width={72}
-                      height={72}
-                      className="size-16 rounded-full object-cover"
-                    />
-                  </span>
+          {/* Stories grid — cards visuais */}
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="flex items-center gap-2 text-[9px] font-black tracking-[0.18em] text-muted-foreground">
+                <Clock className="size-3" aria-hidden="true" />
+                STORIES ATIVOS
+                <span className="rounded-full bg-white/8 px-2 py-0.5 text-[8px] font-black text-zinc-400">
+                  {stories.length}
                 </span>
-                <div className="absolute inset-0 flex items-center justify-center gap-1 rounded-full bg-black/60 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-                  <button
-                    type="button"
-                    aria-label="Editar story"
-                    className="flex size-7 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm"
-                    onClick={() => {
-                      setEditing(s.id)
-                      setStoryForm({ mediaUrl: s.media_url, caption: s.caption ?? '' })
-                    }}
-                  >
-                    <Pencil className="size-3.5" aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Excluir story"
-                    disabled={isPending}
-                    className="flex size-7 items-center justify-center rounded-full bg-red-500/80 text-white backdrop-blur-sm"
-                    onClick={() => confirmDelete(() => deleteStory(s.id, artistId))}
-                  >
-                    <Trash2 className="size-3.5" aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-            ))}
-            {stories.length === 0 && (
-              <p className="w-full rounded-2xl border border-dashed border-white/10 p-6 text-center text-[10px] font-bold text-muted-foreground">
-                Nenhum story ativo. Publique o primeiro!
               </p>
+            </div>
+
+            {stories.length === 0 ? (
+              <div className="flex flex-col items-center gap-4 rounded-3xl border border-dashed border-white/10 py-12 text-center">
+                <span className="flex size-14 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03]">
+                  <Circle className="size-6 text-zinc-600" aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="text-[11px] font-black text-zinc-400">Nenhum story publicado ainda</p>
+                  <p className="mt-1 text-[9px] font-bold text-zinc-600">
+                    Crie o primeiro com o editor visual acima!
+                  </p>
+                </div>
+                <Link
+                  href="/dashboard/estudio/stories/novo"
+                  className="gradient-brand flex items-center gap-2 rounded-2xl px-6 py-3 text-[9px] font-black tracking-[0.18em] text-white shadow-[0_8px_20px_-8px_rgba(255,106,0,0.5)]"
+                >
+                  <Sparkles className="size-3.5" />
+                  CRIAR PRIMEIRO STORY
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                {stories.map((s) => (
+                  <div key={s.id} className="group relative">
+                    {/* card 9:16 */}
+                    <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border border-white/8 bg-card">
+                      <Image
+                        src={s.media_url || '/placeholder.svg'}
+                        alt={s.caption ?? 'Story'}
+                        fill
+                        sizes="(max-width: 640px) 30vw, 160px"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      {/* gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                      {/* gradient brand ring on hover */}
+                      <div className="absolute inset-0 rounded-2xl opacity-0 ring-2 ring-primary/60 transition-opacity group-hover:opacity-100" />
+
+                      {/* caption */}
+                      {s.caption && (
+                        <div className="absolute inset-x-0 bottom-0 px-2 pb-2">
+                          <p className="line-clamp-2 text-[7px] font-bold leading-tight text-white/90">
+                            {s.caption}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* date badge */}
+                      <div className="absolute left-1.5 top-1.5">
+                        <span className="rounded-full bg-black/60 px-1.5 py-0.5 text-[6px] font-black text-white/80 backdrop-blur-sm">
+                          {new Date(s.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                        </span>
+                      </div>
+
+                      {/* action overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 backdrop-blur-sm transition-all duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+                        <button
+                          type="button"
+                          aria-label="Editar story"
+                          className="flex size-9 items-center justify-center rounded-xl bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+                          onClick={() => {
+                            setEditing(s.id)
+                            setStoryForm({ mediaUrl: s.media_url, caption: s.caption ?? '' })
+                          }}
+                        >
+                          <Pencil className="size-3.5" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Excluir story"
+                          disabled={isPending}
+                          className="flex size-9 items-center justify-center rounded-xl bg-red-500/70 text-white backdrop-blur-sm transition-colors hover:bg-red-500/90 disabled:opacity-50"
+                          onClick={() => confirmDelete(() => deleteStory(s.id, artistId))}
+                        >
+                          <Trash2 className="size-3.5" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
