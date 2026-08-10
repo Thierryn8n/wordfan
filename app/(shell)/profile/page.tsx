@@ -3,6 +3,8 @@ import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { LayoutDashboard, ShieldCheck, Sparkles, ChevronRight, Zap, Briefcase, Building2, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { getSiteSettings } from '@/lib/site-settings'
+import { Logo } from '@/components/wordfan/logo'
 import { HoloCrown } from '@/components/wordfan/holo-crown'
 import { SignOutButton } from './sign-out-button'
 import { TIER_LABELS } from '@/lib/types'
@@ -17,7 +19,7 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login?next=/profile')
 
-  const [{ data: profileData }, { data: subsData }, { data: leadsData }] = await Promise.all([
+  const [{ data: profileData }, { data: subsData }, { data: leadsData }, { logoUrl, siteName }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase
       .from('subscriptions')
@@ -25,6 +27,7 @@ export default async function ProfilePage() {
       .eq('user_id', user.id)
       .eq('status', 'active'),
     supabase.from('enterprise_leads').select('status').eq('user_id', user.id),
+    getSiteSettings(),
   ])
 
   const profile = profileData as Profile | null
@@ -42,7 +45,16 @@ export default async function ProfilePage() {
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-40">
-      <main className="px-6 pt-8">
+      {/* Logo no topo */}
+      <div className="flex items-center justify-center pt-8">
+        <Logo
+          href="/home"
+          imageUrl={logoUrl ?? undefined}
+          className="text-2xl"
+        />
+      </div>
+
+      <main className="px-6 pt-6">
         <p className="text-[10px] font-black tracking-[0.3em] text-primary">SUA CONTA</p>
         <h1 className="mt-1 font-serif text-3xl font-black tracking-tight">PERFIL</h1>
 

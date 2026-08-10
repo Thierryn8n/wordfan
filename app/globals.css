@@ -239,6 +239,12 @@
     }
   }
 
+  /* ===== Shimmer (barra de loading indeterminada) ===== */
+  @keyframes shimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+  }
+
   /* ===== Troca de tela (dock inferior permanece fixo) ===== */
   @keyframes screenEnter {
     from {

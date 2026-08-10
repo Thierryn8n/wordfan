@@ -3,6 +3,8 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Sora, Space_Grotesk, Playfair_Display, Bebas_Neue } from 'next/font/google'
 import { getMyEnterpriseStatus } from '@/lib/enterprise'
 import { createClient } from '@/lib/supabase/server'
+import { getSiteSettings } from '@/lib/site-settings'
+import { SplashScreen } from '@/components/wordfan/splash-screen'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-body' })
@@ -45,9 +47,9 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  // Contratante Enterprise aprovado => tema holográfico em todo o app
   const enterprise = await getMyEnterpriseStatus()
   const enterpriseTheme = enterprise?.status === 'approved' ? 'enterprise-theme' : ''
+  const { logoUrl, siteName } = await getSiteSettings()
 
   return (
     <html
@@ -55,6 +57,8 @@ export default async function RootLayout({
       className={`dark bg-background ${enterpriseTheme} ${inter.variable} ${sora.variable} ${spaceGrotesk.variable} ${playfair.variable} ${bebas.variable}`}
     >
       <body className="antialiased font-sans">
+        {/* Splash screen — aparece no primeiro load/reload, some automaticamente */}
+        <SplashScreen logoUrl={logoUrl} siteName={siteName} />
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
