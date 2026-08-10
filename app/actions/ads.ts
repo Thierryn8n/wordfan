@@ -117,7 +117,38 @@ export async function deleteAd(id: string) {
   return { error: null }
 }
 
-/** Registra um clique no anúncio (chamado pela UI pública). */
+/** Upload de imagem para anúncio — usa requireAdmin, não requireManager */
+export async function uploadAdImage(formData: FormData) {
+  const { supabase, error } = await requireAdmin()
+  if (error) return { error }
+
+  const file = formData.get('file') as File | null
+  if (!file || file.size === 0) return { error: 'Nenhum arquivo enviado.' }
+
+  const ALLOWED = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+  if (!ALLOWED.includes(file.type)) {
+    return { error: 'Formato inválido. Use PNG, JPG, WebP ou GIF.' }
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    return { error: 'Imagem muito grande (máx. 5 MB).' }
+  }
+
+  const rawExt = file.type.split('/')[1]
+  const ext    = rawExt === 'jpeg' ? 'jpg' : rawExt
+  const path   = `ads/ad-${Date.now()}.${ext}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('artist-media')
+    .upload(path, file, { upsert: false, contentType: file.type })
+
+  if (uploadError) {
+    console.log('[uploadAdImage] storage error:', uploadError.message)
+    return { error: 'Falha ao enviar imagem. Tente novamente.' }
+  }
+
+  const { data: { publicUrl } } = supabase.storage.from('artist-media').getPublicUrl(path)
+  return { url: publicUrl, error: null }
+}
 export async function trackAdClick(id: string) {
   const supabase = await createClient()
   const { data } = await supabase.from('ad_banners').select('clicks').eq('id', id).maybeSingle()

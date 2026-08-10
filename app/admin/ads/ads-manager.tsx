@@ -21,8 +21,7 @@ import {
 import type { Ad, AdPlacement } from '@/lib/types'
 import { AD_PLACEMENT_LABELS } from '@/lib/types'
 import { AdBanner } from '@/components/wordfan/ad-banner'
-import { saveAd, toggleAd, deleteAd } from '@/app/actions/ads'
-import { uploadContentImage } from '@/app/actions/content'
+import { saveAd, toggleAd, deleteAd, uploadAdImage } from '@/app/actions/ads'
 
 const PLACEMENTS: AdPlacement[] = ['home_hero', 'home_inline', 'discover', 'events']
 
@@ -111,9 +110,7 @@ export function AdsManager({ ads, tableMissing }: { ads: Ad[]; tableMissing: boo
     setError(null)
     const fd = new FormData()
     fd.set('file', file)
-    fd.set('artistId', 'admin')
-    fd.set('kind', 'ad')
-    const res = await uploadContentImage(fd)
+    const res = await uploadAdImage(fd)
     setUploading(false)
     if (res.error) {
       setError(res.error)
