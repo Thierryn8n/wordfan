@@ -276,7 +276,11 @@ export function SubscriptionsManager({
                 className="flex size-9 items-center justify-center rounded-full border border-white/8 text-muted-foreground transition-colors hover:text-foreground"
                 onClick={() => {
                   setEditing(s.id)
-                  setForm({ userId: s.user_id, planId: s.plan_id, status: s.status })
+                  setForm({
+                    userId: s.user_id,
+                    planId: s.plan_id,
+                    status: s.status === 'active' ? 'active' : 'canceled',
+                  })
                 }}
               >
                 <Pencil className="size-3.5" aria-hidden="true" />

@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { assertAdmin } from '@/lib/admin-guard'
 
-const PLATFORM_FEE_PERCENT = 15
+// Comissão usada quando o artista não tem uma taxa própria configurada.
+const DEFAULT_PLATFORM_FEE_PERCENT = 20
 
 function revalidateAll() {
   revalidatePath('/admin/subscriptions')
@@ -30,6 +31,14 @@ export async function saveSubscription(input: {
     .eq('id', input.planId)
     .single()
   if (!plan) return { error: 'Plano não encontrado.' }
+
+  // Usa a comissão configurada para o artista (fallback para o padrão).
+  const { data: artist } = await supabase
+    .from('artists')
+    .select('commission_pct')
+    .eq('id', plan.artist_id)
+    .single()
+  const feePercent = artist?.commission_pct ?? DEFAULT_PLATFORM_FEE_PERCENT
 
   const payload = {
     user_id: input.userId,
@@ -69,7 +78,7 @@ export async function saveSubscription(input: {
   }
 
   if (input.status === 'active') {
-    const fee = Math.round((plan.price_cents * PLATFORM_FEE_PERCENT) / 100)
+    const fee = Math.round((plan.price_cents * feePercent) / 100)
     await supabase.from('transactions').insert({
       subscription_id: created.id,
       artist_id: plan.artist_id,
