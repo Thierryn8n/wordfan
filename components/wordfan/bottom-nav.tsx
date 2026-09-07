@@ -25,8 +25,10 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
   }, [pathname])
 
   const current = pending ?? pathname
-  // Rosa (club) só nas páginas de artista; /fanclub usa o laranja do sistema via `accent`.
-  const clubActive = current.startsWith('/artist')
+  // Em páginas de artista o dock usa a cor do próprio artista (publicada em :root
+  // pelo NavThemePublisher), com fallback para o rosa do fan club.
+  const artistThemed = accent === 'club'
+  const accentColor = 'var(--nav-accent, var(--club))'
 
   function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof Home }) {
     const active = current === href || current.startsWith(href + '/')
@@ -35,11 +37,12 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
         href={href}
         onNavigate={() => setPending(href)}
         aria-current={active ? 'page' : undefined}
+        style={active && artistThemed ? { color: accentColor } : undefined}
         className={cn(
           'group flex flex-1 flex-col items-center gap-1.5 py-1 text-[8px] font-extrabold tracking-[0.1em] transition-colors duration-200',
           active
-            ? accent === 'club'
-              ? 'text-club'
+            ? artistThemed
+              ? undefined
               : 'text-brand'
             : 'text-muted-foreground hover:text-foreground',
         )}
@@ -80,18 +83,27 @@ export function BottomNav({ accent = 'brand' }: { accent?: 'brand' | 'club' }) {
                 href="/fanclub"
                 onNavigate={() => setPending('/fanclub')}
                 aria-label="Fan Club"
+                style={
+                  artistThemed
+                    ? {
+                        backgroundImage:
+                          'linear-gradient(135deg, var(--nav-grad-from, #ff00a2) 0%, var(--nav-grad-via, #ff4db8) 50%, var(--nav-grad-to, #ff80d5) 100%)',
+                      }
+                    : undefined
+                }
                 className={cn(
                   'elev-2 relative z-10 flex size-16 items-center justify-center rounded-full text-white ring-1 ring-white/25 transition-transform duration-200 ease-out active:scale-90',
-                  accent === 'club' ? 'gradient-club' : 'gradient-brand',
+                  !artistThemed && 'gradient-brand',
                 )}
               >
                 <Star className="size-7 fill-white" aria-hidden="true" />
               </Link>
             </div>
             <span
+              style={artistThemed ? { color: accentColor } : undefined}
               className={cn(
                 'whitespace-nowrap pt-0.5 text-[8px] font-extrabold tracking-[0.1em] transition-colors duration-200',
-                clubActive || accent === 'club' ? 'text-club' : 'text-brand',
+                !artistThemed && 'text-brand',
               )}
             >
               FAN CLUB

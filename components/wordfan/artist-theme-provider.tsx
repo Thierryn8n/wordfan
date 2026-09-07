@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { resolveTheme, themeToCssVars, type ArtistTheme } from '@/lib/artist-theme'
 import { cn } from '@/lib/utils'
+import { NavThemePublisher } from '@/components/wordfan/nav-theme-publisher'
 
 interface ArtistThemeScopeProps {
   theme: unknown
@@ -18,6 +19,7 @@ export function ArtistThemeScope({ theme, children, className }: ArtistThemeScop
 
   return (
     <div style={vars} className={cn('artist-scope min-h-dvh', className)}>
+      <NavThemePublisher theme={theme} />
       {children}
     </div>
   )
