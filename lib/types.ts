@@ -126,8 +126,12 @@ export interface Subscription {
   user_id: string
   artist_id: string
   plan_id: string
-  status: 'active' | 'canceled'
+  status: 'active' | 'canceled' | 'pending' | 'past_due'
   started_at: string
+  stripe_subscription_id?: string | null
+  stripe_customer_id?: string | null
+  current_period_end?: string | null
+  cancel_at_period_end?: boolean
   plan?: Plan
   artist?: Artist
 }

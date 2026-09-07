@@ -23,7 +23,16 @@ export function SubscribeButton({
     setError(null)
     startTransition(async () => {
       const result = await subscribeToPlan(slug, planId)
-      if (result?.error) setError(result.error)
+      if (result && 'error' in result) {
+        setError(result.error)
+      } else if (result && 'url' in result) {
+        // Checkout do Stripe abre no mesmo contexto; em iframe (preview), nova aba.
+        if (window.self !== window.top) {
+          window.open(result.url, '_blank')
+        } else {
+          window.location.href = result.url
+        }
+      }
     })
   }
 
