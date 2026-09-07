@@ -65,10 +65,10 @@ function ColorPicker({
         />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-black text-white">{label}</p>
-        <p className="text-[8px] font-bold text-zinc-600">{hint}</p>
+        <p className="text-xs font-black text-white">{label}</p>
+        <p className="text-[11px] font-medium text-zinc-500">{hint}</p>
       </div>
-      <span className="font-mono text-[8px] font-bold text-zinc-600 transition-colors group-hover:text-zinc-400">
+      <span className="font-mono text-[11px] font-bold text-zinc-500 transition-colors group-hover:text-zinc-300">
         {value.toUpperCase()}
       </span>
     </label>
@@ -88,9 +88,9 @@ function TabBtn({
           : 'border border-white/[0.065] bg-white/[0.02] text-zinc-500 hover:border-white/[0.1] hover:text-zinc-300',
       ].join(' ')}
     >
-      <Icon className="size-4" aria-hidden="true" />
-      <span className="text-[9px] font-black tracking-[0.12em]">{label}</span>
-      <span className={`text-[7px] font-bold leading-none ${active ? 'text-white/60' : 'text-zinc-600'}`}>{sub}</span>
+      <Icon className="size-[18px]" aria-hidden="true" />
+      <span className="text-[11px] font-black tracking-[0.04em]">{label}</span>
+      <span className={`text-[11px] font-semibold leading-none ${active ? 'text-white/70' : 'text-zinc-500'}`}>{sub}</span>
     </button>
   )
 }
@@ -112,13 +112,13 @@ function ChipGroup<T extends string>({
           <button
             key={o} type="button" onClick={() => onChange(o)} aria-pressed={value === o}
             className={[
-              'rounded-full px-4 py-2 text-[9px] font-black tracking-[0.12em] transition-all',
+              'rounded-full px-4 py-2 text-[11px] font-black tracking-[0.02em] transition-all',
               value === o
                 ? 'gradient-brand text-white shadow-[0_4px_12px_-4px_rgba(255,106,0,0.5)]'
-                : 'border border-white/[0.065] bg-white/[0.02] text-zinc-500 hover:border-white/[0.1] hover:text-white',
+                : 'border border-white/[0.065] bg-white/[0.02] text-zinc-400 hover:border-white/[0.1] hover:text-white',
             ].join(' ')}
           >
-            {labelMap[o].toUpperCase()}
+            {labelMap[o]}
           </button>
         ))}
       </div>
@@ -230,7 +230,7 @@ export function StudioEditor({
                             className="absolute inset-0 size-full cursor-pointer rounded-lg opacity-0"/>
                           <span className="flex size-7 rounded-lg border border-white/10" style={{ backgroundColor: theme.gradient[key] }}/>
                         </label>
-                        <span className="font-mono text-[8px] font-bold text-zinc-600">{theme.gradient[key].toUpperCase()}</span>
+                        <span className="font-mono text-[11px] font-bold text-zinc-500">{theme.gradient[key].toUpperCase()}</span>
                       </div>
                     </div>
                   ))}
@@ -277,8 +277,8 @@ export function StudioEditor({
                       className="w-full" style={{ accentColor: theme.primary }}
                     />
                   </div>
-                  <div className="mt-1 flex justify-between text-[7px] font-bold text-zinc-700">
-                    <span>QUADRADO</span><span>REDONDO</span>
+                  <div className="mt-1.5 flex justify-between text-[11px] font-semibold text-zinc-500">
+                    <span>Quadrado</span><span>Redondo</span>
                   </div>
                 </div>
               </div>
@@ -291,8 +291,8 @@ export function StudioEditor({
 
                 <div className="flex items-center gap-4 rounded-2xl border border-white/[0.065] bg-white/[0.02] p-4">
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-black text-white">Comissão da plataforma</p>
-                    <p className="text-[8px] font-bold text-zinc-600">% cobrado sobre cada assinatura</p>
+                    <p className="text-xs font-black text-white">Comissão da plataforma</p>
+                    <p className="text-[11px] font-medium text-zinc-500">% cobrado sobre cada assinatura</p>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <input
@@ -320,15 +320,15 @@ export function StudioEditor({
                           <Check className="size-3 text-white"/>
                         </span>
                       )}
-                      <span className="block text-[11px] font-black tracking-[0.08em] text-white">
+                      <span className="block text-xs font-black tracking-[0.04em] text-white">
                         {TOOL_PLANS[p].label.toUpperCase()}
                       </span>
-                      <span className="font-numeric mt-0.5 block text-[11px] font-bold text-primary">
+                      <span className="font-numeric mt-0.5 block text-[13px] font-bold text-primary">
                         {TOOL_PLANS[p].price}
                       </span>
-                      <ul className="mt-3 flex flex-col gap-1">
+                      <ul className="mt-3 flex flex-col gap-1.5">
                         {TOOL_PLANS[p].features.map((f) => (
-                          <li key={f} className="flex items-start gap-1.5 text-[8px] font-bold leading-relaxed text-zinc-500">
+                          <li key={f} className="flex items-start gap-1.5 text-[11px] font-medium leading-relaxed text-zinc-400">
                             <ChevronRight className="mt-0.5 size-2.5 shrink-0 text-primary/70"/>
                             {f}
                           </li>
@@ -378,7 +378,7 @@ export function StudioEditor({
                 <Eye className="size-3.5 text-zinc-500"/>
                 <h2 className="admin-eyebrow">PREVIEW AO VIVO</h2>
               </div>
-              <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-2.5 py-1 text-[7px] font-black tracking-[0.12em] text-emerald-400">
+              <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-2.5 py-1 text-[10px] font-black tracking-[0.04em] text-emerald-400">
                 <span className="size-1.5 animate-pulse rounded-full bg-emerald-400"/>
                 SINCRONIZADO
               </span>

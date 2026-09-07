@@ -30,7 +30,7 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[9px] font-black tracking-[0.15em] text-zinc-500">{label}</span>
+      <span className="text-[11px] font-bold tracking-[0.04em] text-zinc-400">{label}</span>
       {textarea ? (
         <textarea
           value={value}
@@ -95,7 +95,7 @@ function ImageUploader({
 
   return (
     <div className="rounded-3xl border border-white/8 bg-white/[0.025] p-4">
-      <span className="text-[9px] font-black tracking-[0.15em] text-zinc-500">{label}</span>
+      <span className="text-[11px] font-bold tracking-[0.04em] text-zinc-400">{label}</span>
       <div className={kind === 'banner' ? 'mt-3 flex flex-col gap-3' : 'mt-3 flex items-center gap-4'}>
         <div
           className={
@@ -113,9 +113,9 @@ function ImageUploader({
               className="object-cover"
             />
           ) : (
-            <span className="flex h-full flex-col items-center justify-center gap-2 text-[8px] font-black tracking-[0.12em] text-zinc-600">
+            <span className="flex h-full flex-col items-center justify-center gap-2 text-[11px] font-bold tracking-[0.04em] text-zinc-500">
               <ImagePlus className="size-5" aria-hidden="true" />
-              SEM IMAGEM
+              Sem imagem
             </span>
           )}
         </div>
@@ -125,16 +125,16 @@ function ImageUploader({
             onChange={(e) => onUploaded(e.target.value)}
             placeholder="URL da imagem ou envie um arquivo"
             aria-label={`URL de ${label}`}
-            className="h-10 rounded-xl border border-white/10 bg-card px-3 text-[10px] font-bold outline-none focus:border-primary"
+            className="h-10 rounded-xl border border-white/10 bg-card px-3 text-xs font-medium outline-none focus:border-primary"
           />
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 text-[9px] font-black tracking-[0.15em] text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
+            className="flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 text-[11px] font-black tracking-[0.06em] text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
           >
             <Upload className="size-3.5" aria-hidden="true" />
-            {uploading ? 'ENVIANDO...' : 'ENVIAR ARQUIVO'}
+            {uploading ? 'Enviando…' : 'Enviar arquivo'}
           </button>
           <input
             ref={inputRef}
@@ -187,7 +187,7 @@ function ListEditor({
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[9px] font-black tracking-[0.15em] text-zinc-500">{label}</span>
+      <span className="text-[11px] font-bold tracking-[0.04em] text-zinc-400">{label}</span>
       <div className="flex flex-wrap gap-2">
         {items.map((item, i) => (
           <span
@@ -291,7 +291,7 @@ export function ProfileEditor({
   return (
     <div className="flex flex-col gap-5">
       <section aria-labelledby="fotos-h" className="admin-editor-section">
-        <h2 id="fotos-h" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
+        <h2 id="fotos-h" className="text-[11px] font-black tracking-[0.1em] text-muted-foreground">
           FOTOS DO ARTISTA
         </h2>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -324,7 +324,7 @@ export function ProfileEditor({
       </section>
 
       <section aria-labelledby="dados-h" className="admin-editor-section">
-        <h2 id="dados-h" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
+        <h2 id="dados-h" className="text-[11px] font-black tracking-[0.1em] text-muted-foreground">
           DADOS DO ARTISTA
         </h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -339,7 +339,7 @@ export function ProfileEditor({
       </section>
 
       <section aria-labelledby="social-h" className="admin-editor-section">
-        <h2 id="social-h" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
+        <h2 id="social-h" className="text-[11px] font-black tracking-[0.1em] text-muted-foreground">
           REDES SOCIAIS
         </h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -356,7 +356,7 @@ export function ProfileEditor({
       </section>
 
       <section aria-labelledby="sobre-h" className="admin-editor-section">
-        <h2 id="sobre-h" className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
+        <h2 id="sobre-h" className="text-[11px] font-black tracking-[0.1em] text-muted-foreground">
           SOBRE O ARTISTA
         </h2>
         <div className="mt-3 flex flex-col gap-4">
@@ -381,7 +381,7 @@ export function ProfileEditor({
           />
 
           <div className="flex flex-col gap-2">
-            <span className="text-[9px] font-black tracking-[0.15em] text-zinc-500">DISCOGRAFIA</span>
+            <span className="text-[11px] font-bold tracking-[0.04em] text-zinc-400">DISCOGRAFIA</span>
             <div className="flex flex-col gap-2">
               {discography.map((d, i) => (
                 <div
@@ -440,9 +440,9 @@ export function ProfileEditor({
           type="button"
           onClick={save}
           disabled={isPending}
-          className="h-13 w-full rounded-2xl border-2 border-primary bg-primary/10 py-4 text-[11px] font-black tracking-[0.25em] text-primary transition-colors hover:bg-primary/20 disabled:opacity-60"
+          className="h-14 w-full rounded-2xl border-2 border-primary bg-primary/10 py-4 text-xs font-black tracking-[0.12em] text-primary transition-colors hover:bg-primary/20 disabled:opacity-60"
         >
-          {isPending ? 'SALVANDO PERFIL...' : 'SALVAR PERFIL DO ARTISTA'}
+          {isPending ? 'SALVANDO PERFIL…' : 'SALVAR PERFIL DO ARTISTA'}
         </button>
         {status.error && (
           <p role="alert" className="mt-3 text-center text-xs font-bold text-destructive">

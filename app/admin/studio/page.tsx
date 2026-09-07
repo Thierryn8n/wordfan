@@ -109,8 +109,8 @@ export default async function StudioPage({
             <ArrowLeft className="size-4" />
           </Link>
           <div>
-            <p className="flex items-center gap-2 text-[9px] font-black tracking-[0.24em] text-primary">
-              <Palette className="size-3" aria-hidden="true" />
+            <p className="flex items-center gap-2 text-[11px] font-black tracking-[0.08em] text-primary">
+              <Palette className="size-3.5" aria-hidden="true" />
               STUDIO DO ARTISTA
             </p>
             <h1 className="mt-1.5 font-serif text-3xl font-black tracking-[-0.04em] text-white">
@@ -127,7 +127,7 @@ export default async function StudioPage({
           <Link
             href={`/artist/${selected.slug}`}
             target="_blank"
-            className="flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-4 text-[9px] font-black tracking-[0.13em] text-zinc-300 transition-colors hover:bg-white/[0.07] hover:text-white"
+            className="flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-4 text-[11px] font-black tracking-[0.05em] text-zinc-300 transition-colors hover:bg-white/[0.07] hover:text-white"
           >
             VER PERFIL PÚBLICO
             <ArrowUpRight className="size-3.5 text-primary" aria-hidden="true" />
@@ -168,23 +168,23 @@ export default async function StudioPage({
               {selected.name}
               <BadgeCheck className="size-4 shrink-0 text-primary" />
             </p>
-            <p className="mt-0.5 text-[9px] font-bold text-zinc-500">
+            <p className="mt-0.5 text-[11px] font-medium text-zinc-500">
               @{selected.slug}
               {selected.genre ? ` · ${selected.genre}` : ''}
               {selected.city ? ` · ${selected.city}${selected.state ? `/${selected.state}` : ''}` : ''}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2 pb-0.5">
-            <span className="flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-1.5 text-[8px] font-black tracking-[0.1em] text-emerald-400">
-              <TrendingUp className="size-3" />
+            <span className="flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-1.5 text-[11px] font-black tracking-[0.04em] text-emerald-400">
+              <TrendingUp className="size-3.5" />
               {selected.followers_count.toLocaleString('pt-BR')} FÃS
             </span>
-            <span className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-1.5 text-[8px] font-black tracking-[0.1em] text-zinc-500">
+            <span className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-1.5 text-[11px] font-black tracking-[0.04em] text-zinc-400">
               PLANO {selected.tool_plan.toUpperCase()}
             </span>
             <Link
               href="/admin/artists"
-              className="rounded-xl border border-primary/20 bg-primary/[0.07] px-3 py-1.5 text-[8px] font-black tracking-[0.1em] text-primary transition-colors hover:bg-primary/15"
+              className="rounded-xl border border-primary/20 bg-primary/[0.07] px-3 py-1.5 text-[11px] font-black tracking-[0.04em] text-primary transition-colors hover:bg-primary/15"
             >
               TROCAR
             </Link>

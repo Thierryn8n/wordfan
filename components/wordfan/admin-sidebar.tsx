@@ -34,9 +34,7 @@ const NAV_GROUPS = [
   },
   {
     title: 'Artistas',
-    items: [
-      { label: 'Painéis dos Artistas', icon: Briefcase, href: '/dashboard' },
-    ],
+    items: [{ label: 'Painéis dos artistas', icon: Briefcase, href: '/dashboard' }],
   },
   {
     title: 'Operação',
@@ -50,9 +48,7 @@ const NAV_GROUPS = [
   },
   {
     title: 'Sistema',
-    items: [
-      { label: 'Configurações', icon: Settings2, href: '/admin/settings' },
-    ],
+    items: [{ label: 'Configurações', icon: Settings2, href: '/admin/settings' }],
   },
 ] as const
 
@@ -61,56 +57,55 @@ export function AdminSidebar({ siteLogoUrl }: { siteLogoUrl?: string }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   return (
-    <aside className={cn(
-      'sticky top-4 hidden h-[calc(100vh-2rem)] shrink-0 flex-col rounded-2xl border border-white/8 bg-[#050505] shadow-xl lg:flex transition-all duration-300',
-      isCollapsed ? 'w-20' : 'w-72'
-    )}>
-      <div className="border-b border-white/8 px-7 py-7">
-        <div className="flex items-center justify-between">
-          {!isCollapsed && (
-            <div className="flex items-center gap-3">
-              <Logo href="/admin" className="text-12xl" imageUrl={siteLogoUrl || undefined} />
-            </div>
-          )}
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="flex size-8 items-center justify-center rounded-lg border border-white/8 bg-white/[0.025] text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-white"
-          >
-            {isCollapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
-          </button>
-        </div>
+    <aside
+      className={cn(
+        'sticky top-4 hidden h-[calc(100vh-2rem)] shrink-0 flex-col rounded-2xl border border-white/10 bg-[#070707] shadow-2xl lg:flex transition-all duration-300',
+        isCollapsed ? 'w-[76px]' : 'w-72',
+      )}
+    >
+      {/* ── Topo ── */}
+      <div className="flex items-center gap-3 px-4 pb-4 pt-5">
+        {!isCollapsed && (
+          <div className="min-w-0 flex-1">
+            <Logo href="/admin" className="text-xl" imageUrl={siteLogoUrl || undefined} />
+            <p className="mt-1 text-[11px] font-bold tracking-[0.06em] text-primary">
+              Administração
+            </p>
+          </div>
+        )}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
+          className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-zinc-400 transition-colors hover:bg-white/[0.07] hover:text-white"
+        >
+          {isCollapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+        </button>
       </div>
 
-      <nav className="scrollbar-none flex flex-1 flex-col gap-7 overflow-y-auto px-4 py-6" aria-label="Menu administrativo">
+      {/* ── Navegação ── */}
+      <nav
+        className="scrollbar-none flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-4"
+        aria-label="Menu administrativo"
+      >
         {NAV_GROUPS.map((group) => (
           <div key={group.title}>
-            {!isCollapsed && (
-              <p className="px-3 pb-2 text-[9px] font-black tracking-[0.22em] text-zinc-600">
-                {group.title.toUpperCase()}
-              </p>
-            )}
-            <div className="flex flex-col gap-1">
+            {!isCollapsed && <p className="side-group-label mb-1.5 px-2">{group.title}</p>}
+            <div className="flex flex-col gap-0.5">
               {group.items.map(({ label, icon: Icon, href }) => {
                 const active = href === '/admin' ? pathname === href : pathname.startsWith(href)
                 return (
                   <Link
                     key={href}
                     href={href}
+                    data-active={active}
                     aria-current={active ? 'page' : undefined}
-                    className={cn(
-                      'group relative flex items-center gap-3 rounded-xl px-4 py-3 text-[11px] font-bold transition-colors',
-                      active
-                        ? 'bg-primary/12 text-white'
-                        : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white',
-                      isCollapsed && 'justify-center px-0'
-                    )}
+                    className={cn('side-item', isCollapsed && 'justify-center px-0')}
                     title={isCollapsed ? label : undefined}
                   >
-                    {active && (
-                      <span className="absolute inset-y-2 right-0 w-0.5 rounded-full bg-primary" aria-hidden="true" />
-                    )}
-                    <Icon className={cn('size-4', active ? 'text-primary' : 'text-zinc-500 group-hover:text-zinc-300')} aria-hidden="true" />
-                    {!isCollapsed && <span>{label}</span>}
+                    <span className="side-icon">
+                      <Icon className="size-[18px]" aria-hidden="true" />
+                    </span>
+                    {!isCollapsed && <span className="truncate">{label}</span>}
                   </Link>
                 )
               })}
@@ -119,23 +114,24 @@ export function AdminSidebar({ siteLogoUrl }: { siteLogoUrl?: string }) {
         ))}
       </nav>
 
+      {/* ── Rodapé ── */}
       {!isCollapsed && (
-        <div className="border-t border-white/8 p-4">
-          <div className="rounded-2xl border border-white/8 bg-white/[0.035] p-4">
+        <div className="border-t border-white/8 p-3">
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
             <div className="flex items-center gap-3">
-              <span className="flex size-9 items-center justify-center rounded-full bg-primary/12">
+              <span className="flex size-9 items-center justify-center rounded-lg bg-primary/15">
                 <Settings2 className="size-4 text-primary" aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[10px] font-black text-white">Administrador</p>
-                <p className="mt-0.5 text-[8px] font-bold text-zinc-600">Acesso total</p>
+                <p className="truncate text-xs font-black text-white">Administrador</p>
+                <p className="mt-0.5 text-[11px] font-medium text-zinc-500">Acesso total</p>
               </div>
             </div>
             <Link
               href="/home"
-              className="mt-3 flex items-center justify-between border-t border-white/8 pt-3 text-[8px] font-black tracking-[0.14em] text-zinc-500 transition-colors hover:text-white"
+              className="mt-3 flex items-center justify-between border-t border-white/8 pt-3 text-[11px] font-bold text-zinc-400 transition-colors hover:text-white"
             >
-              VER APLICATIVO
+              Ver aplicativo
               <ArrowUpRight className="size-3.5 text-primary" aria-hidden="true" />
             </Link>
           </div>

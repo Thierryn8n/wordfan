@@ -151,7 +151,7 @@ export default async function OverviewPage() {
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-center justify-between gap-5">
         <div>
-          <p className="flex items-center gap-2 text-[9px] font-black tracking-[0.22em] text-[var(--artist-primary)]">
+          <p className="flex items-center gap-2 text-[11px] font-black tracking-[0.08em] text-[var(--artist-primary)]">
             <span className="size-1.5 rounded-full bg-[var(--artist-primary)]" aria-hidden="true" />
             DASHBOARD DO ARTISTA
           </p>
@@ -163,13 +163,13 @@ export default async function OverviewPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="flex h-11 items-center gap-2 rounded-xl border border-white/8 bg-white/[0.035] px-4 text-[9px] font-black tracking-[0.12em] text-[var(--artist-muted)]">
+          <span className="flex h-11 items-center gap-2 rounded-xl border border-white/8 bg-white/[0.035] px-4 text-[11px] font-black tracking-[0.04em] text-[var(--artist-muted)]">
             <Sparkles className="size-3.5 text-[var(--artist-primary)]" aria-hidden="true" />
             PLANO {planInfo.label.toUpperCase()}
           </span>
           <Link
             href="/dashboard/estudio"
-            className="artist-gradient flex h-11 items-center gap-2 rounded-xl px-5 text-[9px] font-black tracking-[0.13em] text-white shadow-[0_12px_30px_-16px_rgba(0,0,0,.9)]"
+            className="artist-gradient flex h-11 items-center gap-2 rounded-xl px-5 text-[11px] font-black tracking-[0.05em] text-white shadow-[0_12px_30px_-16px_rgba(0,0,0,.9)]"
           >
             <FileText className="size-3.5" aria-hidden="true" />
             NOVO CONTEÚDO
@@ -183,7 +183,7 @@ export default async function OverviewPage() {
             <span className={`flex size-10 items-center justify-center rounded-xl ${tone}`}>
               <Icon className="size-4" aria-hidden="true" />
             </span>
-            <p className="mt-5 text-[9px] font-black tracking-[0.16em] text-[var(--artist-muted)]">{label}</p>
+            <p className="mt-5 text-[11px] font-bold tracking-[0.06em] text-[var(--artist-muted)]">{label}</p>
             <p className="mt-1 font-numeric text-2xl font-bold tracking-tight text-[var(--artist-text)]">{value}</p>
           </article>
         ))}
@@ -196,7 +196,7 @@ export default async function OverviewPage() {
               <p className="artist-dashboard-eyebrow">RESULTADOS</p>
               <h2 className="mt-1.5 text-lg font-black text-[var(--artist-text)]">Crescimento de receita</h2>
             </div>
-            <span className="rounded-xl border border-white/8 bg-black/20 px-3 py-2 text-[8px] font-black tracking-[0.12em] text-[var(--artist-muted)]">
+            <span className="rounded-xl border border-white/8 bg-black/20 px-3 py-2 text-[10px] font-black tracking-[0.05em] text-[var(--artist-muted)]">
               ÚLTIMOS 6 MESES
             </span>
           </div>
@@ -211,7 +211,7 @@ export default async function OverviewPage() {
           <TierDonutChart data={tierData} />
           <div className="mt-2 grid grid-cols-2 gap-2">
             {tierData.map((item) => (
-              <div key={item.tier} className="flex items-center gap-2 text-[9px] font-bold text-[var(--artist-muted)]">
+              <div key={item.tier} className="flex items-center gap-2 text-[11px] font-medium text-[var(--artist-muted)]">
                 <span className="size-2 rounded-sm" style={{ backgroundColor: item.color }} aria-hidden="true" />
                 <span className="flex-1">{item.label}</span>
                 <span className="font-numeric text-[var(--artist-text)]">{item.value}</span>
@@ -228,9 +228,9 @@ export default async function OverviewPage() {
               <p className="artist-dashboard-eyebrow">CONTEÚDO</p>
               <h2 className="mt-1.5 text-lg font-black text-[var(--artist-text)]">Publicações recentes</h2>
             </div>
-            <Link href="/dashboard/estudio" className="flex items-center gap-1 text-[8px] font-black tracking-[0.13em] text-[var(--artist-primary)]">
+            <Link href="/dashboard/estudio" className="flex items-center gap-1 text-[11px] font-black tracking-[0.04em] text-[var(--artist-primary)]">
               GERENCIAR
-              <ArrowUpRight className="size-3" aria-hidden="true" />
+              <ArrowUpRight className="size-3.5" aria-hidden="true" />
             </Link>
           </div>
           <div className="mt-5 flex flex-col gap-2.5">
@@ -250,12 +250,12 @@ export default async function OverviewPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[11px] font-black text-[var(--artist-text)]">{post.title || 'Publicação sem título'}</p>
-                  <p className="mt-1 text-[8px] font-bold text-[var(--artist-muted)]">
+                  <p className="truncate text-[13px] font-black text-[var(--artist-text)]">{post.title || 'Publicação sem título'}</p>
+                  <p className="mt-1 text-[11px] font-medium text-[var(--artist-muted)]">
                     {new Date(post.created_at).toLocaleDateString('pt-BR')} · {post.likes_count.toLocaleString('pt-BR')} curtidas
                   </p>
                 </div>
-                <span className="rounded-lg bg-white/5 px-2.5 py-1.5 text-[7px] font-black tracking-[0.12em] text-[var(--artist-muted)]">
+                <span className="rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] font-black tracking-[0.04em] text-[var(--artist-muted)]">
                   {post.is_exclusive ? 'EXCLUSIVO' : 'PÚBLICO'}
                 </span>
               </Link>
@@ -263,7 +263,7 @@ export default async function OverviewPage() {
             {posts.length === 0 && (
               <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center">
                 <FileText className="mx-auto size-5 text-[var(--artist-muted)]" aria-hidden="true" />
-                <p className="mt-3 text-[10px] font-bold text-[var(--artist-muted)]">Nenhuma publicação criada ainda.</p>
+                <p className="mt-3 text-xs font-semibold text-[var(--artist-muted)]">Nenhuma publicação criada ainda.</p>
               </div>
             )}
           </div>
@@ -289,9 +289,9 @@ export default async function OverviewPage() {
                     )}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-black leading-snug text-[var(--artist-text)]">{event.title}</p>
-                    <p className="mt-1 text-[8px] font-bold text-[var(--artist-muted)]">{event.meta || 'Evento do artista'}</p>
-                    <p className="mt-2 font-numeric text-[8px] font-black tracking-[0.1em] text-[var(--artist-primary)]">
+                    <p className="text-[13px] font-black leading-snug text-[var(--artist-text)]">{event.title}</p>
+                    <p className="mt-1 text-[11px] font-medium text-[var(--artist-muted)]">{event.meta || 'Evento do artista'}</p>
+                    <p className="mt-2 font-numeric text-[11px] font-black tracking-[0.05em] text-[var(--artist-primary)]">
                       {new Date(event.date).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).toUpperCase()}
                     </p>
                   </div>
@@ -301,7 +301,7 @@ export default async function OverviewPage() {
             {events.length === 0 && (
               <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center">
                 <CalendarDays className="mx-auto size-5 text-[var(--artist-muted)]" aria-hidden="true" />
-                <p className="mt-3 text-[10px] font-bold text-[var(--artist-muted)]">Nenhum evento agendado.</p>
+                <p className="mt-3 text-xs font-semibold text-[var(--artist-muted)]">Nenhum evento agendado.</p>
               </div>
             )}
           </div>
