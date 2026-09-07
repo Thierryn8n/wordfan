@@ -17,7 +17,10 @@ const nextConfig = {
     NEXT_PUBLIC_SUPABASE_ANON_KEY:
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-      process.env.SUPABASE_ANON_KEY,
+      process.env.SUPABASE_ANON_KEY ??
+      // O ambiente guarda a anon key (role=anon) em JWT, sem prefixo público.
+      process.env.JWT ??
+      process.env.JWT_2,
   },
   async headers() {
     return [
