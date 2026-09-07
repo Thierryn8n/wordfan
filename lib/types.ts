@@ -168,7 +168,19 @@ export interface Live {
   scheduled_at: string
   status: 'scheduled' | 'live' | 'ended'
   min_tier: Tier | null
+  stream_url?: string | null
+  started_at?: string | null
   artist?: Artist
+}
+
+export interface LiveMessage {
+  id: string
+  live_id: string
+  artist_id: string
+  user_id: string
+  author: string
+  body: string
+  created_at: string
 }
 
 export interface GalleryItem {

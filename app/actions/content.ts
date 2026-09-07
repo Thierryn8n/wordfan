@@ -2,6 +2,27 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { TIER_ORDER } from '@/lib/types'
+
+// Compara o tier do usuário com o mínimo exigido (bronze < silver < gold < platinum).
+function tierAllows(userTier: string | null | undefined, minTier: string | null | undefined) {
+  if (!minTier) return true
+  if (!userTier) return false
+  return TIER_ORDER.indexOf(userTier as never) >= TIER_ORDER.indexOf(minTier as never)
+}
+
+// Aceita apenas URLs http(s) para o link de transmissão.
+function sanitizeStreamUrl(raw: string | undefined | null): string | null {
+  const v = (raw ?? '').trim()
+  if (!v) return null
+  try {
+    const u = new URL(v)
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null
+    return v.slice(0, 500)
+  } catch {
+    return null
+  }
+}
 
 // ===== Autorização compartilhada: admin OU dono do artista =====
 async function requireManager(artistId: string) {
@@ -283,6 +304,7 @@ export async function saveLive(input: {
   status: 'scheduled' | 'live' | 'ended'
   isExclusive: boolean
   minTier: string
+  streamUrl?: string
 }) {
   const { supabase, error, slug } = await requireManager(input.artistId)
   if (error) return { error }
@@ -294,6 +316,22 @@ export async function saveLive(input: {
 
   const status = LIVE_STATUSES.includes(input.status) ? input.status : 'scheduled'
   const minTier = input.isExclusive && TIERS.includes(input.minTier) ? input.minTier : null
+  const streamUrl = sanitizeStreamUrl(input.streamUrl)
+
+  // started_at: marca o instante em que a live entrou no ar (preserva o valor
+  // já existente em atualizações; limpa ao reagendar).
+  let startedAt: string | null | undefined
+  if (status === 'live') {
+    let existing: string | null = null
+    if (input.id) {
+      const { data } = await supabase.from('lives').select('started_at').eq('id', input.id).single()
+      existing = (data?.started_at as string | null) ?? null
+    }
+    startedAt = existing ?? new Date().toISOString()
+  } else if (status === 'scheduled') {
+    startedAt = null
+  }
+  // status 'ended' => não mexe em started_at (mantém histórico).
 
   const payload = {
     artist_id: input.artistId,
@@ -301,6 +339,8 @@ export async function saveLive(input: {
     scheduled_at: scheduledAt.toISOString(),
     status,
     min_tier: minTier,
+    stream_url: streamUrl,
+    ...(startedAt !== undefined ? { started_at: startedAt } : {}),
   }
 
   const q = input.id
@@ -348,6 +388,81 @@ export async function deleteLive(id: string, artistId: string) {
   revalidateArtist(slug!)
   revalidatePath('/events')
   revalidatePath('/home')
+  return { success: true }
+}
+
+// ============ CHAT AO VIVO ============
+// Envia uma mensagem no chat da live. Qualquer fã autenticado com acesso ao
+// tier da live pode escrever; a distribuição em tempo real é feita pelo
+// Supabase Realtime (o insert dispara o broadcast para todos os assinantes).
+export async function sendLiveMessage(input: { liveId: string; body: string }) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: 'Você precisa estar logado.' }
+
+  const body = input.body.trim().slice(0, 500)
+  if (!body) return { error: 'Mensagem vazia.' }
+
+  // Confirma que a live existe, está no ar e valida o tier de acesso.
+  const { data: live } = await supabase
+    .from('lives')
+    .select('id, artist_id, status, min_tier')
+    .eq('id', input.liveId)
+    .single()
+  if (!live) return { error: 'Live não encontrada.' }
+  if (live.status !== 'live') return { error: 'Esta live não está no ar.' }
+
+  if (live.min_tier) {
+    // admin/dono/empresário sempre passam; senão, checa a assinatura ativa.
+    const [{ data: profile }, { data: artist }, { data: manager }] = await Promise.all([
+      supabase.from('profiles').select('role').eq('id', user.id).single(),
+      supabase.from('artists').select('owner_id').eq('id', live.artist_id).single(),
+      supabase.from('managers').select('id').eq('user_id', user.id).eq('artist_id', live.artist_id).maybeSingle(),
+    ])
+    const isStaff = profile?.role === 'admin' || artist?.owner_id === user.id || Boolean(manager)
+    if (!isStaff) {
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('status, plan:plans(tier)')
+        .eq('user_id', user.id)
+        .eq('artist_id', live.artist_id)
+        .eq('status', 'active')
+        .maybeSingle()
+      const userTier = (sub?.plan as { tier?: string } | null)?.tier ?? null
+      if (!tierAllows(userTier, live.min_tier)) return { error: 'Sua assinatura não dá acesso a esta live.' }
+    }
+  }
+
+  const author =
+    (user.user_metadata?.display_name as string | undefined)?.trim() ||
+    (user.email?.split('@')[0] ?? 'Fã')
+
+  const { error: dbError } = await supabase.from('live_messages').insert({
+    live_id: input.liveId,
+    artist_id: live.artist_id,
+    user_id: user.id,
+    author: author.slice(0, 60),
+    body,
+  })
+  if (dbError) {
+    console.log('[v0] sendLiveMessage error:', dbError.message)
+    return { error: 'Não foi possível enviar a mensagem.' }
+  }
+  return { success: true }
+}
+
+// Limpa todo o chat de uma live (moderação). Restrito a admin/dono/empresário.
+export async function clearLiveMessages(liveId: string, artistId: string) {
+  const { supabase, error } = await requireManager(artistId)
+  if (error) return { error }
+  const { error: dbError } = await supabase
+    .from('live_messages')
+    .delete()
+    .eq('live_id', liveId)
+    .eq('artist_id', artistId)
+  if (dbError) return { error: 'Não foi possível limpar o chat.' }
   return { success: true }
 }
 

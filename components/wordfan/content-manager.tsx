@@ -262,6 +262,7 @@ export function ContentManager({
     status: 'scheduled' as Live['status'],
     isExclusive: false,
     minTier: 'bronze',
+    streamUrl: '',
   })
   const [planForm, setPlanForm] = useState({
     tier: 'bronze' as Tier,
@@ -276,7 +277,7 @@ export function ContentManager({
     setGalleryForm({ url: '', album: '' })
     setVideoForm({ title: '', category: 'clipe', thumbnailUrl: '', duration: '', isExclusive: false, minTier: 'bronze' })
     setStoryForm({ mediaUrl: '', caption: '' })
-    setLiveForm({ title: '', scheduledAt: '', status: 'scheduled', isExclusive: false, minTier: 'bronze' })
+    setLiveForm({ title: '', scheduledAt: '', status: 'scheduled', isExclusive: false, minTier: 'bronze', streamUrl: '' })
     setPlanForm({ tier: 'bronze', name: '', priceReais: '', benefits: [''] })
     setEditing(null)
     setStatus({})
@@ -1174,6 +1175,24 @@ export function ContentManager({
                 />
               </div>
               <div>
+                <label className={labelCls} htmlFor="cm-live-stream">
+                  LINK DA TRANSMISSÃO
+                </label>
+                <input
+                  id="cm-live-stream"
+                  type="url"
+                  inputMode="url"
+                  className={`mt-1.5 ${inputCls}`}
+                  value={liveForm.streamUrl}
+                  onChange={(e) => setLiveForm((f) => ({ ...f, streamUrl: e.target.value }))}
+                  placeholder="YouTube, Vimeo ou link .mp4/.m3u8"
+                />
+                <p className="mt-1.5 text-[8px] font-bold leading-relaxed tracking-[0.05em] text-muted-foreground">
+                  Cole o link do YouTube/Vimeo ou de um vídeo direto. Ao mudar a
+                  situação para AO VIVO, os fãs veem a transmissão e o chat em tempo real.
+                </p>
+              </div>
+              <div>
                 <p className={labelCls}>SITUAÇÃO</p>
                 <div className="mt-1.5 flex gap-2">
                   {(['scheduled', 'live', 'ended'] as const).map((v) => (
@@ -1251,6 +1270,7 @@ export function ContentManager({
                       status: l.status,
                       isExclusive: Boolean(l.min_tier),
                       minTier: l.min_tier ?? 'bronze',
+                      streamUrl: l.stream_url ?? '',
                     })
                   }}
                 >

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Ad, Artist, Live, Plan, Post, Show, Subscription, GalleryItem, Story, Tier, Video } from '@/lib/types'
+import type { Ad, Artist, Live, LiveMessage, Plan, Post, Show, Subscription, GalleryItem, Story, Tier, Video } from '@/lib/types'
 import { TIER_ORDER } from '@/lib/types'
 
 export async function getArtists() {
@@ -95,6 +95,19 @@ export async function getArtistLives(artistId: string) {
     .in('status', ['scheduled', 'live'])
     .order('scheduled_at', { ascending: true })
   return (data ?? []) as Live[]
+}
+
+// Últimas mensagens do chat de uma live (histórico inicial; o tempo real vem
+// depois via Supabase Realtime no cliente).
+export async function getLiveMessages(liveId: string, limit = 80) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('live_messages')
+    .select('*')
+    .eq('live_id', liveId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  return ((data ?? []) as LiveMessage[]).reverse()
 }
 
 export async function getUpcomingShows(limit = 50) {
