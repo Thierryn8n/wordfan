@@ -146,7 +146,8 @@ export function ArtistSidebar({
                   return (
                     <Link
                       key={artist.id}
-                      href={`/dashboard/${artist.slug}`}
+                      href={`/dashboard/switch/${artist.slug}`}
+                      prefetch={false}
                       className={cn(
                         'flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors',
                         current

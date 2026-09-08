@@ -1,13 +1,20 @@
 import { cache } from 'react'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolveTheme } from '@/lib/artist-theme'
 import type { Artist } from '@/lib/types'
 
+/** Cookie onde fica o slug do artista que o admin está visualizando no painel. */
+export const DASHBOARD_ARTIST_COOKIE = 'wf_admin_artist'
+
 /**
  * Resolve o artista do usuário logado (ou o selecionado, se admin).
  * Envolvido em `cache()` para deduplicar entre o layout e as páginas
  * dentro da mesma requisição — uma única ida ao banco.
+ *
+ * Admin: usa o slug explícito (se passado), senão o cookie de seleção,
+ * senão o primeiro artista. Se a seleção não existir mais, cai no primeiro.
  */
 export const getDashboardArtist = cache(async (nextPath: string, artistSlug?: string) => {
   const supabase = await createClient()
@@ -17,27 +24,31 @@ export const getDashboardArtist = cache(async (nextPath: string, artistSlug?: st
   if (!user) redirect(`/auth/login?next=${encodeURIComponent(nextPath)}`)
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const role = profile?.role ?? 'user'
 
-  let query = supabase.from('artists').select('*')
-  
-  if (profile?.role === 'admin') {
-    // Admin pode selecionar qualquer artista via query param
-    if (artistSlug) {
-      query = query.eq('slug', artistSlug)
-    } else {
-      // Se não especificou, pega o primeiro
-      query = query.limit(1)
+  let artist: Artist | null = null
+
+  if (role === 'admin') {
+    const store = await cookies()
+    const selected = artistSlug ?? store.get(DASHBOARD_ARTIST_COOKIE)?.value
+    if (selected) {
+      const { data } = await supabase.from('artists').select('*').eq('slug', selected).maybeSingle()
+      artist = (data as Artist | null) ?? null
+    }
+    // Sem seleção (ou seleção inexistente): primeiro artista por nome.
+    if (!artist) {
+      const { data } = await supabase.from('artists').select('*').order('name').limit(1).maybeSingle()
+      artist = (data as Artist | null) ?? null
     }
   } else {
-    // Usuário normal só vê seu próprio artista
-    query = query.eq('owner_id', user.id)
+    // Usuário normal só vê seu próprio artista.
+    const { data } = await supabase.from('artists').select('*').eq('owner_id', user.id).maybeSingle()
+    artist = (data as Artist | null) ?? null
   }
-  
-  const { data } = await query.maybeSingle()
 
   return {
-    artist: (data as Artist | null) ?? null,
-    role: profile?.role ?? 'user',
+    artist,
+    role,
     supabase,
     userId: user.id,
   }

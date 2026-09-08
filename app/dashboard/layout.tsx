@@ -15,12 +15,9 @@ export default async function DashboardLayout({
   const h = await headers()
   if (isMobileUserAgent(h.get('user-agent'))) return <DesktopBlocker />
 
-  // Ler parâmetro artist da URL usando headers
-  const url = h.get('x-url') || h.get('referer') || 'http://localhost:3000/dashboard'
-  const urlObj = new URL(url)
-  const artistSlug = urlObj.searchParams.get('artist') || undefined
-  
-  const { artist, role } = await getDashboardArtist('/dashboard', artistSlug)
+  // O artista ativo (para admin) vem do cookie de seleção; o usuário comum
+  // sempre resolve o próprio artista. Ver getDashboardArtist.
+  const { artist, role } = await getDashboardArtist('/dashboard')
   const allArtists = role === 'admin' ? await getAllArtists() : []
 
   // Conta ainda não vinculada a um artista.
