@@ -259,6 +259,8 @@ export async function saveStory(input: {
   artistId: string
   mediaUrl: string
   caption: string
+  mediaType?: 'image' | 'video'
+  durationMs?: number
 }) {
   const { supabase, error, slug } = await requireManager(input.artistId)
   if (error) return { error }
@@ -270,6 +272,8 @@ export async function saveStory(input: {
     artist_id: input.artistId,
     media_url: mediaUrl,
     caption: input.caption.trim().slice(0, 140) || null,
+    media_type: input.mediaType ?? 'image',
+    duration_ms: input.durationMs ? Math.round(input.durationMs) : null,
   }
 
   const q = input.id

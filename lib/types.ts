@@ -198,6 +198,8 @@ export interface Story {
   media_url: string
   caption: string | null
   created_at: string
+  media_type?: 'image' | 'video' | null
+  duration_ms?: number | null
 }
 
 export type AdPlacement = 'home_hero' | 'home_inline' | 'discover' | 'events'

@@ -2,16 +2,32 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Play } from 'lucide-react'
 import type { Artist, Story } from '@/lib/types'
 
-const STORY_DURATION = 5000
+const DEFAULT_IMAGE_DURATION = 5000
+
+// Um story é vídeo quando marcado no banco OU quando a URL termina em extensão de vídeo.
+function isVideoStory(s: Story): boolean {
+  if (s.media_type === 'video') return true
+  const u = (s.media_url || '').toLowerCase()
+  return u.endsWith('.mp4') || u.endsWith('.webm') || u.endsWith('.mov')
+}
+
+// Duração (ms) usada para o auto-advance de cada story.
+function storyDuration(s: Story): number {
+  if (isVideoStory(s) && s.duration_ms && s.duration_ms > 0) return s.duration_ms
+  return DEFAULT_IMAGE_DURATION
+}
 
 export function ArtistStories({ artist, stories }: { artist: Artist; stories: Story[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [progress, setProgress] = useState(0)
+  const [paused, setPaused] = useState(false)
   const startRef = useRef<number>(0)
+  const elapsedRef = useRef<number>(0)
   const rafRef = useRef<number>(0)
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   const close = useCallback(() => {
     setOpenIndex(null)
@@ -25,20 +41,30 @@ export function ArtistStories({ artist, stories }: { artist: Artist; stories: St
       return i + 1
     })
     setProgress(0)
+    elapsedRef.current = 0
   }, [stories.length])
 
   const goPrev = useCallback(() => {
     setOpenIndex((i) => (i === null || i === 0 ? i : i - 1))
     setProgress(0)
+    elapsedRef.current = 0
   }, [])
 
-  // Auto-advance timer
+  // Auto-advance timer — respeita a duração de cada story (vídeo usa duration_ms).
   useEffect(() => {
     if (openIndex === null) return
+    const duration = storyDuration(stories[openIndex])
+    elapsedRef.current = 0
     startRef.current = performance.now()
+
     function tick(now: number) {
-      const elapsed = now - startRef.current
-      const pct = Math.min(1, elapsed / STORY_DURATION)
+      if (paused) {
+        startRef.current = now - elapsedRef.current
+        rafRef.current = requestAnimationFrame(tick)
+        return
+      }
+      elapsedRef.current = now - startRef.current
+      const pct = Math.min(1, elapsedRef.current / duration)
       setProgress(pct)
       if (pct >= 1) {
         goNext()
@@ -48,7 +74,16 @@ export function ArtistStories({ artist, stories }: { artist: Artist; stories: St
     }
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [openIndex, goNext])
+  }, [openIndex, goNext, paused, stories])
+
+  // Controla o elemento de vídeo ao abrir/pausar.
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    if (paused) { v.pause(); return }
+    v.currentTime = 0
+    v.play().catch(() => {})
+  }, [openIndex, paused])
 
   // Keyboard controls + scroll lock
   useEffect(() => {
@@ -57,6 +92,7 @@ export function ArtistStories({ artist, stories }: { artist: Artist; stories: St
       if (e.key === 'Escape') close()
       else if (e.key === 'ArrowRight') goNext()
       else if (e.key === 'ArrowLeft') goPrev()
+      else if (e.key === ' ') { e.preventDefault(); setPaused((p) => !p) }
     }
     document.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
@@ -69,38 +105,56 @@ export function ArtistStories({ artist, stories }: { artist: Artist; stories: St
   if (stories.length === 0) return null
 
   const active = openIndex !== null ? stories[openIndex] : null
+  const activeIsVideo = active ? isVideoStory(active) : false
 
   return (
     <>
       {/* Barra de stories */}
       <div className="scrollbar-none flex gap-4 overflow-x-auto px-6 py-5">
-        {stories.map((s, i) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => {
-              setOpenIndex(i)
-              setProgress(0)
-            }}
-            className="flex shrink-0 flex-col items-center gap-2"
-            aria-label={`Ver story ${i + 1} de ${artist.name}`}
-          >
-            <span className="gradient-club rounded-full p-[3px]">
-              <span className="block rounded-full border-2 border-background">
-                <Image
-                  src={s.media_url || '/placeholder.svg'}
-                  alt=""
-                  width={68}
-                  height={68}
-                  className="size-16 rounded-full object-cover"
-                />
+        {stories.map((s, i) => {
+          const video = isVideoStory(s)
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => {
+                setOpenIndex(i)
+                setProgress(0)
+                setPaused(false)
+              }}
+              className="flex shrink-0 flex-col items-center gap-2"
+              aria-label={`Ver story ${i + 1} de ${artist.name}`}
+            >
+              <span className="gradient-club rounded-full p-[3px]">
+                <span className="relative block overflow-hidden rounded-full border-2 border-background">
+                  {video ? (
+                    <span className="flex size-16 items-center justify-center rounded-full bg-black">
+                      <video
+                        src={s.media_url}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        className="size-16 rounded-full object-cover"
+                      />
+                      <Play className="absolute size-5 fill-white text-white drop-shadow" aria-hidden="true" />
+                    </span>
+                  ) : (
+                    <Image
+                      src={s.media_url || '/placeholder.svg'}
+                      alt=""
+                      width={68}
+                      height={68}
+                      className="size-16 rounded-full object-cover"
+                    />
+                  )}
+                </span>
               </span>
-            </span>
-            <span className="max-w-[68px] truncate text-[9px] font-bold text-muted-foreground">
-              {s.caption || artist.name}
-            </span>
-          </button>
-        ))}
+              <span className="max-w-[68px] truncate text-[9px] font-bold text-muted-foreground">
+                {s.caption || artist.name}
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Visualizador em tela cheia */}
@@ -150,14 +204,26 @@ export function ArtistStories({ artist, stories }: { artist: Artist; stories: St
 
             {/* Mídia */}
             <div className="relative flex-1">
-              <Image
-                src={active.media_url || '/placeholder.svg'}
-                alt={active.caption ?? 'Story'}
-                fill
-                sizes="(max-width: 768px) 100vw, 448px"
-                className="object-contain"
-                priority
-              />
+              {activeIsVideo ? (
+                <video
+                  ref={videoRef}
+                  key={active.id}
+                  src={active.media_url}
+                  className="absolute inset-0 size-full object-contain"
+                  autoPlay
+                  playsInline
+                  onEnded={goNext}
+                />
+              ) : (
+                <Image
+                  src={active.media_url || '/placeholder.svg'}
+                  alt={active.caption ?? 'Story'}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 448px"
+                  className="object-contain"
+                  priority
+                />
+              )}
               {active.caption && (
                 <p className="absolute inset-x-0 bottom-16 px-8 text-center text-base font-bold leading-relaxed text-white text-pretty drop-shadow-lg">
                   {active.caption}
@@ -182,6 +248,14 @@ export function ArtistStories({ artist, stories }: { artist: Artist; stories: St
             >
               <ChevronRight className="size-6" aria-hidden="true" />
             </button>
+
+            {/* Pausar / retomar (centro) */}
+            <button
+              type="button"
+              onClick={() => setPaused((p) => !p)}
+              aria-label={paused ? 'Retomar' : 'Pausar'}
+              className="absolute inset-x-1/3 inset-y-0"
+            />
           </div>
         </div>
       )}
