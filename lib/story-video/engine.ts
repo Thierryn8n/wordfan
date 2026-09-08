@@ -27,7 +27,10 @@ export const ANIMATIONS: { id: AnimId; label: string }[] = [
   { id: 'zoom-out', label: 'Zoom out' },
 ]
 
-export type LayerKind = 'video' | 'image' | 'text'
+export type LayerKind = 'video' | 'image' | 'text' | 'sticker' | 'shape' | 'gradient'
+export type ShapeKind = 'rect' | 'circle' | 'line'
+export type TextStyleId = 'clean' | 'shadow' | 'outline' | 'neon'
+export type TextAlign = 'left' | 'center' | 'right'
 
 // Descritor de uma camada da composição.
 export interface LayerSpec {
@@ -38,14 +41,27 @@ export interface LayerSpec {
   srcDuration?: number   // duração total da fonte de vídeo (s)
   trimStart?: number     // ponto de entrada dentro da fonte de vídeo (s)
   cover?: boolean        // true → preenche o quadro (fundo); false → caixa (overlay)
-  // texto
+  // texto / sticker
   text?: string
   color?: string
   fontScale?: number     // tamanho da fonte como fração da altura do quadro
+  fontFamily?: string    // família de fonte concreta (resolvida) para o canvas
+  textStyle?: TextStyleId
+  align?: TextAlign
+  bold?: boolean
+  italic?: boolean
+  // fundo (gradiente/sólido) — preenche o quadro inteiro
+  gradFrom?: string
+  gradTo?: string | null // null/undefined → cor sólida (gradFrom)
+  // forma
+  shape?: ShapeKind
+  fill?: string          // 'none' → sem preenchimento
+  stroke?: string        // 'none' → sem contorno
+  strokeWidth?: number   // espessura como fração da largura do quadro
   // posição no canvas (centro normalizado 0..1)
   cx: number
   cy: number
-  scale: number          // largura da caixa como fração da largura do quadro (overlay/texto)
+  scale: number          // largura da caixa como fração da largura do quadro (overlay/texto/forma)
   // janela de tempo na timeline (segundos)
   start: number
   duration: number
@@ -138,8 +154,85 @@ export function clearFrame(ctx: CanvasRenderingContext2D, W: number, H: number) 
   ctx.fillRect(0, 0, W, H)
 }
 
+function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const rr = Math.min(r, w / 2, h / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + rr, y)
+  ctx.arcTo(x + w, y, x + w, y + h, rr)
+  ctx.arcTo(x + w, y + h, x, y + h, rr)
+  ctx.arcTo(x, y + h, x, y, rr)
+  ctx.arcTo(x, y, x + w, y, rr)
+  ctx.closePath()
+}
+
+function drawTextLayer(ctx: CanvasRenderingContext2D, W: number, H: number, layer: LayerSpec) {
+  const fontPx = Math.max(10, (layer.fontScale ?? 0.06) * H)
+  const weight = layer.bold === false ? '600' : '800'
+  const italic = layer.italic ? 'italic ' : ''
+  const family = layer.fontFamily || '"Geist", system-ui, -apple-system, sans-serif'
+  ctx.font = `${italic}${weight} ${fontPx}px ${family}`
+  ctx.textBaseline = 'middle'
+  const align: TextAlign = layer.align ?? 'center'
+  ctx.textAlign = align
+  const boxW = layer.scale * W
+  const lines = wrapText(ctx, layer.text ?? '', boxW)
+  const lh = fontPx * 1.2
+  const x = align === 'left' ? -boxW / 2 : align === 'right' ? boxW / 2 : 0
+  const style: TextStyleId = layer.textStyle ?? 'shadow'
+
+  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0
+  if (style === 'shadow')      { ctx.shadowColor = 'rgba(0,0,0,0.7)';   ctx.shadowBlur = fontPx * 0.18; ctx.shadowOffsetY = fontPx * 0.06 }
+  else if (style === 'clean')  { ctx.shadowColor = 'rgba(0,0,0,0.35)';  ctx.shadowBlur = fontPx * 0.12; ctx.shadowOffsetY = fontPx * 0.03 }
+  else if (style === 'neon')   { ctx.shadowColor = 'rgba(255,106,0,0.95)'; ctx.shadowBlur = fontPx * 0.5 }
+
+  lines.forEach((ln, i) => {
+    const y = (i - (lines.length - 1) / 2) * lh
+    if (style === 'outline') {
+      ctx.lineJoin = 'round'
+      ctx.strokeStyle = '#000000'
+      ctx.lineWidth = Math.max(2, fontPx * 0.08)
+      ctx.strokeText(ln, x, y)
+    }
+    ctx.fillStyle = layer.color ?? '#ffffff'
+    ctx.fillText(ln, x, y)
+  })
+}
+
+function drawStickerLayer(ctx: CanvasRenderingContext2D, H: number, layer: LayerSpec) {
+  const fontPx = Math.max(20, (layer.fontScale ?? 0.18) * H)
+  ctx.font = `${fontPx}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = fontPx * 0.08; ctx.shadowOffsetY = fontPx * 0.03
+  ctx.fillText(layer.text ?? '⭐', 0, 0)
+}
+
+function drawShapeLayer(ctx: CanvasRenderingContext2D, W: number, layer: LayerSpec) {
+  const size = layer.scale * W
+  const fill = layer.fill ?? 'rgba(255,255,255,0.10)'
+  const stroke = layer.stroke ?? 'rgba(255,255,255,0.9)'
+  const sw = Math.max(0, (layer.strokeWidth ?? 0.006) * W)
+  ctx.lineWidth = sw
+  ctx.strokeStyle = stroke
+  ctx.fillStyle = fill
+  if (layer.shape === 'circle') {
+    ctx.beginPath(); ctx.arc(0, 0, size / 2, 0, Math.PI * 2)
+    if (fill !== 'none') ctx.fill()
+    if (sw > 0 && stroke !== 'none') ctx.stroke()
+  } else if (layer.shape === 'line') {
+    ctx.beginPath(); ctx.lineCap = 'round'
+    ctx.moveTo(-size / 2, 0); ctx.lineTo(size / 2, 0)
+    if (stroke !== 'none') ctx.stroke()
+  } else {
+    const r = size * 0.14
+    roundRectPath(ctx, -size / 2, -size / 2, size, size, r)
+    if (fill !== 'none') ctx.fill()
+    if (sw > 0 && stroke !== 'none') ctx.stroke()
+  }
+}
+
 // Desenha UMA camada no instante `t` da timeline. `media` é o elemento de mídia
-// (vídeo/imagem) já carregado, ou null para texto.
+// (vídeo/imagem) já carregado, ou null para camadas sem mídia.
 export function drawLayer(
   ctx: CanvasRenderingContext2D,
   W: number,
@@ -155,21 +248,33 @@ export function drawLayer(
 
   ctx.save()
   ctx.globalAlpha = Math.max(0, Math.min(1, anim.alpha))
+
+  // Fundo (gradiente/sólido): preenche todo o quadro, ignora posição/escala.
+  if (layer.kind === 'gradient') {
+    let fillStyle: string | CanvasGradient
+    if (layer.gradTo) {
+      const g = ctx.createLinearGradient(0, 0, 0, H)
+      g.addColorStop(0, layer.gradFrom ?? '#000000')
+      g.addColorStop(1, layer.gradTo)
+      fillStyle = g
+    } else {
+      fillStyle = layer.gradFrom ?? '#000000'
+    }
+    ctx.fillStyle = fillStyle
+    ctx.fillRect(0, 0, W, H)
+    ctx.restore()
+    return
+  }
+
   ctx.translate(layer.cx * W + anim.tx * W, layer.cy * H + anim.ty * H)
   ctx.scale(anim.scale, anim.scale)
 
   if (layer.kind === 'text') {
-    const fontPx = Math.max(10, (layer.fontScale ?? 0.06) * H)
-    ctx.font = `800 ${fontPx}px "Geist", system-ui, -apple-system, sans-serif`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    const lines = wrapText(ctx, layer.text ?? '', layer.scale * W)
-    const lh = fontPx * 1.2
-    ctx.shadowColor = 'rgba(0,0,0,0.55)'
-    ctx.shadowBlur = fontPx * 0.25
-    ctx.shadowOffsetY = fontPx * 0.06
-    ctx.fillStyle = layer.color ?? '#ffffff'
-    lines.forEach((ln, i) => ctx.fillText(ln, 0, (i - (lines.length - 1) / 2) * lh))
+    drawTextLayer(ctx, W, H, layer)
+  } else if (layer.kind === 'sticker') {
+    drawStickerLayer(ctx, H, layer)
+  } else if (layer.kind === 'shape') {
+    drawShapeLayer(ctx, W, layer)
   } else if (media) {
     const { w: mw, h: mh } = naturalSize(media)
     if (layer.cover) {
@@ -277,7 +382,7 @@ export async function exportComposition(
   const media = new Map<string, HTMLVideoElement | HTMLImageElement>()
   const videoLayerIds: string[] = []
   let loaded = 0
-  const mediaLayers = layers.filter((l) => l.kind !== 'text' && l.url)
+  const mediaLayers = layers.filter((l) => (l.kind === 'video' || l.kind === 'image') && l.url)
   for (const l of mediaLayers) {
     if (l.kind === 'video') {
       const v = await loadVideo(l.url!, false)

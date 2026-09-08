@@ -2,23 +2,27 @@
 
 // ─────────────────────────────────────────────────────────────────────────────
 // StoryStudio — editor de stories em tela cheia, estilo CapCut, com CAMADAS.
-// Composição em camadas (vídeo, imagem, texto) sobrepostas: cada camada tem
-// posição no canvas, janela de tempo na timeline (multi-trilha) e animações de
-// entrada/saída próprias. Layout: rail + painel à esquerda, preview no centro,
-// timeline embaixo. Engine de composição/export: @/lib/story-video/engine.
+// Composição em camadas (vídeo, imagem, texto, sticker, forma, fundo gradiente)
+// sobrepostas: cada camada tem posição no canvas, janela de tempo na timeline
+// (multi-trilha) e animações de entrada/saída próprias. Integra os recursos do
+// Editor Visual (fundos, textos estilizados, emojis/stickers, formas).
+// Layout: rail + painel à esquerda, preview no centro, timeline embaixo.
+// Engine de composição/export: @/lib/story-video/engine.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react'
 import {
   ArrowLeft, Plus, Play, Pause, Trash2, ZoomIn, ZoomOut, Film, Image as ImageIcon,
   Type, Check, Loader2, Sparkles, X, AlertCircle, Clapperboard, Clock, Upload,
-  ChevronUp, ChevronDown, Layers,
+  ChevronUp, ChevronDown, Layers, Palette, Smile, Square, Circle as CircleIcon,
+  Minus, Bold, Italic, AlignLeft, AlignCenter, AlignRight,
 } from 'lucide-react'
 import {
-  ANIMATIONS, EXPORT_W, EXPORT_H, compositionDuration, composeFrame, layerActiveAt,
+  ANIMATIONS, EXPORT_W, EXPORT_H, ASPECT, compositionDuration, composeFrame, layerActiveAt,
   loadVideo, loadImage, exportComposition,
-  type AnimId, type LayerSpec, type ExportProgress,
+  type AnimId, type LayerSpec, type ExportProgress, type ShapeKind, type TextStyleId, type TextAlign,
 } from '@/lib/story-video/engine'
 import { createDirectUploadUrl, saveStory } from '@/app/actions/content'
 
@@ -34,6 +38,7 @@ interface Asset {
 interface Layer extends LayerSpec {
   name: string
   thumb: string | null
+  fontCss?: string // css original da fonte (para destacar chip selecionado)
 }
 
 interface Props {
@@ -42,15 +47,57 @@ interface Props {
   artistSlug: string
 }
 
-type Panel = 'media' | 'element' | 'caption'
+type Panel = 'media' | 'bg' | 'text' | 'sticker' | 'shape' | 'element' | 'caption'
 type Phase = 'editing' | 'exporting' | 'done'
 
 const MIN_DUR = 0.4
 const MAX_STORY = 60
 const IMG_DEFAULT_DUR = 4
 const TXT_DEFAULT_DUR = 4
+const BG_DEFAULT_DUR = 6
 
-const TEXT_COLORS = ['#ffffff', '#000000', '#ff6a00', '#ffd93d', '#22c55e', '#3b82f6', '#ec4899']
+const PALETTE = ['#ffffff', '#000000', '#ff6a00', '#ff00a2', '#ffd93d', '#22c55e', '#3b82f6', '#7f00ff', '#ef4444', '#00c6ff']
+
+const PRESET_GRADIENTS = [
+  { label: 'Marca',  from: '#ff8a00', to: '#ff4d00' },
+  { label: 'Rosa',   from: '#f953c6', to: '#b91d73' },
+  { label: 'Roxo',   from: '#7f00ff', to: '#e100ff' },
+  { label: 'Azul',   from: '#0072ff', to: '#00c6ff' },
+  { label: 'Verde',  from: '#11998e', to: '#38ef7d' },
+  { label: 'Noite',  from: '#0f0c29', to: '#302b63' },
+  { label: 'Ouro',   from: '#f7971e', to: '#ffd200' },
+  { label: 'Neon',   from: '#00f260', to: '#0575e6' },
+  { label: 'Club',   from: '#ff00a2', to: '#ff80d5' },
+  { label: 'Cinza',  from: '#1a1a2e', to: '#16213e' },
+  { label: 'Coral',  from: '#ff416c', to: '#ff4b2b' },
+  { label: 'Teal',   from: '#2193b0', to: '#6dd5ed' },
+]
+
+const PRESET_FONTS = [
+  { label: 'Sora',     css: 'var(--font-display)' },
+  { label: 'Grotesk',  css: 'var(--font-numeric)' },
+  { label: 'Bebas',    css: 'var(--font-bebas)' },
+  { label: 'Playfair', css: 'var(--font-playfair)' },
+  { label: 'Impact',   css: 'Impact, Haettenschweiler, sans-serif' },
+  { label: 'Georgia',  css: 'Georgia, "Times New Roman", serif' },
+]
+
+const TEXT_STYLES: { id: TextStyleId; label: string }[] = [
+  { id: 'clean',   label: 'Limpo' },
+  { id: 'shadow',  label: 'Sombra' },
+  { id: 'outline', label: 'Contorno' },
+  { id: 'neon',    label: 'Neon' },
+]
+
+const STICKER_GROUPS = [
+  { label: 'Fogo',   items: ['🔥', '⚡', '💥', '✨', '🌟', '💫', '🎆', '🎇', '☄️', '🌈'] },
+  { label: 'Amor',   items: ['❤️', '💖', '💜', '🖤', '💛', '🤍', '💞', '💝', '🫶', '💘'] },
+  { label: 'Música', items: ['🎵', '🎶', '🎸', '🎤', '🎧', '🥁', '🎹', '🎼', '🎺', '🪗'] },
+  { label: 'Gestos', items: ['🤟', '👏', '🙌', '🤙', '✌️', '👊', '🤘', '💪', '🤌', '🫰'] },
+  { label: 'Rostos', items: ['😍', '🥰', '🤩', '😎', '🤯', '🥺', '😤', '🤑', '🫠', '🤭'] },
+]
+
+const SHAPE_PALETTE = ['none', '#ffffff', '#000000', '#ff6a00', '#ff00a2', '#ffd93d', '#22c55e', '#3b82f6', '#7f00ff']
 
 const ANIM_ICON: Record<string, string> = {
   none: '∅', fade: '◐', 'slide-up': '↑', 'slide-down': '↓',
@@ -66,6 +113,16 @@ function fmtTime(s: number): string {
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+}
+
+// Resolve uma família de fonte (que pode usar var(--x)) para um nome concreto
+// que o canvas entende. next/font define a variável com o nome real da fonte.
+function resolveFont(css: string): string {
+  const m = css.match(/var\((--[\w-]+)\)/)
+  if (!m) return css
+  if (typeof window === 'undefined') return 'sans-serif'
+  const v = getComputedStyle(document.documentElement).getPropertyValue(m[1]).trim()
+  return v ? `${v}, sans-serif` : 'sans-serif'
 }
 
 async function captureVideoThumb(url: string): Promise<string | null> {
@@ -100,6 +157,15 @@ export function StoryStudio({ artistId }: Props) {
   const [caption, setCaption]         = useState('')
   const [loadingAdd, setLoadingAdd]   = useState(false)
 
+  // opções de criação (Editor Visual)
+  const [newTextFont, setNewTextFont]   = useState(PRESET_FONTS[0].css)
+  const [newTextStyle, setNewTextStyle] = useState<TextStyleId>('shadow')
+  const [newTextColor, setNewTextColor] = useState('#ffffff')
+  const [stickerTab, setStickerTab]     = useState(0)
+  const [showEmoji, setShowEmoji]       = useState(false)
+  const [shapeFill, setShapeFill]       = useState('rgba(255,255,255,0.10)')
+  const [shapeStroke, setShapeStroke]   = useState('#ffffff')
+
   const [phase, setPhase]             = useState<Phase>('editing')
   const [exportLabel, setExportLabel] = useState('')
   const [exportPct, setExportPct]     = useState(0)
@@ -119,7 +185,6 @@ export function StoryStudio({ artistId }: Props) {
 
   const total    = useMemo(() => compositionDuration(layers), [layers])
   const selected = layers.find((l) => l.id === selectedId) ?? null
-  const hasBackground = layers.some((l) => l.cover)
 
   const mediaFor = useCallback((id: string) => mediaEls.current.get(id) ?? null, [])
 
@@ -134,7 +199,7 @@ export function StoryStudio({ artistId }: Props) {
   useEffect(() => {
     let cancelled = false
     for (const l of layers) {
-      if (l.kind === 'text' || !l.url || mediaEls.current.has(l.id)) continue
+      if ((l.kind !== 'video' && l.kind !== 'image') || !l.url || mediaEls.current.has(l.id)) continue
       const loader = l.kind === 'video' ? loadVideo(l.url, true) : loadImage(l.url)
       loader.then((el) => {
         if (cancelled) return
@@ -220,6 +285,12 @@ export function StoryStudio({ artistId }: Props) {
   const pause = useCallback(() => { setPlaying(false); stopLoop() }, [stopLoop])
   useEffect(() => () => stopLoop(), [stopLoop])
 
+  // ── Focar o playhead numa camada recém-criada (para vê-la no preview) ─────────
+  function focusOnLayer(l: Layer) {
+    if (playing) pause()
+    setCurrentTime(l.start + Math.min(0.8, l.duration / 2))
+  }
+
   // ── Importar arquivos → biblioteca + camada ─────────────────────────────────
   async function importFiles(files: FileList | File[], kind: 'video' | 'image') {
     const list = Array.from(files).filter((f) => f.type.startsWith(kind + '/'))
@@ -265,8 +336,7 @@ export function StoryStudio({ artistId }: Props) {
     setLayers((p) => [...p, layer])
     setSelectedId(layer.id)
     setPanel('element')
-    if (playing) pause()
-    setCurrentTime(layer.start + Math.min(0.8, layer.duration / 2))
+    focusOnLayer(layer)
   }
 
   function addTextLayer() {
@@ -275,8 +345,12 @@ export function StoryStudio({ artistId }: Props) {
       id: uid('l'),
       kind: 'text',
       text: 'Toque para editar',
-      color: '#ffffff',
+      color: newTextColor,
       fontScale: 0.07,
+      fontFamily: resolveFont(newTextFont),
+      fontCss: newTextFont,
+      textStyle: newTextStyle,
+      align: 'center',
       cover: false,
       cx: 0.5, cy: 0.5,
       scale: 0.8,
@@ -288,8 +362,73 @@ export function StoryStudio({ artistId }: Props) {
     setLayers((p) => [...p, layer])
     setSelectedId(layer.id)
     setPanel('element')
-    if (playing) pause()
-    setCurrentTime(layer.start + Math.min(0.8, layer.duration / 2))
+    focusOnLayer(layer)
+  }
+
+  function addStickerLayer(emoji: string) {
+    const prev = layersRef.current
+    const layer: Layer = {
+      id: uid('l'),
+      kind: 'sticker',
+      text: emoji,
+      fontScale: 0.2,
+      cover: false,
+      cx: 0.5, cy: 0.45,
+      scale: 0.3,
+      start: Math.min(timeRef.current, Math.max(0, compositionDuration(prev) - 0.5)),
+      duration: TXT_DEFAULT_DUR,
+      inAnim: 'zoom-in', outAnim: 'fade',
+      name: emoji, thumb: null,
+    }
+    setLayers((p) => [...p, layer])
+    setSelectedId(layer.id)
+    setShowEmoji(false)
+    focusOnLayer(layer)
+  }
+
+  function addShapeLayer(shape: ShapeKind) {
+    const prev = layersRef.current
+    const isLine = shape === 'line'
+    const layer: Layer = {
+      id: uid('l'),
+      kind: 'shape',
+      shape,
+      fill: isLine ? 'none' : shapeFill,
+      stroke: shapeStroke,
+      strokeWidth: isLine ? 0.012 : 0.006,
+      cover: false,
+      cx: 0.5, cy: 0.5,
+      scale: isLine ? 0.6 : 0.4,
+      start: Math.min(timeRef.current, Math.max(0, compositionDuration(prev) - 0.5)),
+      duration: TXT_DEFAULT_DUR,
+      inAnim: 'fade', outAnim: 'fade',
+      name: isLine ? 'Linha' : shape === 'circle' ? 'Círculo' : 'Retângulo', thumb: null,
+    }
+    setLayers((p) => [...p, layer])
+    setSelectedId(layer.id)
+    setPanel('element')
+    focusOnLayer(layer)
+  }
+
+  // Fundo: cria ou atualiza a camada de gradiente/sólido (fica no fundo, índice 0).
+  function setBackground(from: string, to: string | null) {
+    setLayers((prev) => {
+      const existing = prev.find((l) => l.kind === 'gradient')
+      if (existing) {
+        setSelectedId(existing.id)
+        return prev.map((l) => (l.id === existing.id ? { ...l, gradFrom: from, gradTo: to } : l))
+      }
+      const bg: Layer = {
+        id: uid('l'), kind: 'gradient', cover: true,
+        gradFrom: from, gradTo: to,
+        cx: 0.5, cy: 0.5, scale: 1,
+        start: 0, duration: Math.max(compositionDuration(prev), BG_DEFAULT_DUR),
+        inAnim: 'none', outAnim: 'none',
+        name: 'Fundo', thumb: null,
+      }
+      setSelectedId(bg.id)
+      return [bg, ...prev]
+    })
   }
 
   // ── Mutações de camada ───────────────────────────────────────────────────────
@@ -318,10 +457,22 @@ export function StoryStudio({ artistId }: Props) {
   }
 
   // ── Arraste do overlay no preview ────────────────────────────────────────────
-  function overlayBox(l: Layer, W: number, H: number) {
-    const w = l.scale * W
-    const h = l.kind === 'text' ? Math.max((l.fontScale ?? 0.06) * H * 1.6, 0.12 * H) : w * (H / W)
-    return { x: l.cx * W - w / 2, y: l.cy * H - h / 2, w, h }
+  function overlayBox(l: Layer) {
+    // Retorna caixa normalizada (0..1) para hit-test / desenho de seleção.
+    let w: number, h: number
+    if (l.kind === 'text') {
+      w = l.scale
+      h = Math.max((l.fontScale ?? 0.06) * 1.6, 0.12)
+    } else if (l.kind === 'sticker') {
+      const s = (l.fontScale ?? 0.18) * 1.2
+      w = s; h = s
+    } else if (l.kind === 'shape') {
+      if (l.shape === 'line') { w = l.scale; h = Math.max((l.strokeWidth ?? 0.01) * 3, 0.03) }
+      else { w = l.scale; h = l.scale * ASPECT }
+    } else {
+      w = l.scale; h = l.scale * ASPECT
+    }
+    return { x: l.cx - w / 2, y: l.cy - h / 2, w, h }
   }
 
   function onPreviewPointerDown(e: React.PointerEvent) {
@@ -333,7 +484,7 @@ export function StoryStudio({ artistId }: Props) {
     // hit-test dos overlays (frente → trás), ignorando o fundo cover
     const hit = [...layersRef.current].reverse().find((l) => {
       if (l.cover || !layerActiveAt(l, timeRef.current)) return false
-      const b = overlayBox(l, 1, 1)
+      const b = overlayBox(l)
       return px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h
     })
     if (!hit) return
@@ -382,7 +533,7 @@ export function StoryStudio({ artistId }: Props) {
           const maxStartShift = l.duration - MIN_DUR
           const shift = Math.max(-l.start, Math.min(d, maxStartShift))
           const newStart = l.start + shift
-          let newDur = l.duration - shift
+          const newDur = l.duration - shift
           let newTrim = (l.trimStart ?? 0) + (l.kind === 'video' ? shift : 0)
           if (l.kind === 'video') newTrim = Math.max(0, newTrim)
           return { ...l, start: newStart, duration: newDur, trimStart: newTrim }
@@ -471,8 +622,12 @@ export function StoryStudio({ artistId }: Props) {
 
   const RAIL: { id: Panel; label: string; icon: typeof Film }[] = [
     { id: 'media',   label: 'Mídia',    icon: Layers },
-    { id: 'element', label: 'Elemento', icon: Sparkles },
-    { id: 'caption', label: 'Legenda',  icon: Type },
+    { id: 'bg',      label: 'Fundo',    icon: Palette },
+    { id: 'text',    label: 'Texto',    icon: Type },
+    { id: 'sticker', label: 'Sticker',  icon: Smile },
+    { id: 'shape',   label: 'Formas',   icon: Square },
+    { id: 'element', label: 'Ajustes',  icon: Sparkles },
+    { id: 'caption', label: 'Legenda',  icon: AlignLeft },
   ]
 
   return (
@@ -512,7 +667,7 @@ export function StoryStudio({ artistId }: Props) {
       {/* ── Corpo ── */}
       <div className="flex min-h-0 flex-1">
         {/* Rail */}
-        <nav className="flex w-[68px] shrink-0 flex-col items-center gap-1 border-r border-white/8 bg-[#0d0d0d] py-3">
+        <nav className="flex w-[68px] shrink-0 flex-col items-center gap-1 overflow-y-auto border-r border-white/8 bg-[#0d0d0d] py-3">
           {RAIL.map(({ id, label, icon: Icon }) => (
             <button key={id} type="button" onClick={() => setPanel(id)}
               className={`flex w-14 flex-col items-center gap-1 rounded-xl py-2.5 transition-colors ${
@@ -526,11 +681,12 @@ export function StoryStudio({ artistId }: Props) {
 
         {/* Painel contextual */}
         <aside className="flex w-[300px] shrink-0 flex-col border-r border-white/8 bg-[#0a0a0a]">
+          {/* ── Mídia ── */}
           {panel === 'media' && (
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="border-b border-white/8 p-4">
-                <p className="text-[9px] font-black tracking-[0.15em] text-zinc-500">ADICIONAR CAMADA</p>
-                <div className="mt-3 grid grid-cols-3 gap-2">
+                <p className="text-[9px] font-black tracking-[0.15em] text-zinc-500">ADICIONAR MÍDIA</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
                   <button type="button" onClick={() => videoInput.current?.click()}
                     className="flex flex-col items-center gap-1.5 rounded-xl border border-primary/40 bg-primary/[0.06] py-3 text-primary transition-colors hover:bg-primary/[0.12]">
                     {loadingAdd ? <Loader2 className="size-4 animate-spin" /> : <Film className="size-4" />}
@@ -541,10 +697,19 @@ export function StoryStudio({ artistId }: Props) {
                     <ImageIcon className="size-4" />
                     <span className="text-[8px] font-black tracking-[0.06em]">IMAGEM</span>
                   </button>
-                  <button type="button" onClick={addTextLayer}
-                    className="flex flex-col items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] py-3 text-zinc-300 transition-colors hover:bg-white/[0.07]">
-                    <Type className="size-4" />
-                    <span className="text-[8px] font-black tracking-[0.06em]">TEXTO</span>
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  <button type="button" onClick={() => setPanel('text')}
+                    className="flex flex-col items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] py-2 text-zinc-300 transition-colors hover:bg-white/[0.07]">
+                    <Type className="size-3.5" /><span className="text-[7px] font-black">TEXTO</span>
+                  </button>
+                  <button type="button" onClick={() => setPanel('sticker')}
+                    className="flex flex-col items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] py-2 text-zinc-300 transition-colors hover:bg-white/[0.07]">
+                    <Smile className="size-3.5" /><span className="text-[7px] font-black">STICKER</span>
+                  </button>
+                  <button type="button" onClick={() => setPanel('shape')}
+                    className="flex flex-col items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] py-2 text-zinc-300 transition-colors hover:bg-white/[0.07]">
+                    <Square className="size-3.5" /><span className="text-[7px] font-black">FORMA</span>
                   </button>
                 </div>
               </div>
@@ -576,6 +741,173 @@ export function StoryStudio({ artistId }: Props) {
             </div>
           )}
 
+          {/* ── Fundo ── */}
+          {panel === 'bg' && (
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <p className="text-[9px] font-black tracking-[0.15em] text-zinc-500">GRADIENTES</p>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {PRESET_GRADIENTS.map((g) => {
+                  const active = selected?.kind === 'gradient' && selected.gradFrom === g.from && selected.gradTo === g.to
+                  return (
+                    <button key={g.label} type="button" onClick={() => setBackground(g.from, g.to)}
+                      className={`aspect-square rounded-xl border-2 transition-transform hover:scale-105 ${active ? 'border-primary' : 'border-white/10'}`}
+                      style={{ background: `linear-gradient(160deg, ${g.from}, ${g.to})` }} title={g.label} />
+                  )
+                })}
+              </div>
+              <p className="mt-5 text-[9px] font-black tracking-[0.15em] text-zinc-500">COR SÓLIDA</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {PALETTE.map((c) => (
+                  <button key={c} type="button" onClick={() => setBackground(c, null)}
+                    className="size-7 rounded-full border-2 border-white/15 transition-transform hover:scale-110"
+                    style={{ backgroundColor: c }} aria-label={`Fundo ${c}`} />
+                ))}
+              </div>
+              <div className="mt-5 flex items-center gap-3">
+                <label className="flex flex-1 items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                  <span className="text-[9px] font-bold text-zinc-400">Personalizado</span>
+                  <input type="color" defaultValue="#ff8a00"
+                    onChange={(e) => setBackground(e.target.value, selected?.kind === 'gradient' ? (selected.gradTo ?? e.target.value) : null)}
+                    className="size-6 cursor-pointer rounded bg-transparent" aria-label="Cor personalizada" />
+                </label>
+              </div>
+              <p className="mt-5 text-[9px] font-bold leading-relaxed text-zinc-600">
+                O fundo fica atrás de todas as camadas e preenche a tela inteira. Use um vídeo ou imagem como camada de fundo para sobrepor.
+              </p>
+            </div>
+          )}
+
+          {/* ── Texto ── */}
+          {panel === 'text' && (
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <p className="text-[9px] font-black tracking-[0.15em] text-zinc-500">FONTE</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {PRESET_FONTS.map((f) => (
+                  <button key={f.label} type="button" onClick={() => setNewTextFont(f.css)}
+                    style={{ fontFamily: f.css }}
+                    className={`rounded-lg border px-2 py-2.5 text-[13px] font-bold transition-colors ${
+                      newTextFont === f.css ? 'border-primary/60 bg-primary/12 text-white' : 'border-white/8 bg-white/[0.03] text-zinc-300 hover:bg-white/[0.06]'
+                    }`}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-5 text-[9px] font-black tracking-[0.15em] text-zinc-500">ESTILO</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {TEXT_STYLES.map((s) => (
+                  <button key={s.id} type="button" onClick={() => setNewTextStyle(s.id)}
+                    className={`rounded-lg border px-2 py-2 text-[10px] font-black tracking-[0.06em] transition-colors ${
+                      newTextStyle === s.id ? 'border-primary/60 bg-primary/12 text-white' : 'border-white/8 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06]'
+                    }`}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-5 text-[9px] font-black tracking-[0.15em] text-zinc-500">COR</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {PALETTE.map((c) => (
+                  <button key={c} type="button" onClick={() => setNewTextColor(c)}
+                    className={`size-7 rounded-full border-2 transition-transform hover:scale-110 ${newTextColor === c ? 'border-primary' : 'border-white/15'}`}
+                    style={{ backgroundColor: c }} aria-label={`Cor ${c}`} />
+                ))}
+              </div>
+              <button type="button" onClick={addTextLayer}
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-[10px] font-black tracking-[0.12em] text-white transition-transform hover:scale-[1.02]">
+                <Plus className="size-4" /> ADICIONAR TEXTO
+              </button>
+            </div>
+          )}
+
+          {/* ── Sticker / Emoji ── */}
+          {panel === 'sticker' && (
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-[9px] font-black tracking-[0.15em] text-zinc-500">STICKERS</p>
+                <button type="button" onClick={() => setShowEmoji((s) => !s)}
+                  className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-[8px] font-black tracking-[0.08em] transition-colors ${
+                    showEmoji ? 'border-primary/60 bg-primary/12 text-primary' : 'border-white/10 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06]'
+                  }`}>
+                  <Smile className="size-3" /> TODOS
+                </button>
+              </div>
+
+              {showEmoji ? (
+                <div className="mt-3 overflow-hidden rounded-xl border border-white/10">
+                  <EmojiPicker onEmojiClick={(d) => addStickerLayer(d.emoji)}
+                    theme={Theme.DARK} emojiStyle={EmojiStyle.NATIVE} width="100%" height={360}
+                    lazyLoadEmojis previewConfig={{ showPreview: false }} />
+                </div>
+              ) : (
+                <>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {STICKER_GROUPS.map((g, i) => (
+                      <button key={g.label} type="button" onClick={() => setStickerTab(i)}
+                        className={`rounded-lg px-2.5 py-1 text-[8px] font-black tracking-[0.06em] transition-colors ${
+                          stickerTab === i ? 'bg-primary/15 text-primary' : 'bg-white/[0.03] text-zinc-500 hover:text-zinc-300'
+                        }`}>
+                        {g.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 grid grid-cols-5 gap-2">
+                    {STICKER_GROUPS[stickerTab].items.map((emo, i) => (
+                      <button key={`${emo}-${i}`} type="button" onClick={() => addStickerLayer(emo)}
+                        className="flex aspect-square items-center justify-center rounded-xl border border-white/8 bg-white/[0.03] text-2xl transition-colors hover:border-primary/50 hover:bg-primary/[0.08]">
+                        {emo}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── Formas ── */}
+          {panel === 'shape' && (
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <p className="text-[9px] font-black tracking-[0.15em] text-zinc-500">FORMAS</p>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <button type="button" onClick={() => addShapeLayer('rect')}
+                  className="flex flex-col items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] py-3 text-zinc-300 transition-colors hover:border-primary/50 hover:bg-primary/[0.08]">
+                  <Square className="size-5" /><span className="text-[7px] font-black">RETÂNGULO</span>
+                </button>
+                <button type="button" onClick={() => addShapeLayer('circle')}
+                  className="flex flex-col items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] py-3 text-zinc-300 transition-colors hover:border-primary/50 hover:bg-primary/[0.08]">
+                  <CircleIcon className="size-5" /><span className="text-[7px] font-black">CÍRCULO</span>
+                </button>
+                <button type="button" onClick={() => addShapeLayer('line')}
+                  className="flex flex-col items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] py-3 text-zinc-300 transition-colors hover:border-primary/50 hover:bg-primary/[0.08]">
+                  <Minus className="size-5" /><span className="text-[7px] font-black">LINHA</span>
+                </button>
+              </div>
+              <p className="mt-5 text-[9px] font-black tracking-[0.15em] text-zinc-500">PREENCHIMENTO PADRÃO</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {SHAPE_PALETTE.map((c) => {
+                  const val = c === 'none' ? 'none' : c === '#ffffff' ? 'rgba(255,255,255,0.10)' : c
+                  const active = shapeFill === val
+                  return (
+                    <button key={`f-${c}`} type="button" onClick={() => setShapeFill(val)}
+                      className={`flex size-7 items-center justify-center rounded-full border-2 transition-transform hover:scale-110 ${active ? 'border-primary' : 'border-white/15'}`}
+                      style={{ backgroundColor: c === 'none' ? 'transparent' : c }} aria-label={`Preenchimento ${c}`}>
+                      {c === 'none' && <X className="size-3 text-zinc-500" />}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="mt-5 text-[9px] font-black tracking-[0.15em] text-zinc-500">CONTORNO PADRÃO</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {SHAPE_PALETTE.map((c) => (
+                  <button key={`s-${c}`} type="button" onClick={() => setShapeStroke(c)}
+                    className={`flex size-7 items-center justify-center rounded-full border-2 transition-transform hover:scale-110 ${shapeStroke === c ? 'border-primary' : 'border-white/15'}`}
+                    style={{ backgroundColor: c === 'none' ? 'transparent' : c }} aria-label={`Contorno ${c}`}>
+                    {c === 'none' && <X className="size-3 text-zinc-500" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Ajustes do elemento selecionado ── */}
           {panel === 'element' && (
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
               {!selected ? (
@@ -589,7 +921,12 @@ export function StoryStudio({ artistId }: Props) {
                 <div className="flex flex-col gap-5">
                   <div className="flex items-center gap-2">
                     <span className="flex size-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
-                      {selected.kind === 'video' ? <Film className="size-4" /> : selected.kind === 'image' ? <ImageIcon className="size-4" /> : <Type className="size-4" />}
+                      {selected.kind === 'video' ? <Film className="size-4" />
+                        : selected.kind === 'image' ? <ImageIcon className="size-4" />
+                        : selected.kind === 'shape' ? <Square className="size-4" />
+                        : selected.kind === 'gradient' ? <Palette className="size-4" />
+                        : selected.kind === 'sticker' ? <Smile className="size-4" />
+                        : <Type className="size-4" />}
                     </span>
                     <div className="min-w-0 leading-tight">
                       <p className="truncate text-[11px] font-black text-white">{selected.name}</p>
@@ -609,6 +946,32 @@ export function StoryStudio({ artistId }: Props) {
                     </button>
                   </div>
 
+                  {/* Fundo (gradiente) */}
+                  {selected.kind === 'gradient' && (
+                    <div>
+                      <p className="mb-2 text-[9px] font-black tracking-[0.12em] text-zinc-400">GRADIENTE</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {PRESET_GRADIENTS.map((g) => (
+                          <button key={g.label} type="button" onClick={() => patchLayer(selected.id, { gradFrom: g.from, gradTo: g.to })}
+                            className={`aspect-square rounded-lg border-2 transition-transform hover:scale-105 ${selected.gradFrom === g.from && selected.gradTo === g.to ? 'border-primary' : 'border-white/10'}`}
+                            style={{ background: `linear-gradient(160deg, ${g.from}, ${g.to})` }} title={g.label} />
+                        ))}
+                      </div>
+                      <div className="mt-3 flex items-center gap-2">
+                        <label className="flex flex-1 items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5">
+                          <span className="text-[8px] font-bold text-zinc-500">DE</span>
+                          <input type="color" value={selected.gradFrom ?? '#000000'} onChange={(e) => patchLayer(selected.id, { gradFrom: e.target.value })}
+                            className="size-5 cursor-pointer rounded bg-transparent" />
+                        </label>
+                        <label className="flex flex-1 items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5">
+                          <span className="text-[8px] font-bold text-zinc-500">ATÉ</span>
+                          <input type="color" value={selected.gradTo ?? selected.gradFrom ?? '#000000'} onChange={(e) => patchLayer(selected.id, { gradTo: e.target.value })}
+                            className="size-5 cursor-pointer rounded bg-transparent" />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Texto */}
                   {selected.kind === 'text' && (
                     <>
@@ -619,9 +982,50 @@ export function StoryStudio({ artistId }: Props) {
                           className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] p-3 text-[12px] font-bold text-white outline-none focus:border-primary/50" />
                       </div>
                       <div>
+                        <p className="mb-1.5 text-[9px] font-black tracking-[0.12em] text-zinc-400">FONTE</p>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {PRESET_FONTS.map((f) => (
+                            <button key={f.label} type="button" onClick={() => patchLayer(selected.id, { fontFamily: resolveFont(f.css), fontCss: f.css })}
+                              style={{ fontFamily: f.css }}
+                              className={`rounded-lg border px-1 py-1.5 text-[11px] font-bold transition-colors ${selected.fontCss === f.css ? 'border-primary/60 bg-primary/12 text-white' : 'border-white/8 bg-white/[0.03] text-zinc-300 hover:bg-white/[0.06]'}`}>
+                              {f.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="mb-1.5 text-[9px] font-black tracking-[0.12em] text-zinc-400">ESTILO</p>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {TEXT_STYLES.map((s) => (
+                            <button key={s.id} type="button" onClick={() => patchLayer(selected.id, { textStyle: s.id })}
+                              className={`rounded-lg border py-1.5 text-[8px] font-black transition-colors ${selected.textStyle === s.id ? 'border-primary/60 bg-primary/12 text-white' : 'border-white/8 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06]'}`}>
+                              {s.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex flex-1 items-center gap-1">
+                          {([['left', AlignLeft], ['center', AlignCenter], ['right', AlignRight]] as [TextAlign, typeof AlignLeft][]).map(([a, Icon]) => (
+                            <button key={a} type="button" onClick={() => patchLayer(selected.id, { align: a })}
+                              className={`flex flex-1 items-center justify-center rounded-lg border py-1.5 transition-colors ${(selected.align ?? 'center') === a ? 'border-primary/60 bg-primary/12 text-primary' : 'border-white/8 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06]'}`}>
+                              <Icon className="size-3.5" />
+                            </button>
+                          ))}
+                        </div>
+                        <button type="button" onClick={() => patchLayer(selected.id, { bold: selected.bold === false })}
+                          className={`flex size-8 items-center justify-center rounded-lg border transition-colors ${selected.bold !== false ? 'border-primary/60 bg-primary/12 text-primary' : 'border-white/8 bg-white/[0.03] text-zinc-400'}`}>
+                          <Bold className="size-3.5" />
+                        </button>
+                        <button type="button" onClick={() => patchLayer(selected.id, { italic: !selected.italic })}
+                          className={`flex size-8 items-center justify-center rounded-lg border transition-colors ${selected.italic ? 'border-primary/60 bg-primary/12 text-primary' : 'border-white/8 bg-white/[0.03] text-zinc-400'}`}>
+                          <Italic className="size-3.5" />
+                        </button>
+                      </div>
+                      <div>
                         <p className="mb-1.5 text-[9px] font-black tracking-[0.12em] text-zinc-400">COR</p>
                         <div className="flex flex-wrap gap-2">
-                          {TEXT_COLORS.map((c) => (
+                          {PALETTE.map((c) => (
                             <button key={c} type="button" onClick={() => patchLayer(selected.id, { color: c })}
                               className={`size-6 rounded-full border-2 transition-transform hover:scale-110 ${selected.color === c ? 'border-primary' : 'border-white/20'}`}
                               style={{ backgroundColor: c }} aria-label={`Cor ${c}`} />
@@ -637,8 +1041,65 @@ export function StoryStudio({ artistId }: Props) {
                     </>
                   )}
 
+                  {/* Sticker */}
+                  {selected.kind === 'sticker' && (
+                    <div>
+                      <p className="mb-1.5 text-[9px] font-black tracking-[0.12em] text-zinc-400">TAMANHO</p>
+                      <input type="range" min={0.08} max={0.5} step={0.01} value={selected.fontScale ?? 0.2}
+                        onChange={(e) => patchLayer(selected.id, { fontScale: parseFloat(e.target.value) })}
+                        className="w-full accent-[var(--primary)]" />
+                    </div>
+                  )}
+
+                  {/* Forma */}
+                  {selected.kind === 'shape' && (
+                    <>
+                      {selected.shape !== 'line' && (
+                        <div>
+                          <p className="mb-1.5 text-[9px] font-black tracking-[0.12em] text-zinc-400">PREENCHIMENTO</p>
+                          <div className="flex flex-wrap gap-2">
+                            {SHAPE_PALETTE.map((c) => {
+                              const val = c === 'none' ? 'none' : c === '#ffffff' ? 'rgba(255,255,255,0.10)' : c
+                              return (
+                                <button key={`ef-${c}`} type="button" onClick={() => patchLayer(selected.id, { fill: val })}
+                                  className={`flex size-6 items-center justify-center rounded-full border-2 transition-transform hover:scale-110 ${selected.fill === val ? 'border-primary' : 'border-white/20'}`}
+                                  style={{ backgroundColor: c === 'none' ? 'transparent' : c }} aria-label={`Preenchimento ${c}`}>
+                                  {c === 'none' && <X className="size-3 text-zinc-500" />}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      <div>
+                        <p className="mb-1.5 text-[9px] font-black tracking-[0.12em] text-zinc-400">CONTORNO</p>
+                        <div className="flex flex-wrap gap-2">
+                          {SHAPE_PALETTE.map((c) => (
+                            <button key={`es-${c}`} type="button" onClick={() => patchLayer(selected.id, { stroke: c })}
+                              className={`flex size-6 items-center justify-center rounded-full border-2 transition-transform hover:scale-110 ${selected.stroke === c ? 'border-primary' : 'border-white/20'}`}
+                              style={{ backgroundColor: c === 'none' ? 'transparent' : c }} aria-label={`Contorno ${c}`}>
+                              {c === 'none' && <X className="size-3 text-zinc-500" />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="mb-1.5 text-[9px] font-black tracking-[0.12em] text-zinc-400">ESPESSURA</p>
+                        <input type="range" min={0.002} max={0.03} step={0.001} value={selected.strokeWidth ?? 0.006}
+                          onChange={(e) => patchLayer(selected.id, { strokeWidth: parseFloat(e.target.value) })}
+                          className="w-full accent-[var(--primary)]" />
+                      </div>
+                      <div>
+                        <p className="mb-1.5 text-[9px] font-black tracking-[0.12em] text-zinc-400">TAMANHO</p>
+                        <input type="range" min={0.15} max={1} step={0.02} value={selected.scale}
+                          onChange={(e) => patchLayer(selected.id, { scale: parseFloat(e.target.value) })}
+                          className="w-full accent-[var(--primary)]" />
+                      </div>
+                    </>
+                  )}
+
                   {/* Tamanho do overlay (imagem/vídeo não-fundo) */}
-                  {selected.kind !== 'text' && !selected.cover && (
+                  {(selected.kind === 'image' || selected.kind === 'video') && !selected.cover && (
                     <div>
                       <p className="mb-1.5 text-[9px] font-black tracking-[0.12em] text-zinc-400">TAMANHO</p>
                       <input type="range" min={0.2} max={1} step={0.02} value={selected.scale}
@@ -647,8 +1108,8 @@ export function StoryStudio({ artistId }: Props) {
                     </div>
                   )}
 
-                  {/* Preencher tela (fundo) */}
-                  {selected.kind !== 'text' && (
+                  {/* Preencher tela (fundo) — só mídia */}
+                  {(selected.kind === 'image' || selected.kind === 'video') && (
                     <label className="flex cursor-pointer items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
                       <span className="text-[10px] font-bold text-zinc-300">Preencher a tela (fundo)</span>
                       <input type="checkbox" checked={!!selected.cover}
@@ -702,6 +1163,7 @@ export function StoryStudio({ artistId }: Props) {
             </div>
           )}
 
+          {/* ── Legenda ── */}
           {panel === 'caption' && (
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
               <p className="text-[9px] font-black tracking-[0.15em] text-zinc-500">LEGENDA</p>
@@ -723,7 +1185,7 @@ export function StoryStudio({ artistId }: Props) {
               <div className="flex size-16 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10"><Plus className="size-8 text-primary" /></div>
               <div>
                 <p className="font-serif text-base font-black text-white">Comece sua composição</p>
-                <p className="mt-1 text-[10px] font-bold text-zinc-500">Adicione vídeos, imagens e textos em camadas.</p>
+                <p className="mt-1 text-[10px] font-bold text-zinc-500">Vídeos, imagens, textos, stickers e formas em camadas.</p>
               </div>
               {loadingAdd && <p className="text-[9px] font-bold text-primary">Carregando…</p>}
             </button>
@@ -779,6 +1241,9 @@ export function StoryStudio({ artistId }: Props) {
           <div className="relative flex flex-col gap-1" style={{ width: Math.max(total * pxPerSec, 240) }}>
             {[...layers].reverse().map((l) => {
               const isSel = l.id === selectedId
+              const bg = l.kind === 'gradient'
+                ? `linear-gradient(90deg, ${l.gradFrom}, ${l.gradTo ?? l.gradFrom})`
+                : undefined
               return (
                 <div key={l.id} className="relative h-11">
                   <div
@@ -786,16 +1251,21 @@ export function StoryStudio({ artistId }: Props) {
                     onClick={() => { setSelectedId(l.id); setPanel('element') }}
                     className={`group absolute top-0 flex h-full cursor-grab items-center overflow-hidden rounded-lg border-2 active:cursor-grabbing ${
                       isSel ? 'border-primary' : 'border-white/12'
-                    } ${l.kind === 'text' ? 'bg-primary/15' : ''}`}
+                    } ${l.kind === 'text' || l.kind === 'sticker' ? 'bg-primary/15' : l.kind === 'shape' ? 'bg-white/10' : ''}`}
                     style={{
                       left: l.start * pxPerSec,
                       width: Math.max(l.duration * pxPerSec, 26),
-                      backgroundImage: l.kind !== 'text' && l.thumb ? `url(${l.thumb})` : undefined,
+                      backgroundImage: (l.kind === 'video' || l.kind === 'image') && l.thumb ? `url(${l.thumb})` : bg,
                       backgroundSize: 'cover', backgroundPosition: 'center',
                     }}>
                     <div className="absolute inset-0 bg-black/45" />
                     <span className="pointer-events-none absolute left-1.5 top-1/2 flex -translate-y-1/2 items-center gap-1 truncate pr-4 text-[8px] font-bold text-white">
-                      {l.kind === 'video' ? <Film className="size-2.5 shrink-0" /> : l.kind === 'image' ? <ImageIcon className="size-2.5 shrink-0" /> : <Type className="size-2.5 shrink-0" />}
+                      {l.kind === 'video' ? <Film className="size-2.5 shrink-0" />
+                        : l.kind === 'image' ? <ImageIcon className="size-2.5 shrink-0" />
+                        : l.kind === 'shape' ? <Square className="size-2.5 shrink-0" />
+                        : l.kind === 'gradient' ? <Palette className="size-2.5 shrink-0" />
+                        : l.kind === 'sticker' ? <span className="text-[10px] leading-none">{l.text}</span>
+                        : <Type className="size-2.5 shrink-0" />}
                       <span className="truncate">{l.kind === 'text' ? (l.text || 'Texto') : l.name}</span>
                     </span>
                     {l.cover && <span className="pointer-events-none absolute right-1 top-1 rounded bg-black/70 px-1 text-[6px] font-black tracking-wider text-zinc-300">FUNDO</span>}
