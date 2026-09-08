@@ -12,7 +12,6 @@ import {
 } from 'lucide-react'
 import { uploadContentImage, saveStory, createDirectUploadUrl } from '@/app/actions/content'
 import type { Story } from '@/lib/types'
-import type { ClipSpec, StorySettings, ExportProgress } from '@/lib/story-video/engine'
 
 // ── Editor (fabric.js, client-only) ──────────────────────────────────────────
 const StoryCanvasEditor = dynamic(
@@ -30,21 +29,6 @@ const StoryCanvasEditor = dynamic(
   },
 )
 
-// ── Editor de vídeo com timeline (client-only) ────────────────────────────────
-const StoryVideoEditor = dynamic(
-  () => import('@/components/wordfan/story-video-editor').then((m) => ({ default: m.StoryVideoEditor })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-full flex-col items-center justify-center gap-4 bg-[#090909]">
-        <div className="flex size-14 items-center justify-center rounded-2xl border border-white/8 bg-primary/10">
-          <Loader2 className="size-6 animate-spin text-primary" />
-        </div>
-        <p className="text-[10px] font-black tracking-[0.2em] text-zinc-500">CARREGANDO TIMELINE…</p>
-      </div>
-    ),
-  },
-)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -64,7 +48,7 @@ function fmtBytes(b: number) {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Mode    = 'choose' | 'canvas' | 'video' | 'timeline'
+type Mode    = 'choose' | 'canvas' | 'video'
 type Phase   = 'editing' | 'uploading' | 'done' | 'error'
 
 interface Props {
@@ -97,11 +81,6 @@ export function StoryEditorPage({ artistId, artistName, existingStories }: Props
   const [uploadPct,    setUploadPct]    = useState(0)
   const [videoError,   setVideoError]   = useState('')
 
-  // timeline editor export state
-  const [exporting,    setExporting]    = useState(false)
-  const [exportLabel,  setExportLabel]  = useState('')
-  const [exportPct,    setExportPct]    = useState(0)
-
   // ── Save from canvas ────────────────────────────────────────────────────
   function handleCanvasSave(imageDataUrl: string) {
     setPreviewUrl(imageDataUrl)
@@ -121,76 +100,6 @@ export function StoryEditorPage({ artistId, artistName, existingStories }: Props
       setPhase('done')
       setTimeout(() => router.push('/dashboard/estudio'), 1800)
     })
-  }
-
-  // ── Timeline export → render MP4 → upload direto → publica ────────────────
-  async function handleTimelineExport(clips: ClipSpec[], settings: StorySettings, totalSec: number) {
-    setExporting(true)
-    setExportLabel('Preparando…')
-    setExportPct(0)
-    setVideoError('')
-    try {
-      const { exportTimeline } = await import('@/lib/story-video/engine')
-      const { blob } = await exportTimeline(clips, settings, (p: ExportProgress) => {
-        const label =
-          p.phase === 'preparing'   ? 'Preparando clipes…' :
-          p.phase === 'recording'   ? 'Renderizando vídeo…' :
-                                       'Finalizando MP4…'
-        setExportLabel(label)
-        // recording ocupa 0–70%, transcoding 70–100%
-        const pct = p.phase === 'transcoding' ? 70 + p.pct * 30 : p.phase === 'recording' ? p.pct * 65 : p.pct * 5
-        setExportPct(Math.round(pct))
-      })
-
-      setExportLabel('Enviando para o servidor…')
-      const file = new File([blob], `story-${Date.now()}.mp4`, { type: 'video/mp4' })
-
-      const signed = await createDirectUploadUrl({
-        artistId,
-        kind:          'story',
-        fileType:      file.type,
-        fileSizeBytes: file.size,
-      })
-      if (signed.error || !signed.signedUrl) {
-        setVideoError(signed.error ?? 'Erro ao gerar link de upload.')
-        setExporting(false); return
-      }
-
-      const ok = await new Promise<boolean>((resolve) => {
-        const xhr = new XMLHttpRequest()
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) setExportPct(Math.round(e.loaded / e.total * 100))
-        }
-        xhr.onload = () => resolve(xhr.status >= 200 && xhr.status < 300)
-        xhr.onerror = () => resolve(false)
-        xhr.open('PUT', signed.signedUrl!)
-        xhr.setRequestHeader('Content-Type', file.type)
-        xhr.send(file)
-      })
-      if (!ok) {
-        setVideoError('Falha ao enviar o vídeo. Verifique sua conexão e tente novamente.')
-        setExporting(false); return
-      }
-
-      const save = await saveStory({
-        artistId,
-        mediaUrl:  signed.publicUrl!,
-        caption:   caption.trim(),
-        mediaType: 'video',
-        durationMs: Math.round(totalSec * 1000),
-      })
-      if (save.error) {
-        setVideoError(save.error)
-        setExporting(false); return
-      }
-
-      setPhase('done')
-      setTimeout(() => router.push('/dashboard/estudio'), 1800)
-    } catch (err) {
-      console.log('[v0] timeline export error:', (err as Error).message)
-      setVideoError((err as Error).message || 'Não foi possível exportar o vídeo.')
-      setExporting(false)
-    }
   }
 
   // ── Video file selection ────────────────────────────────────────────────
@@ -367,7 +276,7 @@ export function StoryEditorPage({ artistId, artistName, existingStories }: Props
     )
   }
 
-  // ── Topbar (shared across modes) ─────────────────────────────────────────
+  // ── Topbar (shared across modes) ────────────────────��────────────────────
   const Topbar = (
     <div className="flex shrink-0 items-center gap-3 border-b border-white/8 bg-[var(--artist-bg)] px-5 py-3">
       <Link href="/dashboard/estudio"
@@ -381,7 +290,7 @@ export function StoryEditorPage({ artistId, artistName, existingStories }: Props
           ESTÚDIO · STORIES
         </p>
         <h1 className="font-serif text-sm font-black tracking-tight text-[var(--artist-text)]">
-          {mode === 'canvas' ? 'Editor visual' : mode === 'video' ? 'Upload de vídeo' : mode === 'timeline' ? 'Editor de vídeo' : 'Criar novo story'}
+          {mode === 'canvas' ? 'Editor visual' : mode === 'video' ? 'Upload de vídeo' : 'Criar novo story'}
         </h1>
       </div>
 
@@ -427,8 +336,8 @@ export function StoryEditorPage({ artistId, artistName, existingStories }: Props
 
           <div className="grid w-full max-w-4xl grid-cols-1 gap-4 sm:grid-cols-3">
 
-            {/* Timeline video editor */}
-            <button type="button" onClick={() => setMode('timeline')}
+            {/* Timeline video editor — página dedicada em tela cheia */}
+            <button type="button" onClick={() => router.push('/estudio/editor-video')}
               className="group relative overflow-hidden rounded-3xl border border-primary/30 bg-primary/[0.06] p-7 text-left transition-all hover:border-primary/60 hover:bg-primary/[0.1] hover:shadow-[0_0_36px_-8px_rgba(255,106,0,0.45)]">
               <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-primary/15 blur-2xl transition-all group-hover:bg-primary/25" />
               <div className="relative">
@@ -678,47 +587,6 @@ export function StoryEditorPage({ artistId, artistName, existingStories }: Props
             )}
 
           </div>
-        </div>
-      </div>
-    )
-  }
-
-  // ── MODE: timeline video editor ──────────────────────────────────────────
-  if (mode === 'timeline') {
-    return (
-      <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
-        {Topbar}
-        <div className="relative min-h-0 flex-1 overflow-hidden">
-          <StoryVideoEditor onExport={handleTimelineExport} exporting={exporting} />
-
-          {/* Overlay de progresso de export */}
-          {exporting && (
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-black/85 backdrop-blur-sm px-6">
-              <div className="flex size-16 items-center justify-center rounded-3xl border border-primary/30 bg-primary/10">
-                <Film className="size-8 text-primary" />
-              </div>
-              <div className="w-full max-w-sm text-center">
-                <p className="text-[11px] font-black tracking-[0.18em] text-white">{exportLabel.toUpperCase()}</p>
-                <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-primary transition-all duration-200" style={{ width: `${exportPct}%` }} />
-                </div>
-                <p className="font-numeric mt-2 text-[10px] font-bold text-primary">{exportPct}%</p>
-                <p className="mt-3 text-[9px] font-bold leading-relaxed text-zinc-500">
-                  Estamos renderizando o vídeo diretamente no seu navegador. Mantenha esta aba aberta — pode levar alguns instantes.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Erro de export */}
-          {videoError && !exporting && (
-            <div className="absolute inset-x-4 bottom-4 z-20 flex items-start gap-3 rounded-2xl border border-destructive/25 bg-destructive/10 p-4 backdrop-blur-sm">
-              <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" />
-              <p className="text-[10px] font-bold leading-relaxed text-destructive">{videoError}</p>
-              <button type="button" onClick={() => setVideoError('')}
-                className="ml-auto text-[8px] font-black tracking-[0.1em] text-zinc-400 hover:text-white">FECHAR</button>
-            </div>
-          )}
         </div>
       </div>
     )
