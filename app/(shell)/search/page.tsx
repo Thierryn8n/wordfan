@@ -7,9 +7,9 @@ export const metadata = { title: 'Pesquisar — WordFan' }
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ g?: string }>
+  searchParams: Promise<{ g?: string; q?: string }>
 }) {
-  const [{ g }, artists, shows, ads] = await Promise.all([
+  const [{ g, q }, artists, shows, ads] = await Promise.all([
     searchParams,
     getArtists(),
     getUpcomingShows(40),
@@ -22,6 +22,7 @@ export default async function SearchPage({
         artists={artists}
         shows={shows}
         initialGenre={g ?? null}
+        initialQuery={q ?? ''}
         adSlot={ads.length > 0 ? <AdBanner ad={ads[0]} variant="inline" /> : null}
       />
     </div>

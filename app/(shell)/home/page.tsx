@@ -63,17 +63,28 @@ export default async function HomePage() {
       </header>
 
       <main className="px-6 pt-32">
-        {/* Search */}
-        <Link
-          href="/search"
+        {/* Search — navega para /search já com o termo digitado */}
+        <form
+          action="/search"
+          method="GET"
           className="surface elev-1 flex h-14 items-center gap-3 rounded-2xl px-4"
         >
-          <Search className="size-5 text-muted-foreground" aria-hidden="true" />
-          <span className="flex-1 text-sm text-muted-foreground">
-            Buscar artistas, músicas, eventos...
-          </span>
-          <SlidersHorizontal className="size-5 text-muted-foreground" aria-hidden="true" />
-        </Link>
+          <Search className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <input
+            type="search"
+            name="q"
+            placeholder="Buscar artistas, músicas, eventos..."
+            aria-label="Buscar artistas, músicas, eventos"
+            className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          />
+          <button
+            type="submit"
+            aria-label="Pesquisar"
+            className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <SlidersHorizontal className="size-5" aria-hidden="true" />
+          </button>
+        </form>
 
         {/* Filtros de gênero (vindos dos artistas reais) */}
         {genres.length > 0 && (

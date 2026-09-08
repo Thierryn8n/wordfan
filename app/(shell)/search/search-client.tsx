@@ -13,14 +13,16 @@ export function SearchClient({
   artists,
   shows,
   initialGenre = null,
+  initialQuery = '',
   adSlot,
 }: {
   artists: Artist[]
   shows: ShowWithArtist[]
   initialGenre?: string | null
+  initialQuery?: string
   adSlot?: React.ReactNode
 }) {
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(initialQuery)
   const [genre, setGenre] = useState<string | null>(initialGenre)
 
   const genres = useMemo(
@@ -84,6 +86,7 @@ export function SearchClient({
           placeholder="Artista, cidade, evento ou música..."
           className="w-full bg-transparent text-xs font-bold outline-none placeholder:text-zinc-600"
           aria-label="Pesquisar artistas"
+          autoFocus={Boolean(initialQuery)}
         />
       </div>
 
