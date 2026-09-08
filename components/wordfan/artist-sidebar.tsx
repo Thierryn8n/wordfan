@@ -144,10 +144,12 @@ export function ArtistSidebar({
                 {allArtists.map((artist) => {
                   const current = artist.slug === slug
                   return (
-                    <Link
+                    // <a> nativo (não <Link>): a navegação para o Route Handler
+                    // precisa ser uma requisição GET real do navegador, senão o
+                    // redirect do handler não é seguido na navegação client-side.
+                    <a
                       key={artist.id}
                       href={`/dashboard/switch/${artist.slug}`}
-                      prefetch={false}
                       className={cn(
                         'flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors',
                         current
@@ -176,7 +178,7 @@ export function ArtistSidebar({
                           aria-hidden="true"
                         />
                       )}
-                    </Link>
+                    </a>
                   )
                 })}
               </div>
