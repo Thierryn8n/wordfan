@@ -88,17 +88,6 @@ function PLbl({ children }: { children: React.ReactNode }) {
   return <p className="admin-eyebrow mb-2">{children}</p>
 }
 
-// ─── Video frame capture helper ──────────────────────────────────────────────
-// Draws one frame of a <video> onto a 2D canvas and returns a data-URL.
-// Used to create the initial fabric.Image from video.
-function captureFrame(video: HTMLVideoElement, w: number, h: number): string {
-  const c = document.createElement('canvas')
-  c.width = w; c.height = h
-  const ctx = c.getContext('2d')!
-  ctx.drawImage(video, 0, 0, w, h)
-  return c.toDataURL('image/png')
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function StoryCanvasEditor({ onSave, onCancel, backgroundImage }: StoryCanvasEditorProps) {
@@ -191,22 +180,12 @@ export function StoryCanvasEditor({ onSave, onCancel, backgroundImage }: StoryCa
 
   const startBgLoop = useCallback(() => {
     const canvas = fc.current
-    const video  = bgVidEl.current
-    if (!canvas || !video) return
-
-    // Access the raw 2d context Fabric uses internally
-    const rawCanvas = canvas.getElement?.() ?? (canvas as unknown as { lowerCanvasEl: HTMLCanvasElement }).lowerCanvasEl
-    const ctx2d     = rawCanvas?.getContext('2d') ?? null
-
+    if (!canvas) return
+    // O vídeo de fundo é um backgroundImage do Fabric cujo elemento é o
+    // <video>. A cada render o Fabric desenha o frame atual desse elemento,
+    // então basta pedir renders enquanto o vídeo estiver tocando.
     const draw = () => {
-      if (video && !video.paused && !video.ended && ctx2d) {
-        // Draw video behind all objects: save state, reset transform, draw, restore
-        ctx2d.save()
-        ctx2d.setTransform(1, 0, 0, 1, 0, 0)
-        ctx2d.drawImage(video, 0, 0, CANVAS_W, CANVAS_H)
-        ctx2d.restore()
-        canvas.renderAll()
-      }
+      canvas.requestRenderAll()
       bgVidRaf.current = requestAnimationFrame(draw)
     }
     bgVidRaf.current = requestAnimationFrame(draw)
@@ -215,15 +194,13 @@ export function StoryCanvasEditor({ onSave, onCancel, backgroundImage }: StoryCa
   const applyBgVideo = useCallback((src: string) => {
     stopBgLoop()
     const canvas = fc.current; if (!canvas) return
-    // Clear any fabric background
-    canvas.setBackgroundImage('', canvas.renderAll.bind(canvas))
-    canvas.setBackgroundColor('#000000', canvas.renderAll.bind(canvas))
 
     // Clean up previous video element
     if (bgVidEl.current) {
       bgVidEl.current.pause()
       bgVidEl.current.src = ''
       if (document.body.contains(bgVidEl.current)) document.body.removeChild(bgVidEl.current)
+      bgVidEl.current = null
     }
 
     const v = document.createElement('video')
@@ -231,24 +208,35 @@ export function StoryCanvasEditor({ onSave, onCancel, backgroundImage }: StoryCa
     v.loop         = true
     v.muted        = true
     v.playsInline  = true
-    v.crossOrigin  = 'anonymous'
     v.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none'
     document.body.appendChild(v)
     bgVidEl.current = v
     setBgVidOk(false)
 
     const onReady = () => {
+      const cv = fc.current; if (!cv) return
+      const vw = v.videoWidth  || CANVAS_W
+      const vh = v.videoHeight || CANVAS_H
+      // "cover": preenche todo o quadro 1080×1920 mantendo a proporção.
+      const scale = Math.max(CANVAS_W / vw, CANVAS_H / vh)
+      const fImg = new fabric.Image(v as unknown as HTMLImageElement, {
+        originX: 'center', originY: 'center',
+        left: CANVAS_W / 2, top: CANVAS_H / 2,
+        scaleX: scale, scaleY: scale,
+        objectCaching: false, selectable: false, evented: false,
+      })
+      cv.setBackgroundColor('#000000', () => {})
+      cv.setBackgroundImage(fImg, cv.renderAll.bind(cv))
+      setBgVidOk(true)
+      // Toca (autoplay mudo é permitido); se bloquear, o loop ainda mostra o
+      // primeiro frame parado.
       v.play()
-        .then(() => { setBgVidPlay(true); setBgVidOk(true); startBgLoop() })
-        .catch(() => {
-          // autoplay blocked — wait for click
-          setBgVidOk(true)
-          setBgVidPlay(false)
-        })
+        .then(() => { setBgVidPlay(true); startBgLoop() })
+        .catch(() => { setBgVidPlay(false); startBgLoop() })
     }
 
-    if (v.readyState >= 2) { onReady() }
-    else { v.addEventListener('loadeddata', onReady, { once: true }) }
+    if (v.readyState >= 1) { onReady() }
+    else { v.addEventListener('loadedmetadata', onReady, { once: true }) }
   }, [startBgLoop, stopBgLoop])
 
   function toggleBgVideo() {
@@ -258,25 +246,20 @@ export function StoryCanvasEditor({ onSave, onCancel, backgroundImage }: StoryCa
   }
 
   // ── Object video loop ──────────────────────────────────────────────────────
-  // Each video object is a fabric.Image whose backing element is refreshed
-  // every frame. We obtain the first frame via captureFrame so Fabric can
-  // measure the image dimensions properly on creation.
+  // Cada vídeo-objeto é uma fabric.Image cujo elemento É o próprio <video>.
+  // O Fabric desenha o frame atual desse elemento em cada render, então o
+  // loop só precisa marcar como sujo e pedir render enquanto tocam.
 
   const stopObjLoop = useCallback(() => { cancelAnimationFrame(vidObjRaf.current); vidObjRaf.current = 0 }, [])
 
   const startObjLoop = useCallback(() => {
     const canvas = fc.current; if (!canvas) return
     const run = () => {
-      let dirty = false
+      let playing = false
       vidObjMap.current.forEach((v, img) => {
-        if (!v.paused && !v.ended) {
-          // swap the backing element to the current frame
-          img.setElement(v as unknown as HTMLImageElement)
-          img.dirty = true
-          dirty = true
-        }
+        if (!v.paused && !v.ended) { img.dirty = true; playing = true }
       })
-      if (dirty) canvas.renderAll()
+      if (playing) canvas.requestRenderAll()
       vidObjRaf.current = requestAnimationFrame(run)
     }
     vidObjRaf.current = requestAnimationFrame(run)
@@ -290,50 +273,46 @@ export function StoryCanvasEditor({ onSave, onCancel, backgroundImage }: StoryCa
     v.loop        = true
     v.muted       = true
     v.playsInline = true
-    v.crossOrigin = 'anonymous'
     v.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none'
     document.body.appendChild(v)
 
     const onReady = () => {
-      // Capture first frame so Fabric knows the image size
-      const frameUrl = captureFrame(v, v.videoWidth || 1080, v.videoHeight || 1920)
+      const cv = fc.current; if (!cv) return
+      const vw = v.videoWidth  || 1080
+      const vh = v.videoHeight || 1920
 
-      fabric.Image.fromURL(frameUrl, (fImg) => {
-        // Scale to fit canvas width keeping aspect
-        const nw = v.videoWidth  || 1080
-        const nh = v.videoHeight || 1920
-        const scale = Math.min(CANVAS_W / nw, CANVAS_H / nh)
-        fImg.set({
-          left: CANVAS_W / 2, top: CANVAS_H / 2,
-          originX: 'center', originY: 'center',
-          scaleX: scale, scaleY: scale,
-          objectCaching: false,
-        })
+      // Cria a imagem do Fabric direto a partir do <video>: cada render pinta
+      // o frame ao vivo, sem snapshot estático.
+      const fImg = new fabric.Image(v as unknown as HTMLImageElement, {
+        left: CANVAS_W / 2, top: CANVAS_H / 2,
+        originX: 'center', originY: 'center',
+        objectCaching: false,
+      })
+      fImg.set({ width: vw, height: vh })
+      fImg.scale(Math.min(CANVAS_W / vw, CANVAS_H / vh) * 0.8)
 
-        canvas.add(fImg)
-        canvas.setActiveObject(fImg)
-        canvas.requestRenderAll()
+      cv.add(fImg)
+      cv.setActiveObject(fImg)
+      cv.requestRenderAll()
 
-        // Register and start playback
-        v.play().catch(() => {})
-        vidObjMap.current.set(fImg, v)
+      v.play().catch(() => {})
+      vidObjMap.current.set(fImg, v)
+      setObjVidCount(vidObjMap.current.size)
+      if (vidObjMap.current.size === 1) startObjLoop()
+
+      // Cleanup quando o objeto é removido
+      cv.on('object:removed', (e) => {
+        if (e.target !== fImg) return
+        vidObjMap.current.delete(fImg)
         setObjVidCount(vidObjMap.current.size)
-        if (vidObjMap.current.size === 1) startObjLoop()
-
-        // Cleanup when removed
-        canvas.on('object:removed', (e) => {
-          if (e.target !== fImg) return
-          vidObjMap.current.delete(fImg)
-          setObjVidCount(vidObjMap.current.size)
-          v.pause()
-          if (document.body.contains(v)) document.body.removeChild(v)
-          if (vidObjMap.current.size === 0) stopObjLoop()
-        })
+        v.pause()
+        if (document.body.contains(v)) document.body.removeChild(v)
+        if (vidObjMap.current.size === 0) stopObjLoop()
       })
     }
 
-    if (v.readyState >= 2) { onReady() }
-    else                   { v.addEventListener('loadeddata', onReady, { once: true }) }
+    if (v.readyState >= 1) { onReady() }
+    else                   { v.addEventListener('loadedmetadata', onReady, { once: true }) }
   }
 
   // ── Canvas init ────────────────────────────────────────────────────────────
@@ -583,7 +562,7 @@ export function StoryCanvasEditor({ onSave, onCancel, backgroundImage }: StoryCa
                 <div className="grid grid-cols-3 gap-1 rounded-xl border border-white/8 bg-black/30 p-1">
                   {(['solid','gradient','video'] as BgType[]).map(t=>(
                     <button key={t} type="button"
-                      onClick={() => { if(t!=='video') setBgType(t) }}
+                      onClick={() => setBgType(t)}
                       className={`rounded-lg py-1.5 text-[7px] font-black tracking-[0.08em] transition-all ${bgType===t?'bg-primary/15 text-primary':'text-zinc-600 hover:text-zinc-300'}`}>
                       {t==='solid'?'SÓLIDO':t==='gradient'?'GRADIENTE':'VÍDEO'}
                     </button>
