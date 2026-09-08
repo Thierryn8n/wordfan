@@ -949,7 +949,7 @@ export function ContentManager({
               </div>
               <div className="flex shrink-0 flex-col gap-2">
                 <Link
-                  href="/dashboard/estudio/stories/novo"
+                  href="/estudio/editor-video"
                   className="gradient-brand flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-[10px] font-black tracking-[0.18em] text-white shadow-[0_8px_24px_-8px_rgba(255,106,0,0.6)] transition-transform hover:scale-[1.02]"
                 >
                   <Sparkles className="size-3.5" aria-hidden="true" />
@@ -1049,7 +1049,7 @@ export function ContentManager({
                   </p>
                 </div>
                 <Link
-                  href="/dashboard/estudio/stories/novo"
+                  href="/estudio/editor-video"
                   className="gradient-brand flex items-center gap-2 rounded-2xl px-6 py-3 text-[9px] font-black tracking-[0.18em] text-white shadow-[0_8px_20px_-8px_rgba(255,106,0,0.5)]"
                 >
                   <Sparkles className="size-3.5" />
