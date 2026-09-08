@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
@@ -82,6 +82,22 @@ export function ArtistTabs({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const about = (artist.about ?? {}) as ArtistAbout
 
+  // Permite que links externos (ex.: os stats do topo do perfil) pulem direto para uma aba.
+  useEffect(() => {
+    function syncFromHash() {
+      const key = window.location.hash.slice(1) as TabKey
+      if (TABS.some((t) => t.key === key)) setTab(key)
+    }
+    syncFromHash()
+    window.addEventListener('hashchange', syncFromHash)
+    return () => window.removeEventListener('hashchange', syncFromHash)
+  }, [])
+
+  function selectTab(key: TabKey) {
+    setTab(key)
+    window.history.replaceState(null, '', `#${key}`)
+  }
+
   const filteredVideos =
     videoFilter === 'all' ? videos : videos.filter((v) => v.category === videoFilter)
 
@@ -108,7 +124,7 @@ export function ArtistTabs({
               type="button"
               role="tab"
               aria-selected={tab === key}
-              onClick={() => setTab(key)}
+              onClick={() => selectTab(key)}
               className={
                 tab === key
                   ? 'gradient-club shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-[11px] font-extrabold tracking-[0.1em] text-white'

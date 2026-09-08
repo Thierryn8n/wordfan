@@ -170,6 +170,60 @@ export default async function PlansPage({ params }: { params: Promise<{ slug: st
           <CompactCard key={p.id} plan={p} />
         ))}
 
+        {/* Comparativo de benefícios entre os planos */}
+        {plans.length > 1 && (
+          <section
+            aria-labelledby="compare-heading"
+            className="rounded-[32px] border border-white/8 bg-card p-6"
+          >
+            <h2 id="compare-heading" className="font-serif text-lg font-extrabold tracking-tight">
+              COMPARE OS BENEFÍCIOS
+            </h2>
+            <div className="mt-5 overflow-x-auto">
+              <table className="w-full min-w-[420px] border-collapse text-left">
+                <thead>
+                  <tr>
+                    <th scope="col" className="pb-3 pr-2" />
+                    {plans.map((p) => (
+                      <th
+                        key={p.id}
+                        scope="col"
+                        className={`pb-3 text-center text-[10px] font-black tracking-[0.1em] ${tierColor[p.tier]}`}
+                      >
+                        {p.name.toUpperCase()}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from(new Set(plans.flatMap((p) => p.benefits))).map((benefit, i) => (
+                    <tr key={benefit} className={i % 2 === 0 ? 'bg-white/[0.02]' : undefined}>
+                      <th
+                        scope="row"
+                        className="py-3 pr-2 text-left text-xs font-bold text-foreground/90"
+                      >
+                        {benefit}
+                      </th>
+                      {plans.map((p) => (
+                        <td key={p.id} className="py-3 text-center">
+                          {p.benefits.includes(benefit) ? (
+                            <Check className="mx-auto size-4 text-club" aria-hidden="true" />
+                          ) : (
+                            <span
+                              className="mx-auto block size-1 rounded-full bg-white/15"
+                              aria-hidden="true"
+                            />
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
         {/* Plano Enterprise — global, gerido pelo admin, aparece em todos os artistas */}
         {enterprise.active && (
           <div className="relative mt-2">

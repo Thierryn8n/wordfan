@@ -2,24 +2,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getUpcomingShows, getUpcomingLives, getActiveAds } from '@/lib/data'
 import { AdBanner } from '@/components/wordfan/ad-banner'
-import { Radio, MapPin, CalendarDays, Ticket, ChevronRight } from 'lucide-react'
+import { Radio, CalendarDays, Ticket, ChevronRight } from 'lucide-react'
+import { EventsAgenda } from './events-agenda'
 
 export const metadata = { title: 'Eventos — WordFan' }
-
-const MONTHS = [
-  'JANEIRO',
-  'FEVEREIRO',
-  'MARÇO',
-  'ABRIL',
-  'MAIO',
-  'JUNHO',
-  'JULHO',
-  'AGOSTO',
-  'SETEMBRO',
-  'OUTUBRO',
-  'NOVEMBRO',
-  'DEZEMBRO',
-]
 
 export default async function EventsPage() {
   const [shows, lives, ads] = await Promise.all([
@@ -27,16 +13,6 @@ export default async function EventsPage() {
     getUpcomingLives(20),
     getActiveAds('events'),
   ])
-
-  // Agrupa shows por mês/ano
-  const groups = new Map<string, typeof shows>()
-  for (const s of shows) {
-    const d = new Date(s.starts_at)
-    const key = `${d.getFullYear()}-${d.getMonth()}`
-    const arr = groups.get(key) ?? []
-    arr.push(s)
-    groups.set(key, arr)
-  }
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-md bg-background pb-40">
@@ -132,61 +108,8 @@ export default async function EventsPage() {
               </p>
             </div>
           ) : (
-            <div className="mt-5 flex flex-col gap-8">
-              {Array.from(groups.entries()).map(([key, items]) => {
-                const [, monthIdx] = key.split('-').map(Number)
-                return (
-                  <div key={key}>
-                    <div className="flex items-center gap-3">
-                      <p className="text-[10px] font-black tracking-[0.25em] text-muted-foreground">
-                        {MONTHS[monthIdx]}
-                      </p>
-                      <span className="hairline flex-1" aria-hidden="true" />
-                    </div>
-                    <ul className="mt-4 flex flex-col gap-3">
-                      {items.map((s) => {
-                        const d = new Date(s.starts_at)
-                        return (
-                          <li key={s.id}>
-                            <Link
-                              href={`/artist/${s.artist.slug}`}
-                              className="surface elev-1 flex items-center gap-4 rounded-[26px] p-4"
-                            >
-                              <div className="flex size-16 shrink-0 flex-col items-center justify-center rounded-2xl bg-white/5">
-                                <span className="font-numeric text-2xl font-black leading-none">
-                                  {d.getDate()}
-                                </span>
-                                <span className="mt-1 text-[8px] font-black tracking-[0.15em] text-muted-foreground">
-                                  {d.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase()}
-                                </span>
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="line-clamp-1 text-sm font-extrabold tracking-[0.05em]">
-                                  {s.title}
-                                </p>
-                                <p className="mt-1 text-[11px] font-bold text-brand">
-                                  {s.artist.name}
-                                </p>
-                                <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-zinc-500">
-                                  <MapPin className="size-2.5 shrink-0" aria-hidden="true" />
-                                  <span className="truncate">
-                                    {s.venue ? `${s.venue} • ` : ''}
-                                    {s.city || 'A definir'}
-                                    {s.state ? `, ${s.state}` : ''}
-                                  </span>
-                                </p>
-                              </div>
-                              <span className="font-numeric text-[11px] font-bold text-muted-foreground">
-                                {d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </Link>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  </div>
-                )
-              })}
+            <div className="mt-5">
+              <EventsAgenda shows={shows} />
             </div>
           )}
         </section>

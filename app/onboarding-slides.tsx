@@ -56,6 +56,42 @@ export function OnboardingSlides({
   const startRef = useRef(0)
   const rafRef = useRef(0)
   const [progress, setProgress] = useState(0)
+  const dragRef = useRef<{ x: number; active: boolean } | null>(null)
+  const [dragOffset, setDragOffset] = useState(0)
+
+  function goTo(next: number) {
+    setIndex(((next % SLIDES.length) + SLIDES.length) % SLIDES.length)
+  }
+
+  function handlePointerDown(e: React.PointerEvent) {
+    dragRef.current = { x: e.clientX, active: true }
+  }
+
+  function handlePointerMove(e: React.PointerEvent) {
+    if (!dragRef.current?.active) return
+    setDragOffset(e.clientX - dragRef.current.x)
+  }
+
+  function handlePointerUp(e: React.PointerEvent) {
+    const drag = dragRef.current
+    dragRef.current = null
+    setDragOffset(0)
+    if (!drag?.active) return
+    const delta = e.clientX - drag.x
+    const SWIPE_THRESHOLD = 48
+    if (delta <= -SWIPE_THRESHOLD) {
+      goTo(index + 1)
+    } else if (delta >= SWIPE_THRESHOLD) {
+      goTo(index - 1)
+    } else {
+      // Toque rápido sem arrasto: avança pelo lado direito, volta pelo esquerdo.
+      const rect = (e.target as HTMLElement).closest('[data-tap-zone]')?.getBoundingClientRect()
+      if (rect) {
+        const isRightSide = e.clientX - rect.left > rect.width / 2
+        goTo(isRightSide ? index + 1 : index - 1)
+      }
+    }
+  }
 
   // Onboarding aparece apenas uma vez por dispositivo.
   useEffect(() => {
@@ -116,9 +152,23 @@ export function OnboardingSlides({
   const slide = SLIDES[index]
 
   return (
-    <main className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-hidden bg-background">
-      {/* Imagem de fundo full-bleed */}
-      <div className="absolute inset-0" aria-hidden="true">
+    <main
+      data-tap-zone
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={() => {
+        dragRef.current = null
+        setDragOffset(0)
+      }}
+      className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col touch-pan-y select-none overflow-hidden bg-background"
+    >
+      {/* Imagem de fundo full-bleed — segue o dedo levemente durante o arrasto */}
+      <div
+        className="absolute inset-0 transition-transform duration-150 ease-out"
+        style={{ transform: `translateX(${Math.max(-60, Math.min(60, dragOffset * 0.3))}px)` }}
+        aria-hidden="true"
+      >
         <Image
           key={slide.image}
           src={slide.image || '/placeholder.svg'}
@@ -126,14 +176,18 @@ export function OnboardingSlides({
           fill
           priority
           sizes="(max-width: 768px) 100vw, 448px"
-          className="animate-[fadeIn_0.6s_ease] object-cover"
+          className="animate-[fadeIn_0.6s_ease] scale-105 object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/85 to-background/30" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-transparent to-transparent" />
       </div>
 
-      {/* Topo: logo + barras de progresso */}
-      <div className="relative z-10 px-6 pt-8">
+      {/* Topo: logo + barras de progresso (fora da zona de toque para navegação) */}
+      <div
+        className="relative z-10 px-6 pt-8"
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
           <Logo
             href="/home"
@@ -167,8 +221,12 @@ export function OnboardingSlides({
         </div>
       </div>
 
-      {/* Conteúdo */}
-      <div className="relative z-10 mt-auto flex flex-col px-7 pb-10">
+      {/* Conteúdo (fora da zona de toque para navegação) */}
+      <div
+        className="relative z-10 mt-auto flex flex-col px-7 pb-10"
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
+      >
         <p className="flex items-center gap-2 text-[11px] font-black tracking-[0.3em] text-brand">
           <Sparkles className="size-3.5" aria-hidden="true" />
           {slide.eyebrow}

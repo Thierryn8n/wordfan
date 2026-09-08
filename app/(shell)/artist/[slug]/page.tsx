@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation'
 import {
   ArrowLeft,
   Share2,
-  UserPlus,
   Star,
   BadgeCheck,
   Music2,
@@ -29,6 +28,7 @@ import {
 } from '@/lib/data'
 import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
 import { BioText } from '@/components/wordfan/bio-text'
+import { FollowButton } from '@/components/wordfan/follow-button'
 import { ArtistTabs } from './artist-tabs'
 import { ArtistStories } from './artist-stories'
 
@@ -186,6 +186,9 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
               {formatFans(artist.followers_count)} FÃS
             </span>
           </p>
+          <p className="mt-1.5 text-[10px] font-bold tracking-[0.1em] text-zinc-500">
+            NA PLATAFORMA DESDE {new Date(artist.created_at).getFullYear()}
+          </p>
 
           <div className="mt-5 flex gap-3">
             <Link
@@ -195,10 +198,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
               <Star className="size-4 fill-white" aria-hidden="true" />
               {subscription ? 'ACESSAR FAN CLUB' : 'ENTRAR NO FAN CLUB'}
             </Link>
-            <button className="surface elev-1 flex h-14 items-center gap-2 rounded-2xl px-5 text-[11px] font-extrabold tracking-[0.2em] transition-transform active:scale-[0.98]">
-              <UserPlus className="size-4" aria-hidden="true" />
-              SEGUIR
-            </button>
+            <FollowButton />
           </div>
         </div>
       </div>
@@ -234,44 +234,52 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         </Link>
       )}
 
-      {/* Stats */}
+      {/* Stats — clicáveis, levam direto para a aba correspondente */}
       <div className="surface elev-1 mx-6 mt-6 flex rounded-3xl px-2 py-6">
         {[
-          { value: String(posts.length), label: 'POSTS' },
-          { value: String(videos.length), label: 'VÍDEOS' },
-          { value: String(shows.length), label: 'SHOWS' },
-          { value: formatFans(artist.followers_count), label: 'FÃS' },
-        ].map((s, i) => (
-          <div
-            key={s.label}
-            className={`flex flex-1 flex-col items-center gap-1.5 ${i > 0 ? 'border-l border-white/8' : ''}`}
-          >
-            <span className="font-numeric text-lg font-black">{s.value}</span>
-            <span className="text-[8px] font-extrabold tracking-[0.15em] text-muted-foreground">
-              {s.label}
-            </span>
-          </div>
-        ))}
+          { value: String(posts.length), label: 'POSTS', hash: 'feed' },
+          { value: String(videos.length), label: 'VÍDEOS', hash: 'videos' },
+          { value: String(shows.length), label: 'SHOWS', hash: 'agenda' },
+          { value: formatFans(artist.followers_count), label: 'FÃS', hash: null },
+        ].map((s, i) =>
+          s.hash ? (
+            <a
+              key={s.label}
+              href={`#${s.hash}`}
+              className={`flex flex-1 flex-col items-center gap-1.5 transition-opacity active:opacity-70 ${i > 0 ? 'border-l border-white/8' : ''}`}
+            >
+              <span className="font-numeric text-lg font-black">{s.value}</span>
+              <span className="text-[8px] font-extrabold tracking-[0.15em] text-muted-foreground">
+                {s.label}
+              </span>
+            </a>
+          ) : (
+            <div
+              key={s.label}
+              className={`flex flex-1 flex-col items-center gap-1.5 ${i > 0 ? 'border-l border-white/8' : ''}`}
+            >
+              <span className="font-numeric text-lg font-black">{s.value}</span>
+              <span className="text-[8px] font-extrabold tracking-[0.15em] text-muted-foreground">
+                {s.label}
+              </span>
+            </div>
+          ),
+        )}
       </div>
 
-      {/* Redes sociais */}
+      {/* Redes sociais — linha compacta de ícones */}
       {activeSocials.length > 0 && (
-        <div className="flex justify-center gap-5 px-6 py-7">
+        <div className="scrollbar-none flex justify-center gap-3 overflow-x-auto px-6 py-6">
           {activeSocials.map(({ key, label, icon: Icon }) => (
             <a
               key={key}
               href={artist.social_links[key]}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex flex-col items-center gap-2"
+              className="surface elev-1 flex size-11 shrink-0 items-center justify-center rounded-2xl text-foreground/80 transition-colors hover:text-club"
               aria-label={label}
             >
-              <span className="surface elev-1 flex size-13 items-center justify-center rounded-2xl p-4 text-foreground/80 transition-colors group-hover:text-club">
-                <Icon className="size-5" aria-hidden="true" />
-              </span>
-              <span className="text-[8px] font-extrabold tracking-[0.15em] text-muted-foreground">
-                {label}
-              </span>
+              <Icon className="size-4" aria-hidden="true" />
             </a>
           ))}
         </div>
