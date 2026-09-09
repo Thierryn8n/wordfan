@@ -302,7 +302,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         <Link
           href={`/artist/${artist.slug}/live`}
           aria-label={`Entrar na live: ${liveNow.title}`}
-          className="nav-float fixed inset-x-6 bottom-40 z-40 mx-auto flex max-w-sm items-center gap-3 rounded-3xl p-3"
+          className="nav-float fixed inset-x-4 bottom-32 left-1/2 z-50 mx-auto flex w-full max-w-sm -translate-x-1/2 items-center gap-3 rounded-3xl p-3 transition-all duration-200 hover:scale-105 active:scale-95"
         >
           <div className="relative shrink-0">
             <Image
