@@ -101,6 +101,23 @@ export const VIDEO_CATEGORY_LABELS: Record<Video['category'], string> = {
   bastidores: 'Bastidores',
 }
 
+export interface Song {
+  id: string
+  artist_id: string
+  title: string
+  audio_url: string
+  cover_url: string | null
+  duration_seconds: number
+  /** Ordem no Top 10 (1 = primeira). */
+  rank: number
+  is_new_release: boolean
+  is_exclusive: boolean
+  min_tier: Tier | null
+  plays_count: number
+  created_at: string
+  artist?: Artist
+}
+
 export interface Transaction {
   id: string
   subscription_id: string | null

@@ -12,6 +12,7 @@ import type {
   Plan,
   Post,
   Show,
+  Song,
   Story,
   Video,
 } from '@/lib/types'
@@ -30,6 +31,7 @@ export default async function StudioPage() {
     { data: storiesData },
     { data: livesData },
     { data: plansData },
+    { data: songsData },
   ] = await Promise.all([
     supabase.from('posts').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
     supabase.from('shows').select('*').eq('artist_id', artist.id).order('starts_at', { ascending: true }),
@@ -38,6 +40,7 @@ export default async function StudioPage() {
     supabase.from('stories').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
     supabase.from('lives').select('*').eq('artist_id', artist.id).order('scheduled_at', { ascending: false }),
     supabase.from('plans').select('*').eq('artist_id', artist.id).order('price_cents', { ascending: true }),
+    supabase.from('songs').select('*').eq('artist_id', artist.id).order('rank', { ascending: true }),
   ])
 
   const posts   = (postsData   ?? []) as Post[]
@@ -47,6 +50,7 @@ export default async function StudioPage() {
   const stories = (storiesData ?? []) as Story[]
   const lives   = (livesData   ?? []) as Live[]
   const plans   = (plansData   ?? []) as Plan[]
+  const songs   = (songsData   ?? []) as Song[]
 
   const totalContent =
     posts.length + stories.length + videos.length +
@@ -148,6 +152,7 @@ export default async function StudioPage() {
         stories={stories}
         lives={lives}
         plans={plans}
+        songs={songs}
       />
     </div>
   )

@@ -395,6 +395,114 @@ export async function deleteLive(id: string, artistId: string) {
   return { success: true }
 }
 
+// ============ MÚSICAS (Top 10 + lançamentos) ============
+export async function saveSong(input: {
+  id?: string
+  artistId: string
+  title: string
+  audioUrl: string
+  coverUrl: string
+  durationSeconds: number
+  rank: number
+  isNewRelease: boolean
+  isExclusive: boolean
+  minTier: string
+}) {
+  const { supabase, error, slug } = await requireManager(input.artistId)
+  if (error) return { error }
+
+  const title = input.title.trim().slice(0, 140)
+  if (!title) return { error: 'Título obrigatório.' }
+  const audioUrl = input.audioUrl.trim().slice(0, 500)
+  if (!audioUrl) return { error: 'Envie o arquivo de áudio.' }
+
+  const rank = Number.isFinite(input.rank) ? Math.max(0, Math.min(999, Math.trunc(input.rank))) : 0
+  const duration = Number.isFinite(input.durationSeconds)
+    ? Math.max(0, Math.trunc(input.durationSeconds))
+    : 0
+  const minTier = input.isExclusive && TIERS.includes(input.minTier) ? input.minTier : null
+
+  const payload = {
+    artist_id: input.artistId,
+    title,
+    audio_url: audioUrl,
+    cover_url: input.coverUrl.trim().slice(0, 500) || null,
+    duration_seconds: duration,
+    rank,
+    is_new_release: input.isNewRelease,
+    is_exclusive: input.isExclusive,
+    min_tier: minTier,
+  }
+
+  const q = input.id
+    ? supabase.from('songs').update(payload).eq('id', input.id).eq('artist_id', input.artistId)
+    : supabase.from('songs').insert(payload)
+  const { error: dbError } = await q
+  if (dbError) {
+    console.log('[v0] saveSong error:', dbError.message)
+    return { error: 'Não foi possível salvar a música.' }
+  }
+  revalidateArtist(slug!)
+  return { success: true }
+}
+
+export async function deleteSong(id: string, artistId: string) {
+  const { supabase, error, slug } = await requireManager(artistId)
+  if (error) return { error }
+  const { error: dbError } = await supabase.from('songs').delete().eq('id', id).eq('artist_id', artistId)
+  if (dbError) return { error: 'Não foi possível excluir.' }
+  revalidateArtist(slug!)
+  return { success: true }
+}
+
+// Upload de áudio para o bucket 'artist-audio' (mp3/aac/wav/ogg, até 25MB).
+const ALLOWED_AUDIO_TYPES = [
+  'audio/mpeg', 'audio/mp3', 'audio/aac', 'audio/mp4',
+  'audio/x-m4a', 'audio/wav', 'audio/ogg', 'audio/webm',
+]
+const MAX_AUDIO_BYTES = 25 * 1024 * 1024
+
+export async function uploadContentAudio(formData: FormData) {
+  const artistId = String(formData.get('artistId') ?? '')
+  const { supabase, error, slug } = await requireManager(artistId)
+  if (error) return { error }
+
+  const file = formData.get('file') as File | null
+  if (!file || file.size === 0) return { error: 'Nenhum arquivo enviado.' }
+
+  if (!ALLOWED_AUDIO_TYPES.includes(file.type)) {
+    return { error: 'Formato inválido. Use MP3, AAC, M4A, WAV ou OGG.' }
+  }
+  if (file.size > MAX_AUDIO_BYTES) {
+    return { error: 'Áudio muito grande (máx. 25MB).' }
+  }
+
+  const extMap: Record<string, string> = {
+    'audio/mpeg': 'mp3', 'audio/mp3': 'mp3', 'audio/aac': 'aac',
+    'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/wav': 'wav',
+    'audio/ogg': 'ogg', 'audio/webm': 'webm',
+  }
+  const ext = extMap[file.type] ?? 'mp3'
+  const path = `${slug}/song-${Date.now()}.${ext}`
+
+  const { error: upError } = await supabase.storage.from('artist-audio').upload(path, file, {
+    contentType: file.type,
+    upsert: false,
+  })
+  if (upError) {
+    console.log('[upload-audio] erro:', upError.message)
+    if (upError.message.includes('Bucket not found')) {
+      return { error: 'Bucket de áudio não configurado no Supabase.' }
+    }
+    return { error: `Falha no upload: ${upError.message}` }
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from('artist-audio').getPublicUrl(path)
+  return { url: publicUrl }
+}
+
 // ============ CHAT AO VIVO ============
 // Envia uma mensagem no chat da live. Qualquer fã autenticado com acesso ao
 // tier da live pode escrever; a distribuição em tempo real é feita pelo

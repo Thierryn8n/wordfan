@@ -25,6 +25,7 @@ import {
   type Plan,
   type Post,
   type Show,
+  type Song,
   type Story,
   type Subscription,
   type Video,
@@ -152,6 +153,7 @@ export default async function ManagerPage({
     { data: storiesData },
     { data: plansData },
     { data: leadsData },
+    { data: songsData },
   ] = await Promise.all([
     supabase.from('subscriptions').select('*, plan:plans(*)').eq('artist_id', artist.id).eq('status', 'active'),
     supabase.from('posts').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
@@ -161,6 +163,7 @@ export default async function ManagerPage({
     supabase.from('stories').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
     supabase.from('plans').select('*').eq('artist_id', artist.id).order('price_cents', { ascending: true }),
     supabase.from('enterprise_leads').select('*').eq('artist_id', artist.id).order('created_at', { ascending: false }),
+    supabase.from('songs').select('*').eq('artist_id', artist.id).order('rank', { ascending: true }),
   ])
 
   const subs = (subsData ?? []) as (Subscription & { plan: Plan })[]
@@ -295,6 +298,7 @@ export default async function ManagerPage({
                 videos={(videosData as Video[]) ?? []}
                 stories={(storiesData as Story[]) ?? []}
                 plans={(plansData as Plan[]) ?? []}
+                songs={(songsData as Song[]) ?? []}
               />
             </div>
           </section>

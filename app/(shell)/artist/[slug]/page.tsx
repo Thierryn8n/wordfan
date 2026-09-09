@@ -9,7 +9,6 @@ import {
   Music2,
   AudioLines,
   Globe,
-  Play,
   Check,
   Radio,
   CalendarClock,
@@ -20,15 +19,18 @@ import {
   getArtistShows,
   getArtistGallery,
   getArtistLives,
+  getArtistSongs,
   getArtistVideos,
   getArtistStories,
   getArtistPlans,
   getUserSubscription,
   getCurrentUser,
 } from '@/lib/data'
+import { TIER_ORDER } from '@/lib/types'
 import { ArtistThemeScope } from '@/components/wordfan/artist-theme-provider'
 import { BioText } from '@/components/wordfan/bio-text'
 import { FollowButton } from '@/components/wordfan/follow-button'
+import { ArtistFloatingPlayer } from '@/components/wordfan/artist-floating-player'
 import { ArtistTabs } from './artist-tabs'
 import { ArtistStories } from './artist-stories'
 
@@ -79,11 +81,12 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   const artist = await getArtistBySlug(slug)
   if (!artist) notFound()
 
-  const [posts, shows, gallery, lives, videos, stories, plans, subscription, user] = await Promise.all([
+  const [posts, shows, gallery, lives, songs, videos, stories, plans, subscription, user] = await Promise.all([
     getArtistPosts(artist.id),
     getArtistShows(artist.id),
     getArtistGallery(artist.id),
     getArtistLives(artist.id),
+    getArtistSongs(artist.id),
     getArtistVideos(artist.id),
     getArtistStories(artist.id),
     getArtistPlans(artist.id),
@@ -94,6 +97,10 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
 
   const liveNow = lives.find((l) => l.status === 'live')
   const nextLive = lives.find((l) => l.status === 'scheduled')
+
+  // Acesso às músicas: tier do assinante (0 = sem plano) e bypass do dono.
+  const userTierRank = subscription?.plan?.tier ? TIER_ORDER.indexOf(subscription.plan.tier) + 1 : 0
+  const canManage = isLoggedIn && artist.owner_id === user!.id
   const cheapest = plans.length > 0 ? Math.min(...plans.map((p) => p.price_cents)) : null
   const activeSocials = SOCIALS.filter((s) => artist.social_links?.[s.key])
 
@@ -297,45 +304,17 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         cheapestPriceCents={cheapest}
       />
 
-      {/* Mini player flutuante — só aparece se estiver AO VIVO de verdade */}
-      {liveNow && (
-        <Link
-          href={`/artist/${artist.slug}/live`}
-          aria-label={`Entrar na live: ${liveNow.title}`}
-          className="nav-float fixed inset-x-4 bottom-32 left-1/2 z-50 mx-auto flex w-full max-w-sm -translate-x-1/2 items-center gap-3 rounded-3xl p-3 transition-all duration-200 hover:scale-105 active:scale-95"
-        >
-          <div className="relative shrink-0">
-            <Image
-              src={artist.avatar_url || '/placeholder.svg?height=56&width=56'}
-              alt=""
-              width={56}
-              height={56}
-              className="size-14 rounded-2xl object-cover"
-            />
-            <span
-              className="absolute -right-1 -top-1 flex items-center gap-1 rounded-full bg-red-600 px-1.5 py-0.5 text-[7px] font-black tracking-[0.1em] text-white"
-              aria-hidden="true"
-            >
-              <span className="size-1 animate-pulse rounded-full bg-white" />
-              LIVE
-            </span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-extrabold tracking-[0.1em]">
-              {liveNow.title.toUpperCase()}
-            </p>
-            <p className="mt-0.5 text-[10px] font-extrabold tracking-[0.15em] text-muted-foreground">
-              {artist.name.toUpperCase()} • <span className="text-club">AO VIVO</span>
-            </p>
-          </div>
-          <span
-            className="gradient-club flex size-12 shrink-0 items-center justify-center rounded-2xl"
-            aria-hidden="true"
-          >
-            <Play className="size-5 fill-white text-white" />
-          </span>
-        </Link>
-      )}
+      {/* Player flutuante: LIVE ao vivo de verdade OU Top 10 com gating de assinatura */}
+      <ArtistFloatingPlayer
+        artistName={artist.name}
+        artistSlug={artist.slug}
+        artistAvatar={artist.avatar_url || ''}
+        songs={songs}
+        live={liveNow ? { title: liveNow.title } : null}
+        userTierRank={userTierRank}
+        canManage={canManage}
+        isLoggedIn={isLoggedIn}
+      />
     </div>
     </ArtistThemeScope>
   )

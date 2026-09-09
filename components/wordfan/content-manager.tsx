@@ -24,8 +24,11 @@ import {
   Sparkles,
   ExternalLink,
   Clock,
+  Music,
+  Music2,
+  Rocket,
 } from 'lucide-react'
-import type { GalleryItem, Live, Plan, Post, Show, Story, Video, Tier } from '@/lib/types'
+import type { GalleryItem, Live, Plan, Post, Show, Song, Story, Video, Tier } from '@/lib/types'
 import { TIER_LABELS, TIER_ORDER, VIDEO_CATEGORY_LABELS, formatPrice } from '@/lib/types'
 import {
   savePost,
@@ -43,9 +46,12 @@ import {
   savePlan,
   deletePlan,
   uploadContentImage,
+  saveSong,
+  deleteSong,
+  uploadContentAudio,
 } from '@/app/actions/content'
 
-type Section = 'feed' | 'stories' | 'agenda' | 'galeria' | 'videos' | 'lives' | 'fanclub'
+type Section = 'feed' | 'stories' | 'agenda' | 'galeria' | 'videos' | 'musicas' | 'lives' | 'fanclub'
 
 const SECTIONS: { key: Section; label: string; icon: typeof FileText }[] = [
   { key: 'feed', label: 'FEED', icon: FileText },
@@ -53,6 +59,7 @@ const SECTIONS: { key: Section; label: string; icon: typeof FileText }[] = [
   { key: 'agenda', label: 'AGENDA', icon: CalendarDays },
   { key: 'galeria', label: 'GALERIA', icon: ImageIcon },
   { key: 'videos', label: 'VÍDEOS', icon: PlaySquare },
+  { key: 'musicas', label: 'MÚSICAS', icon: Music },
   { key: 'lives', label: 'LIVES', icon: Radio },
   { key: 'fanclub', label: 'FAN CLUB', icon: Star },
 ]
@@ -204,6 +211,90 @@ function MediaUpload({
   )
 }
 
+// Upload de áudio para o bucket 'artist-audio'. Também extrai a duração do
+// arquivo no cliente (via <audio> temporário) para preencher o formulário.
+function AudioUpload({
+  artistId,
+  value,
+  onChange,
+  onDuration,
+}: {
+  artistId: string
+  value: string
+  onChange: (url: string) => void
+  onDuration?: (seconds: number) => void
+}) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleFile(file: File) {
+    setUploading(true)
+    setError('')
+
+    if (onDuration) {
+      const url = URL.createObjectURL(file)
+      const audio = document.createElement('audio')
+      audio.preload = 'metadata'
+      audio.src = url
+      audio.addEventListener('loadedmetadata', () => {
+        if (Number.isFinite(audio.duration)) onDuration(Math.round(audio.duration))
+        URL.revokeObjectURL(url)
+      })
+    }
+
+    const fd = new FormData()
+    fd.set('file', file)
+    fd.set('artistId', artistId)
+    const res = await uploadContentAudio(fd)
+    setUploading(false)
+    if (res.error) setError(res.error)
+    else if (res.url) onChange(res.url)
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-3">
+        <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-dashed border-white/15 text-muted-foreground">
+          <Music2 className="size-5" aria-hidden="true" />
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="flex w-fit items-center gap-2 rounded-full border border-white/8 bg-background px-4 py-2 text-[8px] font-black tracking-[0.15em] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+          >
+            {uploading ? (
+              <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+            ) : (
+              <Upload className="size-3" aria-hidden="true" />
+            )}
+            {uploading ? 'ENVIANDO...' : 'ENVIAR ÁUDIO'}
+          </button>
+          {value && (
+            <audio src={value} controls className="h-9 w-full max-w-[240px]">
+              <track kind="captions" />
+            </audio>
+          )}
+        </div>
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="audio/mpeg,audio/mp3,audio/aac,audio/mp4,audio/x-m4a,audio/wav,audio/ogg"
+        className="sr-only"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) handleFile(f)
+          e.target.value = ''
+        }}
+      />
+      {error && <p className="text-[9px] font-bold text-red-400">{error}</p>}
+    </div>
+  )
+}
+
 export function ContentManager({
   artistId,
   posts,
@@ -213,6 +304,7 @@ export function ContentManager({
   stories = [],
   lives = [],
   plans = [],
+  songs = [],
 }: {
   artistId: string
   posts: Post[]
@@ -222,6 +314,7 @@ export function ContentManager({
   stories?: Story[]
   lives?: Live[]
   plans?: Plan[]
+  songs?: Song[]
 }) {
   const router = useRouter()
   const [section, setSection] = useState<Section>('feed')
@@ -270,6 +363,16 @@ export function ContentManager({
     priceReais: '',
     benefits: [''],
   })
+  const [songForm, setSongForm] = useState({
+    title: '',
+    audioUrl: '',
+    coverUrl: '',
+    durationSeconds: 0,
+    rank: 0,
+    isNewRelease: false,
+    isExclusive: false,
+    minTier: 'gold',
+  })
 
   function resetForms() {
     setPostForm({ type: 'text', title: '', content: '', mediaUrl: '', isExclusive: false, minTier: 'bronze' })
@@ -279,6 +382,7 @@ export function ContentManager({
     setStoryForm({ mediaUrl: '', caption: '' })
     setLiveForm({ title: '', scheduledAt: '', status: 'scheduled', isExclusive: false, minTier: 'bronze', streamUrl: '' })
     setPlanForm({ tier: 'bronze', name: '', priceReais: '', benefits: [''] })
+    setSongForm({ title: '', audioUrl: '', coverUrl: '', durationSeconds: 0, rank: 0, isNewRelease: false, isExclusive: false, minTier: 'gold' })
     setEditing(null)
     setStatus({})
   }
@@ -1119,6 +1223,210 @@ export function ContentManager({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ============ MÚSICAS ============ */}
+      {section === 'musicas' && (
+        <div className="mt-5">
+          {editing === null && (
+            <>
+              <button type="button" onClick={() => setEditing('new')} className={btnPrimary}>
+                <Plus className="size-3.5" aria-hidden="true" />
+                NOVA MÚSICA
+              </button>
+              <p className="mt-3 text-[10px] font-bold leading-relaxed text-muted-foreground">
+                As faixas aparecem no player flutuante do perfil em ordem de <strong>ranking</strong> (Top 10).
+                As 2 primeiras tocam livres; as demais exigem assinatura. Marque um{' '}
+                <strong>lançamento</strong> para dar destaque e restringir a um plano exclusivo.
+              </p>
+            </>
+          )}
+
+          {editing !== null && (
+            <form
+              className="flex flex-col gap-4 rounded-3xl border border-white/8 bg-background/50 p-5"
+              onSubmit={(e) => {
+                e.preventDefault()
+                run(
+                  () => saveSong({ id: editing === 'new' ? undefined : editing, artistId, ...songForm }),
+                  editing === 'new' ? 'Música adicionada!' : 'Música atualizada!',
+                )
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-[9px] font-black tracking-[0.2em] text-primary">
+                  {editing === 'new' ? 'NOVA MÚSICA' : 'EDITAR MÚSICA'}
+                </p>
+                <button type="button" onClick={resetForms} aria-label="Fechar formulário">
+                  <X className="size-4 text-muted-foreground" aria-hidden="true" />
+                </button>
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="cm-song-title">TÍTULO *</label>
+                <input
+                  id="cm-song-title"
+                  className={`mt-1.5 ${inputCls}`}
+                  value={songForm.title}
+                  onChange={(e) => setSongForm((f) => ({ ...f, title: e.target.value }))}
+                  required
+                  maxLength={140}
+                />
+              </div>
+              <div>
+                <span className={labelCls}>ARQUIVO DE ÁUDIO *</span>
+                <div className="mt-1.5">
+                  <AudioUpload
+                    artistId={artistId}
+                    value={songForm.audioUrl}
+                    onChange={(url) => setSongForm((f) => ({ ...f, audioUrl: url }))}
+                    onDuration={(s) => setSongForm((f) => ({ ...f, durationSeconds: s }))}
+                  />
+                </div>
+              </div>
+              <div>
+                <span className={labelCls}>CAPA</span>
+                <div className="mt-1.5">
+                  <MediaUpload
+                    artistId={artistId}
+                    kind="song-cover"
+                    value={songForm.coverUrl}
+                    onChange={(url) => setSongForm((f) => ({ ...f, coverUrl: url }))}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className={labelCls} htmlFor="cm-song-rank">RANKING (TOP 10)</label>
+                  <input
+                    id="cm-song-rank"
+                    type="number"
+                    min={0}
+                    max={999}
+                    className={`mt-1.5 ${inputCls}`}
+                    value={songForm.rank}
+                    onChange={(e) => setSongForm((f) => ({ ...f, rank: Number(e.target.value) }))}
+                    placeholder="1"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className={labelCls} htmlFor="cm-song-dur">DURAÇÃO (SEG)</label>
+                  <input
+                    id="cm-song-dur"
+                    type="number"
+                    min={0}
+                    className={`mt-1.5 ${inputCls}`}
+                    value={songForm.durationSeconds}
+                    onChange={(e) => setSongForm((f) => ({ ...f, durationSeconds: Number(e.target.value) }))}
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSongForm((f) => ({ ...f, isNewRelease: !f.isNewRelease }))}
+                className={
+                  songForm.isNewRelease
+                    ? 'flex items-center gap-2 rounded-2xl bg-primary/15 px-4 py-3 text-[9px] font-black tracking-[0.15em] text-primary'
+                    : 'flex items-center gap-2 rounded-2xl border border-white/8 bg-background px-4 py-3 text-[9px] font-black tracking-[0.15em] text-muted-foreground'
+                }
+              >
+                <Rocket className="size-3.5" aria-hidden="true" />
+                {songForm.isNewRelease ? 'LANÇAMENTO EM DESTAQUE' : 'MARCAR COMO LANÇAMENTO'}
+              </button>
+              <div>
+                <span className={labelCls}>ACESSO</span>
+                <div className="mt-1.5">
+                  <TierPicker
+                    isExclusive={songForm.isExclusive}
+                    minTier={songForm.minTier}
+                    onChange={(excl, tier) => setSongForm((f) => ({ ...f, isExclusive: excl, minTier: tier }))}
+                  />
+                </div>
+                <p className="mt-2 text-[9px] font-bold text-muted-foreground">
+                  Público = segue a regra das 2 grátis. Exclusivo = só assinantes do tier escolhido tocam.
+                </p>
+              </div>
+              <button type="submit" disabled={isPending} className={btnPrimary}>
+                {isPending && <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />}
+                {editing === 'new' ? 'ADICIONAR MÚSICA' : 'SALVAR ALTERAÇÕES'}
+              </button>
+            </form>
+          )}
+
+          <ul className="mt-4 flex flex-col gap-2">
+            {songs.map((s, i) => (
+              <li key={s.id} className="flex items-center gap-3 rounded-2xl border border-white/8 bg-background/40 p-3.5">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/5 text-xs font-black tabular-nums text-muted-foreground">
+                  {s.rank || i + 1}
+                </span>
+                {s.cover_url ? (
+                  <Image
+                    src={s.cover_url || "/placeholder.svg"}
+                    alt=""
+                    width={44}
+                    height={44}
+                    className="size-11 shrink-0 rounded-lg object-cover"
+                  />
+                ) : (
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-white/5 text-muted-foreground">
+                    <Music className="size-4" aria-hidden="true" />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-1.5 truncate text-[11px] font-extrabold">
+                    {s.title}
+                    {s.is_new_release && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[7px] font-black tracking-[0.1em] text-primary">
+                        <Rocket className="size-2.5" aria-hidden="true" />
+                        NOVO
+                      </span>
+                    )}
+                  </p>
+                  <p className="mt-0.5 text-[8px] font-black tracking-[0.1em] text-muted-foreground">
+                    {s.is_exclusive && s.min_tier ? `${TIER_LABELS[s.min_tier].toUpperCase()}+` : 'PÚBLICO'}
+                    {' · '}
+                    {s.duration_seconds
+                      ? `${Math.floor(s.duration_seconds / 60)}:${String(s.duration_seconds % 60).padStart(2, '0')}`
+                      : '—'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label={`Editar ${s.title}`}
+                  className="flex size-8 items-center justify-center rounded-full border border-white/8 text-muted-foreground transition-colors hover:text-foreground"
+                  onClick={() => {
+                    setEditing(s.id)
+                    setSongForm({
+                      title: s.title,
+                      audioUrl: s.audio_url,
+                      coverUrl: s.cover_url ?? '',
+                      durationSeconds: s.duration_seconds,
+                      rank: s.rank,
+                      isNewRelease: s.is_new_release,
+                      isExclusive: s.is_exclusive,
+                      minTier: s.min_tier ?? 'gold',
+                    })
+                  }}
+                >
+                  <Pencil className="size-3.5" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Excluir ${s.title}`}
+                  disabled={isPending}
+                  className="flex size-8 items-center justify-center rounded-full border border-red-500/20 text-red-400 transition-colors hover:bg-red-500/10"
+                  onClick={() => confirmDelete(() => deleteSong(s.id, artistId))}
+                >
+                  <Trash2 className="size-3.5" aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+            {songs.length === 0 && (
+              <li className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-[10px] font-bold text-muted-foreground">
+                Nenhuma música cadastrada.
+              </li>
+            )}
+          </ul>
         </div>
       )}
 

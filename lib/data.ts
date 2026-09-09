@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Ad, Artist, Live, LiveMessage, Plan, Post, Show, Subscription, GalleryItem, Story, Tier, Video } from '@/lib/types'
+import type { Ad, Artist, Live, LiveMessage, Plan, Post, Show, Song, Subscription, GalleryItem, Story, Tier, Video } from '@/lib/types'
 import { TIER_ORDER } from '@/lib/types'
 
 export async function getArtists() {
@@ -84,6 +84,17 @@ export async function getArtistVideos(artistId: string) {
     .eq('artist_id', artistId)
     .order('views_count', { ascending: false })
   return (data ?? []) as Video[]
+}
+
+export async function getArtistSongs(artistId: string) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('songs')
+    .select('*')
+    .eq('artist_id', artistId)
+    .order('rank', { ascending: true })
+    .order('created_at', { ascending: false })
+  return (data ?? []) as Song[]
 }
 
 export async function getArtistLives(artistId: string) {
