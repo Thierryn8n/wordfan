@@ -76,6 +76,29 @@ const SOCIALS = [
   { key: 'site', label: 'SITE', icon: Globe },
 ]
 
+// Normaliza o valor salvo (handle "@nome" ou URL completa) em um link clicável real.
+function socialHref(key: string, raw: string): string {
+  const v = raw.trim()
+  if (/^https?:\/\//i.test(v)) return v
+  const handle = v.replace(/^@/, '')
+  switch (key) {
+    case 'instagram':
+      return `https://instagram.com/${handle}`
+    case 'tiktok':
+      return `https://tiktok.com/@${handle}`
+    case 'youtube':
+      return `https://youtube.com/@${handle}`
+    case 'spotify':
+      return `https://open.spotify.com/search/${encodeURIComponent(handle)}`
+    case 'facebook':
+      return `https://facebook.com/${handle}`
+    case 'site':
+      return `https://${handle}`
+    default:
+      return v
+  }
+}
+
 export default async function ArtistPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const artist = await getArtistBySlug(slug)
@@ -280,7 +303,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           {activeSocials.map(({ key, label, icon: Icon }) => (
             <a
               key={key}
-              href={artist.social_links[key]}
+              href={socialHref(key, artist.social_links[key])}
               target="_blank"
               rel="noopener noreferrer"
               className="surface elev-1 flex size-11 shrink-0 items-center justify-center rounded-2xl text-foreground/80 transition-colors hover:text-club"
