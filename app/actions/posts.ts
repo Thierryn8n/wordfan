@@ -9,6 +9,7 @@ export interface PostComment {
   user_id: string
   author_name: string
   author_avatar: string | null
+  badge_tier: string | null
 }
 
 // Curtir / descurtir. Exige login — retorna needAuth quando não há sessão,
@@ -79,6 +80,8 @@ export async function addPostComment(postId: string, content: string) {
     .eq('id', user.id)
     .maybeSingle()
 
+  const { data: badge } = await supabase.rpc('get_user_badge', { p_user_id: user.id })
+
   const comment: PostComment = {
     id: data.id,
     content: data.content,
@@ -86,6 +89,7 @@ export async function addPostComment(postId: string, content: string) {
     user_id: data.user_id,
     author_name: profile?.display_name ?? 'Fã',
     author_avatar: profile?.avatar_url ?? null,
+    badge_tier: (badge as string | null) ?? null,
   }
   return { comment }
 }

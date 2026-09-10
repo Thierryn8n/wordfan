@@ -8,7 +8,10 @@ import { Logo } from '@/components/wordfan/logo'
 import { HoloCrown } from '@/components/wordfan/holo-crown'
 import { SignOutButton } from './sign-out-button'
 import { TIER_LABELS } from '@/lib/types'
-import type { Profile, Subscription, Plan, Artist } from '@/lib/types'
+import { TierBadgeIcon } from '@/components/wordfan/tier-badge'
+import type { Profile, Subscription, Plan, Artist, Tier } from '@/lib/types'
+
+const TIER_RANK: Record<Tier, number> = { bronze: 1, silver: 2, gold: 3, platinum: 4 }
 
 export const metadata = { title: 'Perfil — WordFan' }
 
@@ -35,6 +38,12 @@ export default async function ProfilePage() {
   const leadStatuses = (leadsData ?? []) as { status: string }[]
   const isEnterprise = leadStatuses.some((l) => l.status === 'approved')
   const hasAnyLead = leadStatuses.length > 0
+  const bestTier = subscriptions.reduce<Tier | null>((best, s) => {
+    const t = s.plan?.tier
+    if (!t) return best
+    if (!best || TIER_RANK[t] > TIER_RANK[best]) return t
+    return best
+  }, null)
   const displayName = profile?.display_name ?? user.email?.split('@')[0] ?? 'Fã'
   const initials = displayName
     .split(' ')
@@ -85,6 +94,7 @@ export default async function ProfilePage() {
             </div>
             <p className="mt-3 flex items-center gap-2 truncate font-serif text-xl font-extrabold">
               {displayName}
+              <TierBadgeIcon tier={bestTier} size="md" />
               {isEnterprise && (
                 <span className="holo-text text-[9px] font-black tracking-[0.2em]">ENTERPRISE</span>
               )}

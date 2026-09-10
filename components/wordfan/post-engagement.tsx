@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Heart, MessageCircle, Share2, Check, Loader2, Send, Trash2 } from 'lucide-react'
+import { Heart, MessageCircle, Share2, Check, Loader2, Send, Trash2, ImageIcon } from 'lucide-react'
 import {
   togglePostLike,
   getPostComments,
@@ -11,6 +11,10 @@ import {
   deletePostComment,
   type PostComment,
 } from '@/app/actions/posts'
+import { TierBadgeIcon } from '@/components/wordfan/tier-badge'
+import { GifPicker } from '@/components/wordfan/gif-picker'
+
+const GIF_PREFIX = '[gif]'
 
 function formatCount(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -57,6 +61,7 @@ export function PostEngagement({
   const [draft, setDraft] = useState('')
   const [posting, setPosting] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [gifOpen, setGifOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const loginHref = `/auth/login?next=/artist/${artistSlug}`
@@ -110,6 +115,20 @@ export function PostEngagement({
       setComments((prev) => [...(prev ?? []), res.comment])
       setCommentCount((n) => n + 1)
       setDraft('')
+    }
+  }
+
+  async function sendGif(url: string) {
+    setGifOpen(false)
+    if (!isLoggedIn) return requireLogin()
+    if (posting) return
+    setPosting(true)
+    const res = await addPostComment(postId, `${GIF_PREFIX}${url}`)
+    setPosting(false)
+    if ('needAuth' in res && res.needAuth) return requireLogin()
+    if ('comment' in res && res.comment) {
+      setComments((prev) => [...(prev ?? []), res.comment])
+      setCommentCount((n) => n + 1)
     }
   }
 
@@ -224,13 +243,25 @@ export function PostEngagement({
                     className="size-8 shrink-0 rounded-full object-cover"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-extrabold tracking-wide">
-                      {c.author_name}
-                      <span className="ml-2 text-[9px] font-bold text-muted-foreground">
+                    <p className="flex items-center gap-1 text-[11px] font-extrabold tracking-wide">
+                      <span className="truncate">{c.author_name}</span>
+                      <TierBadgeIcon tier={c.badge_tier} />
+                      <span className="ml-1 text-[9px] font-bold text-muted-foreground">
                         {timeAgo(c.created_at)}
                       </span>
                     </p>
-                    <p className="mt-0.5 text-sm leading-relaxed text-foreground/90">{c.content}</p>
+                    {c.content.startsWith(GIF_PREFIX) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={c.content.slice(GIF_PREFIX.length) || '/placeholder.svg'}
+                        alt="GIF"
+                        className="mt-1.5 max-h-48 rounded-xl"
+                      />
+                    ) : (
+                      <p className="mt-0.5 text-sm leading-relaxed text-foreground/90">
+                        {c.content}
+                      </p>
+                    )}
                   </div>
                   {currentUserId === c.user_id && (
                     <button
@@ -252,6 +283,13 @@ export function PostEngagement({
             </p>
           )}
 
+          {/* Seletor de GIFs */}
+          {gifOpen && isLoggedIn && (
+            <div className="mt-4">
+              <GifPicker onSelect={sendGif} onClose={() => setGifOpen(false)} />
+            </div>
+          )}
+
           {/* Campo de novo comentário */}
           <form onSubmit={submitComment} className="mt-4 flex items-center gap-2">
             <input
@@ -268,6 +306,18 @@ export function PostEngagement({
               maxLength={500}
               className="h-11 flex-1 rounded-full border border-white/8 bg-background px-4 text-sm outline-none placeholder:text-muted-foreground focus:border-club"
             />
+            <button
+              type="button"
+              onClick={() => {
+                if (!isLoggedIn) return requireLogin()
+                setGifOpen((v) => !v)
+              }}
+              aria-label="Adicionar GIF"
+              aria-pressed={gifOpen}
+              className="flex size-11 shrink-0 items-center justify-center rounded-full border border-white/8 text-foreground transition-colors hover:bg-muted"
+            >
+              <ImageIcon className="size-4" aria-hidden="true" />
+            </button>
             <button
               type="submit"
               disabled={posting || !draft.trim()}
