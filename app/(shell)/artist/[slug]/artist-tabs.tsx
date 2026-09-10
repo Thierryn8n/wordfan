@@ -5,14 +5,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   BadgeCheck,
-  Bookmark,
   Clock,
   Gem,
   Heart,
   Lock,
   LogIn,
   MapPin,
-  MessageCircle,
   MoreHorizontal,
   Play,
   Star,
@@ -23,6 +21,7 @@ import {
 } from 'lucide-react'
 import type { Artist, GalleryItem, Post, Show, Video, ArtistAbout } from '@/lib/types'
 import { TIER_LABELS, VIDEO_CATEGORY_LABELS, formatPrice } from '@/lib/types'
+import { PostEngagement } from '@/components/wordfan/post-engagement'
 
 type TabKey = 'feed' | 'agenda' | 'galeria' | 'videos' | 'sobre' | 'fanclub'
 
@@ -34,12 +33,6 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'sobre', label: 'SOBRE' },
   { key: 'fanclub', label: 'FAN CLUB' },
 ]
-
-function formatFans(n: number) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-  return String(n)
-}
 
 function timeAgo(date: string) {
   const diff = Date.now() - new Date(date).getTime()
@@ -67,6 +60,9 @@ export function ArtistTabs({
   isSubscriber,
   isLoggedIn,
   cheapestPriceCents,
+  currentUserId,
+  likedPostIds,
+  commentCounts,
 }: {
   artist: Artist
   posts: (Post & { locked?: boolean })[]
@@ -76,7 +72,11 @@ export function ArtistTabs({
   isSubscriber: boolean
   isLoggedIn: boolean
   cheapestPriceCents: number | null
+  currentUserId: string | null
+  likedPostIds: string[]
+  commentCounts: Record<string, number>
 }) {
+  const likedSet = new Set(likedPostIds)
   const [tab, setTab] = useState<TabKey>('feed')
   const [videoFilter, setVideoFilter] = useState<Video['category'] | 'all'>('all')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -292,22 +292,20 @@ export function ArtistTabs({
                     </div>
                   )}
 
-                  <footer className="mt-4 flex items-center gap-6">
-                    <span className="flex items-center gap-2 text-sm font-bold">
-                      <Heart className="size-6 fill-club text-club" aria-hidden="true" />
-                      <span className="font-numeric">{formatFans(p.likes_count)}</span>
-                    </span>
-                    <span className="flex items-center gap-2 text-sm font-bold">
-                      <MessageCircle className="size-6" aria-hidden="true" />
-                      <span className="font-numeric">{Math.round(p.likes_count / 15)}</span>
-                    </span>
-                    <Bookmark className="ml-auto size-6" aria-hidden="true" />
-                  </footer>
                   {(p.content || p.title) && (
                     <p className="mt-3 text-sm leading-relaxed text-foreground/90">
                       {p.content ?? p.title}
                     </p>
                   )}
+                  <PostEngagement
+                    postId={p.id}
+                    artistSlug={artist.slug}
+                    initialLikes={p.likes_count}
+                    initialLiked={likedSet.has(p.id)}
+                    initialCommentCount={commentCounts[p.id] ?? 0}
+                    isLoggedIn={isLoggedIn}
+                    currentUserId={currentUserId}
+                  />
                 </article>
               ),
             )}

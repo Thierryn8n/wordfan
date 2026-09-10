@@ -45,6 +45,31 @@ export async function getArtistPosts(artistId: string) {
   ) as (Post & { locked?: boolean })[]
 }
 
+// Engajamento agregado do feed: contagem de comentários por post e quais
+// posts o usuário atual já curtiu. As policies de post_likes/post_comments
+// permitem SELECT público, então basta consultar direto.
+export async function getPostsEngagement(postIds: string[], userId: string | null) {
+  const commentCounts: Record<string, number> = {}
+  const likedPostIds: string[] = []
+  if (postIds.length === 0) return { commentCounts, likedPostIds }
+
+  const supabase = await createClient()
+  const [{ data: comments }, likedRes] = await Promise.all([
+    supabase.from('post_comments').select('post_id').in('post_id', postIds),
+    userId
+      ? supabase.from('post_likes').select('post_id').eq('user_id', userId).in('post_id', postIds)
+      : Promise.resolve({ data: [] as { post_id: string }[] }),
+  ])
+
+  for (const row of (comments ?? []) as { post_id: string }[]) {
+    commentCounts[row.post_id] = (commentCounts[row.post_id] ?? 0) + 1
+  }
+  for (const row of (likedRes.data ?? []) as { post_id: string }[]) {
+    likedPostIds.push(row.post_id)
+  }
+  return { commentCounts, likedPostIds }
+}
+
 export async function getArtistShows(artistId: string) {
   const supabase = await createClient()
   const { data } = await supabase

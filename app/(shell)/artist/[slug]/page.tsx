@@ -16,6 +16,7 @@ import {
 import {
   getArtistBySlug,
   getArtistPosts,
+  getPostsEngagement,
   getArtistShows,
   getArtistGallery,
   getArtistLives,
@@ -126,6 +127,10 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   const canManage = isLoggedIn && artist.owner_id === user!.id
   const cheapest = plans.length > 0 ? Math.min(...plans.map((p) => p.price_cents)) : null
   const activeSocials = SOCIALS.filter((s) => artist.social_links?.[s.key])
+
+  // Engajamento real do feed (curtidas do usuário + contagem de comentários).
+  const visiblePostIds = posts.filter((p) => !p.locked).map((p) => p.id)
+  const { commentCounts, likedPostIds } = await getPostsEngagement(visiblePostIds, user?.id ?? null)
 
   return (
     <ArtistThemeScope theme={artist.theme}>
@@ -325,6 +330,9 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         isSubscriber={Boolean(subscription)}
         isLoggedIn={isLoggedIn}
         cheapestPriceCents={cheapest}
+        currentUserId={user?.id ?? null}
+        likedPostIds={likedPostIds}
+        commentCounts={commentCounts}
       />
 
       {/* Player flutuante: LIVE ao vivo de verdade OU Top 10 com gating de assinatura */}
