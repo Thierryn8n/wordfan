@@ -1,5 +1,6 @@
 import 'server-only'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getSupabaseUrl } from '@/lib/supabase/env'
 
 /**
  * Indica se a service role key está configurada no ambiente. Use isto antes
@@ -17,7 +18,7 @@ export function isServiceRoleConfigured() {
  * já protegidas por verificação de admin.
  */
 export function createServiceClient() {
-  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!
+  const url = getSupabaseUrl()
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
   if (!serviceKey) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY não configurada.')
