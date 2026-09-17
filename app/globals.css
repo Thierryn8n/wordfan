@@ -494,6 +494,46 @@
     color: var(--primary);
   }
 
+  /* ===== Formulário e selects da Agenda ===== */
+  .agenda-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+  .agenda-label {
+    font-size: 0.625rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--artist-muted, #a1a1aa);
+  }
+  .agenda-input {
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--artist-bg, #0a0a0a);
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--artist-text, #fafafa);
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+  .agenda-input::placeholder {
+    color: color-mix(in srgb, var(--artist-muted, #a1a1aa) 70%, transparent);
+    font-weight: 500;
+  }
+  .agenda-input:focus {
+    outline: none;
+    border-color: var(--artist-primary, #6d28d9);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--artist-primary, #6d28d9) 22%, transparent);
+  }
+  .agenda-input option {
+    background-color: #0c0c0c;
+    color: #fafafa;
+  }
+
   /* ===== Holográfico (Enterprise) ===== */
   @keyframes holoShift {
     0% {

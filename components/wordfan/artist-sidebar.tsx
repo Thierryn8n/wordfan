@@ -7,6 +7,7 @@ import { useState } from 'react'
 import {
   BarChart3,
   Briefcase,
+  CalendarClock,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
@@ -51,7 +52,10 @@ const NAV_GROUPS = [
   },
   {
     title: 'Negócio',
-    items: [{ label: 'Financeiro', href: '/dashboard/financeiro', icon: Wallet }],
+    items: [
+      { label: 'Agenda', href: '/dashboard/agenda', icon: CalendarClock },
+      { label: 'Financeiro', href: '/dashboard/financeiro', icon: Wallet },
+    ],
   },
 ] as const
 

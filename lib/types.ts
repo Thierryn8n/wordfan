@@ -167,6 +167,21 @@ export interface Post {
   artist?: Artist
 }
 
+export type ShowStatus = 'scheduled' | 'done' | 'canceled'
+export type DealStatus = 'pendente' | 'confirmado' | 'revisao'
+
+export const SHOW_STATUS_LABELS: Record<ShowStatus, string> = {
+  scheduled: 'Agendado',
+  done: 'Realizado',
+  canceled: 'Cancelado',
+}
+
+export const DEAL_STATUS_LABELS: Record<DealStatus, string> = {
+  pendente: 'Pendente',
+  confirmado: 'Confirmado',
+  revisao: 'Em revisão',
+}
+
 export interface Show {
   id: string
   artist_id: string
@@ -175,7 +190,23 @@ export interface Show {
   city: string | null
   state: string | null
   starts_at: string
-  status: 'scheduled' | 'done' | 'canceled'
+  status: ShowStatus
+  /** Cachê do show, em reais. */
+  fee: number | null
+  /** Forma de pagamento (PIX, transferência, dinheiro, etc.). */
+  payment_method: string | null
+  /** Status do pagamento: pendente → confirmado → revisão. */
+  payment_status: DealStatus | null
+  /** Tipo de contrato (exclusividade, único, temporada, etc.). */
+  contract_type: string | null
+  /** Status do contrato: pendente → confirmado → revisão. */
+  contract_status: DealStatus | null
+  /** Observações contratuais livres. */
+  contract_notes: string | null
+  /** Endereço completo do local (usado no cálculo de rota). */
+  address: string | null
+  lat: number | null
+  lng: number | null
 }
 
 export interface Live {

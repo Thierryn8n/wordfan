@@ -56,6 +56,9 @@ importers:
       fabric:
         specifier: ^5.3.0
         version: 5.5.2
+      leaflet:
+        specifier: ^1.9.4
+        version: 1.9.4
       lucide-react:
         specifier: ^1.16.0
         version: 1.17.0(react@19.2.4)
@@ -105,6 +108,9 @@ importers:
       '@types/fabric':
         specifier: ^5.3.0
         version: 5.3.11
+      '@types/leaflet':
+        specifier: ^1.9.22
+        version: 1.9.22
       '@types/node':
         specifier: ^24
         version: 24.10.4
@@ -941,6 +947,12 @@ packages:
 
   '@types/fabric@5.3.11':
     resolution: {integrity: sha512-dvicyfS0rDW2KGnwXGz+t+ckMGZUtHzhp8XvaM99R1TsYVsIenf96PbEWCNMHknR6a3/lyYwh1APxxm+DqRkpw==}
+
+  '@types/geojson@7946.0.16':
+    resolution: {integrity: sha512-6C8nqWur3j98U6+lXDfTUWIfgvZU+EumvpHKcYjujKH7woYyLj2sUmff0tRhrqM7BohUw7Pz3ZB1jj2gW9Fvmg==}
+
+  '@types/leaflet@1.9.22':
+    resolution: {integrity: sha512-h3lhECYEKDasG7LFHu+GiHqAvsgLuQvlJvVZzJDGONo3sEL+wUOqSFLnwkZlK0qVxnxbuGFW8iBlJNYs5wgndA==}
 
   '@types/node@24.10.4':
     resolution: {integrity: sha512-vnDVpYPMzs4wunl27jHrfmwojOGKya0xyM3sH+UE5iv5uPS6vX7UIoh6m+vQc5LGBq52HBKPIn/zcSZVzeDEZg==}
@@ -1977,6 +1989,9 @@ packages:
   kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
+
+  leaflet@1.9.4:
+    resolution: {integrity: sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA==}
 
   lie@3.3.0:
     resolution: {integrity: sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==}
@@ -3879,6 +3894,12 @@ snapshots:
 
   '@types/fabric@5.3.11': {}
 
+  '@types/geojson@7946.0.16': {}
+
+  '@types/leaflet@1.9.22':
+    dependencies:
+      '@types/geojson': 7946.0.16
+
   '@types/node@24.10.4':
     dependencies:
       undici-types: 7.16.0
@@ -4876,6 +4897,8 @@ snapshots:
   kleur@3.0.3: {}
 
   kleur@4.1.5: {}
+
+  leaflet@1.9.4: {}
 
   lie@3.3.0:
     dependencies:
