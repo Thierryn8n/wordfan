@@ -25,7 +25,7 @@ import {
   Link2,
   UserCheck,
 } from 'lucide-react'
-import type { Artist } from '@/lib/types'
+import type { Artist, ArtistAbout } from '@/lib/types'
 import { resolveTheme } from '@/lib/artist-theme'
 import { createArtist, deleteArtist } from './actions'
 
@@ -146,12 +146,20 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
       <ul className="mt-4 flex flex-col gap-3">
         {filtered.map((a) => {
           const t = resolveTheme(a.theme)
+          const pending = Boolean((a.about as ArtistAbout | null)?.setup_pending)
+          const studioHref = pending
+            ? `/admin/studio?artist=${a.slug}&tab=profile`
+            : `/admin/studio?artist=${a.slug}`
           return (
             <li
               key={a.id}
-              className="flex flex-col gap-4 rounded-2xl border border-white/[0.065] bg-white/[0.02] p-4 transition-colors hover:border-primary/15 hover:bg-primary/[0.025] sm:flex-row sm:items-center"
+              className={`flex flex-col gap-4 rounded-2xl border p-4 transition-colors sm:flex-row sm:items-center ${
+                pending
+                  ? 'border-gold/35 bg-gold/[0.05] hover:border-gold/55 hover:bg-gold/[0.08]'
+                  : 'border-white/[0.065] bg-white/[0.02] hover:border-primary/15 hover:bg-primary/[0.025]'
+              }`}
             >
-              <Link href={`/admin/studio?artist=${a.slug}`} className="flex min-w-0 flex-1 items-center gap-4">
+              <Link href={studioHref} className="flex min-w-0 flex-1 items-center gap-4">
                 <span className="relative shrink-0">
                   <Image
                     src={a.avatar_url || '/placeholder.svg?height=64&width=64'}
@@ -176,6 +184,12 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
                       style={{ backgroundImage: `linear-gradient(135deg, ${t.gradient.from}, ${t.gradient.to})` }}
                       aria-label="Cor da identidade visual"
                     />
+                    {pending && (
+                      <span className="flex shrink-0 items-center gap-1 rounded-full bg-gold/20 px-2 py-0.5 text-[8px] font-black tracking-[0.14em] text-gold">
+                        <AlertTriangle className="size-2.5" aria-hidden="true" />
+                        CADASTRO PENDENTE
+                      </span>
+                    )}
                   </span>
                   <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-muted-foreground">
                     <span className="font-black tracking-[0.1em] uppercase" style={{ color: t.primary }}>
@@ -196,11 +210,15 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
 
               <div className="flex shrink-0 gap-2">
                 <Link
-                  href={`/admin/studio?artist=${a.slug}`}
-                  className="flex items-center gap-2 rounded-full bg-gold/15 px-4 py-2.5 text-[9px] font-black tracking-[0.15em] text-gold transition-colors hover:bg-gold/25"
+                  href={studioHref}
+                  className={`flex items-center gap-2 rounded-full px-4 py-2.5 text-[9px] font-black tracking-[0.15em] transition-colors ${
+                    pending
+                      ? 'gradient-brand text-white'
+                      : 'bg-gold/15 text-gold hover:bg-gold/25'
+                  }`}
                 >
-                  <Palette className="size-3.5" aria-hidden="true" />
-                  EDITAR
+                  {pending ? <PencilLine className="size-3.5" aria-hidden="true" /> : <Palette className="size-3.5" aria-hidden="true" />}
+                  {pending ? 'FINALIZAR' : 'EDITAR'}
                 </Link>
                 <Link
                   href={`/artist/${a.slug}`}
