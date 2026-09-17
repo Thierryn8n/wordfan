@@ -170,59 +170,99 @@ export default async function PlansPage({ params }: { params: Promise<{ slug: st
           <CompactCard key={p.id} plan={p} />
         ))}
 
-        {/* Comparativo de benefícios entre os planos */}
-        {plans.length > 1 && (
-          <section
-            aria-labelledby="compare-heading"
-            className="rounded-[32px] border border-white/8 bg-card p-6"
-          >
-            <h2 id="compare-heading" className="font-serif text-lg font-extrabold tracking-tight">
-              COMPARE OS BENEFÍCIOS
-            </h2>
-            <div className="mt-5 overflow-x-auto">
-              <table className="w-full min-w-[420px] border-collapse text-left">
-                <thead>
-                  <tr>
-                    <th scope="col" className="pb-3 pr-2" />
-                    {plans.map((p) => (
-                      <th
-                        key={p.id}
-                        scope="col"
-                        className={`pb-3 text-center text-[10px] font-black tracking-[0.1em] ${tierColor[p.tier]}`}
-                      >
-                        {p.name.toUpperCase()}
-                      </th>
+        {/* Comparativo de benefícios entre os planos (cumulativo, mobile-first) */}
+        {plans.length > 1 &&
+          (() => {
+            const rank: Record<string, number> = { bronze: 1, silver: 2, gold: 3, platinum: 4 }
+            const ordered = [...plans].sort(
+              (a, b) => (rank[a.tier] ?? 99) - (rank[b.tier] ?? 99),
+            )
+            // Linhas "Tudo do X" são redundantes num comparativo cumulativo
+            const isMeta = (b: string) => /^tudo d[oa]\b/i.test(b.trim())
+            // Um plano marca o benefício se ele estiver nele OU em qualquer tier inferior
+            const has = (planTier: string, benefit: string) =>
+              ordered.some(
+                (p) =>
+                  (rank[p.tier] ?? 99) <= (rank[planTier] ?? 99) &&
+                  p.benefits.includes(benefit),
+              )
+            // Benefícios únicos, do tier mais baixo ao mais alto (efeito escada)
+            const rows: string[] = []
+            for (const p of ordered) {
+              for (const b of p.benefits) {
+                if (!isMeta(b) && !rows.includes(b)) rows.push(b)
+              }
+            }
+            return (
+              <section
+                aria-labelledby="compare-heading"
+                className="rounded-[32px] border border-white/8 bg-card p-6"
+              >
+                <h2
+                  id="compare-heading"
+                  className="font-serif text-lg font-extrabold tracking-tight"
+                >
+                  COMPARE OS BENEFÍCIOS
+                </h2>
+                <p className="mt-1 text-[10px] font-bold tracking-wide text-muted-foreground">
+                  Cada plano inclui tudo do anterior
+                </p>
+                <table className="mt-5 w-full table-fixed border-collapse">
+                  <colgroup>
+                    <col />
+                    {ordered.map((p) => (
+                      <col key={p.id} className="w-[3.25rem]" />
                     ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.from(new Set(plans.flatMap((p) => p.benefits))).map((benefit, i) => (
-                    <tr key={benefit} className={i % 2 === 0 ? 'bg-white/[0.02]' : undefined}>
-                      <th
-                        scope="row"
-                        className="py-3 pr-2 text-left text-xs font-bold text-foreground/90"
-                      >
-                        {benefit}
-                      </th>
-                      {plans.map((p) => (
-                        <td key={p.id} className="py-3 text-center">
-                          {p.benefits.includes(benefit) ? (
-                            <Check className="mx-auto size-4 text-club" aria-hidden="true" />
-                          ) : (
-                            <span
-                              className="mx-auto block size-1 rounded-full bg-white/15"
-                              aria-hidden="true"
-                            />
-                          )}
-                        </td>
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th scope="col" className="pb-3" />
+                      {ordered.map((p) => (
+                        <th
+                          key={p.id}
+                          scope="col"
+                          className={`pb-3 text-center align-bottom text-[9px] font-black leading-tight tracking-[0.04em] ${tierColor[p.tier]}`}
+                        >
+                          {p.name
+                            .toUpperCase()
+                            .split(' ')
+                            .map((w, idx) => (
+                              <span key={idx} className="block">
+                                {w}
+                              </span>
+                            ))}
+                        </th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
+                  </thead>
+                  <tbody>
+                    {rows.map((benefit, i) => (
+                      <tr key={benefit} className={i % 2 === 0 ? 'bg-white/[0.02]' : undefined}>
+                        <th
+                          scope="row"
+                          className="py-3 pr-2 text-left text-[11px] font-bold leading-tight text-pretty text-foreground/90"
+                        >
+                          {benefit}
+                        </th>
+                        {ordered.map((p) => (
+                          <td key={p.id} className="py-3 text-center">
+                            {has(p.tier, benefit) ? (
+                              <Check className="mx-auto size-4 text-club" aria-hidden="true" />
+                            ) : (
+                              <span
+                                className="mx-auto block size-1 rounded-full bg-white/15"
+                                aria-hidden="true"
+                              />
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </section>
+            )
+          })()}
 
         {/* Plano Enterprise — global, gerido pelo admin, aparece em todos os artistas */}
         {enterprise.active && (
