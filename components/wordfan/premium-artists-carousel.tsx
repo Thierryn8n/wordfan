@@ -105,8 +105,8 @@ export function PremiumArtistsCarousel({
         {/* Carousel Container */}
         <div
           ref={scrollContainerRef}
-          className="scrollbar-none flex gap-4 overflow-x-auto scroll-smooth"
-          style={{ scrollBehavior: 'smooth' }}
+          className="scrollbar-none flex gap-4 overflow-x-auto scroll-smooth rounded-[32px] px-1 py-1"
+          style={{ scrollBehavior: 'smooth', scrollPaddingLeft: '4px' }}
         >
           {artists.map((a) => {
             const t = resolveTheme(a.theme)
