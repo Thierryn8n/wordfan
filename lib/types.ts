@@ -203,6 +203,8 @@ export interface Show {
   contract_status: DealStatus | null
   /** Observações contratuais livres. */
   contract_notes: string | null
+  /** CEP do local (autofill de endereço via ViaCEP). */
+  cep: string | null
   /** Endereço completo do local (usado no cálculo de rota). */
   address: string | null
   lat: number | null

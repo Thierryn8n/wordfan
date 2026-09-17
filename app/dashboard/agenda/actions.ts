@@ -55,6 +55,7 @@ export async function saveShow(formData: FormData): Promise<ShowFormResult> {
     venue: str(formData.get('venue')),
     city: str(formData.get('city')),
     state: str(formData.get('state')),
+    cep: str(formData.get('cep')),
     address: str(formData.get('address')),
     starts_at: startsAt.toISOString(),
     status: showStatus(formData.get('status')),

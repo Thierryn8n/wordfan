@@ -30,6 +30,7 @@ import {
   X,
 } from 'lucide-react'
 import { saveShow, deleteShow } from '@/app/dashboard/agenda/actions'
+import { ShowAddressFields } from '@/components/wordfan/show-address-fields'
 import {
   DEAL_STATUS_LABELS,
   SHOW_STATUS_LABELS,
@@ -70,10 +71,13 @@ const SHOW_STATUS_CLS: Record<ShowStatus, string> = {
   canceled: 'bg-red-500/15 text-red-400',
 }
 
-function locationText(s: Show) {
-  if (s.address) return s.address
-  return [s.venue, s.city, s.state].filter(Boolean).join(', ')
-}
+  function locationText(s: Show) {
+    // Junta endereço + cidade + UF para o Google sempre conseguir geocodificar
+    // (endereço isolado como "Rua, 7" não é roteável).
+    const parts = [s.address, s.city, s.state].filter(Boolean)
+    if (parts.length) return parts.join(', ')
+    return [s.venue, s.city, s.state].filter(Boolean).join(', ')
+  }
 
 function money(v: number | null) {
   if (v == null) return '—'
@@ -722,31 +726,8 @@ li{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #eee;font-size:13
                 </label>
               </div>
 
-              <label className="agenda-field">
-                <span className="agenda-label">Local / casa de show</span>
-                <input name="venue" defaultValue={editing?.venue ?? ''} className="agenda-input" placeholder="Ex.: Pátio do Forró" />
-              </label>
+              <ShowAddressFields editing={editing} />
 
-              <div className="grid gap-3.5 sm:grid-cols-2">
-                <label className="agenda-field">
-                  <span className="agenda-label">Cidade</span>
-                  <input name="city" defaultValue={editing?.city ?? ''} className="agenda-input" />
-                </label>
-                <label className="agenda-field">
-                  <span className="agenda-label">Estado (UF)</span>
-                  <input name="state" defaultValue={editing?.state ?? ''} maxLength={2} className="agenda-input" placeholder="PE" />
-                </label>
-              </div>
-
-              <label className="agenda-field">
-                <span className="agenda-label">Endereço completo (para rota)</span>
-                <input
-                  name="address"
-                  defaultValue={editing?.address ?? ''}
-                  className="agenda-input"
-                  placeholder="Rua, número, bairro, cidade — UF"
-                />
-              </label>
 
               <div className="my-1 border-t border-white/8 pt-1">
                 <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--artist-primary)]">
