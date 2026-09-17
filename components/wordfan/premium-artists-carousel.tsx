@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { BadgeCheck } from 'lucide-react'
@@ -17,78 +16,26 @@ export interface PremiumArtist {
 
 interface PremiumArtistsCarouselProps {
   artists: PremiumArtist[]
-  autoScrollInterval?: number
+  /** Segundos para uma volta completa da faixa. Menor = mais rápido. */
+  speedSeconds?: number
 }
 
 export function PremiumArtistsCarousel({
   artists,
-  autoScrollInterval = 5000,
+  speedSeconds = 30,
 }: PremiumArtistsCarouselProps) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const autoScrollTimerRef = useRef<NodeJS.Timeout | null>(null)
-
   const formatFans = (n: number) => {
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
     if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
     return String(n)
   }
 
-  const scrollToIndex = (index: number) => {
-    if (scrollContainerRef.current && artists.length > 0) {
-      const container = scrollContainerRef.current
-      const cardWidth = 290 + 16 // card width + gap
-      const scrollPosition = index * cardWidth
-      
-      container.scrollTo({
-        left: scrollPosition,
-        behavior: 'smooth',
-      })
-      setCurrentIndex(index)
-    }
-  }
-
-  const handleNext = () => {
-    const nextIndex = (currentIndex + 1) % artists.length
-    scrollToIndex(nextIndex)
-    resetAutoScroll()
-  }
-
-  const handlePrev = () => {
-    const prevIndex = currentIndex === 0 ? artists.length - 1 : currentIndex - 1
-    scrollToIndex(prevIndex)
-    resetAutoScroll()
-  }
-
-  const resetAutoScroll = () => {
-    if (autoScrollTimerRef.current) {
-      clearTimeout(autoScrollTimerRef.current)
-    }
-    
-    autoScrollTimerRef.current = setTimeout(() => {
-      handleNext()
-    }, autoScrollInterval)
-  }
-
-  useEffect(() => {
-    if (artists.length === 0) return
-
-    scrollToIndex(0)
-    
-    autoScrollTimerRef.current = setTimeout(() => {
-      handleNext()
-    }, autoScrollInterval)
-
-    return () => {
-      if (autoScrollTimerRef.current) {
-        clearTimeout(autoScrollTimerRef.current)
-      }
-    }
-  }, [artists.length])
-
   if (artists.length === 0) {
     return null
   }
+
+  // Duplicamos a lista para o loop contínuo (marquee) parecer infinito.
+  const loop = [...artists, ...artists]
 
   return (
     <section aria-labelledby="destaque" className="mt-10">
@@ -101,19 +48,20 @@ export function PremiumArtistsCarousel({
         </Link>
       </div>
 
-      <div className="relative mt-5">
-        {/* Carousel Container */}
+      <div className="marquee relative mt-5 overflow-hidden rounded-[32px] py-1">
+        {/* Máscara suave nas laterais para reforçar a sensação de infinito */}
         <div
-          ref={scrollContainerRef}
-          className="scrollbar-none flex gap-4 overflow-x-auto scroll-smooth rounded-[32px] px-1 py-1"
-          style={{ scrollBehavior: 'smooth', scrollPaddingLeft: '4px' }}
+          className="marquee-track flex w-max gap-4"
+          style={{ animationDuration: `${speedSeconds}s` }}
         >
-          {artists.map((a) => {
+          {loop.map((a, i) => {
             const t = resolveTheme(a.theme)
             return (
               <Link
-                key={a.id}
+                key={`${a.id}-${i}`}
                 href={`/artist/${a.slug}`}
+                aria-hidden={i >= artists.length ? true : undefined}
+                tabIndex={i >= artists.length ? -1 : undefined}
                 className="elev-2 relative w-[290px] shrink-0 overflow-hidden rounded-[32px] border transition-transform duration-300 hover:scale-105"
                 style={{ borderColor: `color-mix(in srgb, ${t.primary} 40%, transparent)` }}
               >
@@ -144,70 +92,34 @@ export function PremiumArtistsCarousel({
             )
           })}
         </div>
-
-        {/* Navigation Buttons */}
-        {artists.length > 1 && (
-          <div className="mt-5 flex items-center justify-between px-4">
-            <button
-              onClick={handlePrev}
-              aria-label="Artista anterior"
-              className="surface elev-1 flex size-10 items-center justify-center rounded-full transition-colors hover:bg-white/10"
-            >
-              <svg
-                className="size-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-
-            {/* Dots Indicator */}
-            <div className="flex gap-2">
-              {artists.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => scrollToIndex(index)}
-                  aria-label={`Ir para artista ${index + 1}`}
-                  className={`h-2 rounded-full transition-all ${
-                    index === currentIndex
-                      ? 'w-8 bg-brand'
-                      : 'w-2 bg-white/20 hover:bg-white/40'
-                  }`}
-                />
-              ))}
-            </div>
-
-            <button
-              onClick={handleNext}
-              aria-label="Próximo artista"
-              className="surface elev-1 flex size-10 items-center justify-center rounded-full transition-colors hover:bg-white/10"
-            >
-              <svg
-                className="size-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          </div>
-        )}
       </div>
+
+      <style jsx>{`
+        .marquee-track {
+          animation-name: marquee-scroll;
+          animation-timing-function: linear;
+          animation-iteration-count: infinite;
+          will-change: transform;
+        }
+        /* Metade da faixa é uma cópia; deslocar -50% cria o loop perfeito */
+        @keyframes marquee-scroll {
+          from {
+            transform: translateX(0);
+          }
+          to {
+            transform: translateX(-50%);
+          }
+        }
+        /* Pausa ao passar o mouse para o usuário conseguir clicar */
+        .marquee:hover .marquee-track {
+          animation-play-state: paused;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .marquee-track {
+            animation: none;
+          }
+        }
+      `}</style>
     </section>
   )
 }
