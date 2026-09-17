@@ -5,6 +5,22 @@ export const runtime = 'nodejs'
 interface DirectionsBody {
   originText?: string
   destinationText?: string
+  originLat?: number | null
+  originLng?: number | null
+  destinationLat?: number | null
+  destinationLng?: number | null
+}
+
+/** Prefer coordenadas (sempre roteáveis); cai para o endereço em texto. */
+function waypoint(
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+  address: string,
+) {
+  if (typeof lat === 'number' && typeof lng === 'number' && (lat !== 0 || lng !== 0)) {
+    return { location: { latLng: { latitude: lat, longitude: lng } } }
+  }
+  return { address }
 }
 
 function metersToText(m: number) {
@@ -65,8 +81,8 @@ export async function POST(req: Request) {
         'X-Goog-FieldMask': fieldMask,
       },
       body: JSON.stringify({
-        origin: { address: origin },
-        destination: { address: destination },
+        origin: waypoint(body.originLat, body.originLng, origin),
+        destination: waypoint(body.destinationLat, body.destinationLng, destination),
         travelMode: 'DRIVE',
         routingPreference: 'TRAFFIC_AWARE',
         languageCode: 'pt-BR',
@@ -88,7 +104,10 @@ export async function POST(req: Request) {
   const route = data.routes?.[0]
   if (!route) {
     return NextResponse.json(
-      { error: 'Nenhuma rota encontrada entre esses endereços.' },
+      {
+        error:
+          'Não foi possível traçar a rota. Verifique se os dois shows têm o endereço completo preenchido (rua, cidade e estado) ou coordenadas no mapa.',
+      },
       { status: 422 },
     )
   }

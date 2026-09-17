@@ -200,6 +200,10 @@ export function AgendaClient({ shows }: AgendaClientProps) {
         body: JSON.stringify({
           originText: locationText(originShow),
           destinationText: locationText(destinationShow),
+          originLat: originShow.lat,
+          originLng: originShow.lng,
+          destinationLat: destinationShow.lat,
+          destinationLng: destinationShow.lng,
         }),
       })
       const data = await res.json()
