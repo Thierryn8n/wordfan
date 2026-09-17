@@ -31,7 +31,10 @@ export default async function HomePage() {
     getActiveAds('home_inline'),
   ])
 
-  const featured = artists.filter((a) => a.is_featured)
+  // Carrossel "EM DESTAQUE" mostra os artistas premium (tool_plan === 'premium'),
+  // com fallback para os marcados como destaque caso nenhum premium exista.
+  const premiumArtists = artists.filter((a) => a.tool_plan === 'premium')
+  const featured = premiumArtists.length > 0 ? premiumArtists : artists.filter((a) => a.is_featured)
   const top = [...artists].sort((a, b) => b.followers_count - a.followers_count).slice(0, 5)
   // Gêneros derivados dos artistas cadastrados — nada hardcoded.
   const genres = Array.from(new Set(artists.map((a) => a.genre).filter(Boolean) as string[]))
