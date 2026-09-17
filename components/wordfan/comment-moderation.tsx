@@ -12,6 +12,7 @@ export interface ModerationComment {
   createdAt: string
   postTitle: string
   authorName: string
+  authorHandle: string | null
   authorAvatar: string | null
 }
 
@@ -84,6 +85,11 @@ export function CommentModeration({
               <span className="text-[11px] font-black text-[var(--artist-text)]">
                 {c.authorName}
               </span>
+              {c.authorHandle && (
+                <span className="text-[10px] font-bold text-[var(--artist-primary)]">
+                  {c.authorHandle}
+                </span>
+              )}
               <span className="text-[9px] font-bold text-[var(--artist-muted)]">
                 {timeAgo(c.createdAt)}
               </span>

@@ -51,7 +51,20 @@ export default async function LivePage({ params }: { params: Promise<{ slug: str
 
   // Histórico do chat só é carregado para quem tem acesso e quando está no ar.
   const initialMessages = hasAccess && isLive ? await getLiveMessages(live.id) : []
-  const displayName = (user.user_metadata?.display_name as string | undefined)?.trim() || 'Você'
+
+  // Identidade nas interações: prioriza o @username do perfil.
+  const chatSupabase = await createClient()
+  const { data: chatProfile } = await chatSupabase
+    .from('profiles')
+    .select('username, display_name')
+    .eq('id', user.id)
+    .maybeSingle()
+  const handle = (chatProfile?.username as string | undefined)?.trim()
+  const displayName = handle
+    ? `@${handle}`
+    : (chatProfile?.display_name as string | undefined)?.trim() ||
+      (user.user_metadata?.display_name as string | undefined)?.trim() ||
+      'Você'
 
   return (
     <ArtistThemeScope theme={artist.theme}>

@@ -547,9 +547,19 @@ export async function sendLiveMessage(input: { liveId: string; body: string }) {
     }
   }
 
-  const author =
-    (user.user_metadata?.display_name as string | undefined)?.trim() ||
-    (user.email?.split('@')[0] ?? 'Fã')
+  // Identidade nas interações: sempre o @username do perfil quando existir.
+  const { data: authorProfile } = await supabase
+    .from('profiles')
+    .select('username, display_name')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const handle = (authorProfile?.username as string | undefined)?.trim()
+  const author = handle
+    ? `@${handle}`
+    : (authorProfile?.display_name as string | undefined)?.trim() ||
+      (user.user_metadata?.display_name as string | undefined)?.trim() ||
+      (user.email?.split('@')[0] ?? 'Fã')
 
   const { error: dbError } = await supabase.from('live_messages').insert({
     live_id: input.liveId,

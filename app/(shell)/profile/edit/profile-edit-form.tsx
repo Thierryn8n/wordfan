@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -10,26 +10,35 @@ import {
   Check,
   AlertTriangle,
   Trash2,
-  User as UserIcon,
+  Upload,
 } from 'lucide-react'
 import { updateProfile, deleteMyAccount } from '@/app/actions/profile'
 
 export function ProfileEditForm({
   email,
   initialName,
+  initialUsername,
   initialAvatar,
 }: {
   email: string
   initialName: string
+  initialUsername: string
   initialAvatar: string
 }) {
   const router = useRouter()
   const [name, setName] = useState(initialName)
+  const [username, setUsername] = useState(initialUsername)
   const [avatar, setAvatar] = useState(initialAvatar)
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const usernameValid = /^[a-zA-Z0-9_.]{3,20}$/.test(username)
+  const shownAvatar = preview || avatar
 
   const initials =
     (name || email.split('@')[0] || 'F')
@@ -39,15 +48,42 @@ export function ProfileEditForm({
       .join('')
       .toUpperCase() || 'F'
 
+  function pickFile(f: File | null) {
+    if (!f) return
+    if (!f.type.startsWith('image/')) {
+      setError('Envie um arquivo de imagem válido.')
+      return
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      setError('A imagem deve ter no máximo 5 MB.')
+      return
+    }
+    setError(null)
+    setFile(f)
+    setPreview(URL.createObjectURL(f))
+  }
+
   function handleSave() {
     setError(null)
     setSaved(false)
+    if (!usernameValid) {
+      setError('Escolha um nome de usuário: 3 a 20 caracteres (letras, números, ponto ou _).')
+      return
+    }
+    const fd = new FormData()
+    fd.set('display_name', name)
+    fd.set('username', username)
+    fd.set('avatar_url', avatar)
+    if (file) fd.set('avatar', file)
     startTransition(async () => {
-      const res = await updateProfile({ displayName: name, avatarUrl: avatar })
+      const res = await updateProfile(fd)
       if (res.error) {
         setError(res.error)
         return
       }
+      if (res.avatarUrl) setAvatar(res.avatarUrl)
+      setFile(null)
+      setPreview(null)
       setSaved(true)
       router.refresh()
       setTimeout(() => setSaved(false), 2500)
@@ -84,15 +120,21 @@ export function ProfileEditForm({
       </header>
 
       <main className="mt-8 px-6">
-        {/* Avatar preview */}
+        {/* Avatar + upload do dispositivo */}
         <div className="flex flex-col items-center">
-          <div className="relative">
-            {avatar ? (
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="group relative"
+            aria-label="Enviar foto de perfil"
+          >
+            {shownAvatar ? (
               <Image
-                src={avatar || '/placeholder.svg'}
+                src={shownAvatar || '/placeholder.svg'}
                 alt="Pré-visualização do avatar"
                 width={96}
                 height={96}
+                unoptimized
                 className="size-24 rounded-[28px] border border-white/10 object-cover"
               />
             ) : (
@@ -100,12 +142,53 @@ export function ProfileEditForm({
                 {initials}
               </span>
             )}
-          </div>
+            <span className="absolute -bottom-1 -right-1 flex size-8 items-center justify-center rounded-xl bg-brand text-white shadow-lg transition-transform group-active:scale-90">
+              <Upload className="size-4" aria-hidden="true" />
+            </span>
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
+          />
           <p className="mt-3 text-xs font-bold text-muted-foreground">{email}</p>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="mt-1 text-[11px] font-black tracking-[0.15em] text-brand"
+          >
+            ENVIAR FOTO DO DISPOSITIVO
+          </button>
         </div>
 
         {/* Campos */}
         <div className="mt-8 flex flex-col gap-5">
+          <label className="block">
+            <span className="mb-1.5 block text-[10px] font-black tracking-[0.2em] text-muted-foreground">
+              NOME DE USUÁRIO <span className="text-brand">*</span>
+            </span>
+            <div className="ad-input flex items-center gap-1 !py-0">
+              <span className="text-sm font-bold text-muted-foreground">@</span>
+              <input
+                value={username}
+                onChange={(e) =>
+                  setUsername(e.target.value.replace(/[^a-zA-Z0-9_.]/g, '').toLowerCase())
+                }
+                maxLength={20}
+                className="w-full bg-transparent py-3 outline-none"
+                placeholder="seu_usuario"
+                aria-invalid={username.length > 0 && !usernameValid}
+              />
+            </div>
+            <span className="mt-1.5 block text-[10px] font-medium text-zinc-600">
+              {username.length > 0 && !usernameValid
+                ? 'De 3 a 20 caracteres: letras, números, ponto ou _.'
+                : 'Este @ identifica você em chats, comentários e interações.'}
+            </span>
+          </label>
+
           <label className="block">
             <span className="mb-1.5 block text-[10px] font-black tracking-[0.2em] text-muted-foreground">
               NOME DE EXIBIÇÃO
@@ -117,22 +200,6 @@ export function ProfileEditForm({
               className="ad-input"
               placeholder="Como você quer ser chamado"
             />
-          </label>
-
-          <label className="block">
-            <span className="mb-1.5 block text-[10px] font-black tracking-[0.2em] text-muted-foreground">
-              URL DO AVATAR
-            </span>
-            <input
-              value={avatar}
-              onChange={(e) => setAvatar(e.target.value)}
-              className="ad-input"
-              placeholder="https://... (opcional)"
-            />
-            <span className="mt-1.5 flex items-center gap-1 text-[10px] font-medium text-zinc-600">
-              <UserIcon className="size-2.5" aria-hidden="true" />
-              Cole o link de uma imagem para usar como foto.
-            </span>
           </label>
         </div>
 
@@ -146,7 +213,7 @@ export function ProfileEditForm({
         <button
           type="button"
           onClick={handleSave}
-          disabled={isPending}
+          disabled={isPending || !usernameValid}
           className="gradient-brand elev-1 mt-7 flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-[11px] font-black tracking-[0.2em] text-white transition-transform active:scale-[0.98] disabled:opacity-60"
         >
           {isPending ? (

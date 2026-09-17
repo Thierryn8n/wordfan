@@ -25,6 +25,7 @@ export default async function ProfileEditPage() {
       <ProfileEditForm
         email={user.email ?? ''}
         initialName={profile?.display_name ?? ''}
+        initialUsername={profile?.username ?? ''}
         initialAvatar={profile?.avatar_url ?? ''}
       />
     </div>

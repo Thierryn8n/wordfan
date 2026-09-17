@@ -20,6 +20,9 @@ export function OnboardingModal({ initialName }: { initialName?: string }) {
   const [preview, setPreview] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // @username é obrigatório (padrão Instagram) e é a identidade em toda interação.
+  const usernameValid = /^[a-zA-Z0-9_.]{3,20}$/.test(username)
+
   if (!open) return null
 
   function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -35,6 +38,10 @@ export function OnboardingModal({ initialName }: { initialName?: string }) {
 
   function submit() {
     setError(null)
+    if (!usernameValid) {
+      setError('Escolha um nome de usuário: 3 a 20 caracteres (letras, números, ponto ou _).')
+      return
+    }
     const fd = new FormData()
     fd.set('username', username)
     fd.set('display_name', displayName)
@@ -106,18 +113,24 @@ export function OnboardingModal({ initialName }: { initialName?: string }) {
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
             <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/50">
-              Nome de usuário
+              Nome de usuário <span className="text-[var(--brand,#ff5a1f)]">*</span>
             </span>
             <div className="flex items-center rounded-xl border border-white/10 bg-white/5 px-3 focus-within:border-[var(--brand,#ff5a1f)]">
               <span className="text-sm font-bold text-white/40">@</span>
               <input
                 value={username}
-                onChange={(e) => setUsername(e.target.value.replace(/\s/g, ''))}
+                onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_.]/g, '').toLowerCase())}
                 maxLength={20}
                 className="w-full bg-transparent px-1 py-2.5 text-sm font-semibold text-white outline-none placeholder:text-white/30"
                 placeholder="seu_usuario"
+                aria-invalid={username.length > 0 && !usernameValid}
               />
             </div>
+            <span className="text-[10px] font-semibold text-white/40">
+              {username.length > 0 && !usernameValid
+                ? 'De 3 a 20 caracteres: letras, números, ponto ou _.'
+                : 'Este @ vai identificar você em chats, comentários e interações.'}
+            </span>
           </label>
 
           <label className="flex flex-col gap-1">
@@ -142,7 +155,7 @@ export function OnboardingModal({ initialName }: { initialName?: string }) {
           <button
             type="button"
             onClick={submit}
-            disabled={pending}
+            disabled={pending || !usernameValid}
             className="flex items-center justify-center gap-2 rounded-xl bg-[var(--brand,#ff5a1f)] px-4 py-3 text-sm font-black text-white transition hover:brightness-110 disabled:opacity-60"
           >
             {pending && <Loader2 className="h-4 w-4 animate-spin" />}

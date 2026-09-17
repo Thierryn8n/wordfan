@@ -37,14 +37,15 @@ export async function completeOnboarding(formData: FormData): Promise<Onboarding
   } = await supabase.auth.getUser()
   if (!user) return { ok: false, error: 'Sessão expirada. Faça login novamente.' }
 
-  const username = (formData.get('username') ?? '').toString().trim()
+  const username = (formData.get('username') ?? '').toString().trim().toLowerCase()
   const displayName = (formData.get('display_name') ?? '').toString().trim() || username
   const file = formData.get('avatar')
 
-  if (username && !/^[a-zA-Z0-9_.]{3,20}$/.test(username)) {
+  // @username é obrigatório: é a identidade do usuário em toda interação.
+  if (!username || !/^[a-zA-Z0-9_.]{3,20}$/.test(username)) {
     return {
       ok: false,
-      error: 'Nome de usuário: 3 a 20 caracteres, apenas letras, números, ponto e underline.',
+      error: 'Escolha um nome de usuário: 3 a 20 caracteres, apenas letras, números, ponto e underline.',
     }
   }
 

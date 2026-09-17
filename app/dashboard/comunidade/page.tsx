@@ -70,14 +70,23 @@ export default async function ComunidadePage() {
 
     // Busca os perfis dos autores em uma segunda consulta
     const userIds = [...new Set(rows.map((r) => r.user_id))]
-    const profileMap = new Map<string, { name: string; avatar: string | null }>()
+    const profileMap = new Map<string, { name: string; handle: string | null; avatar: string | null }>()
     if (userIds.length > 0) {
       const { data: profs } = await supabase
         .from('profiles')
-        .select('id, display_name, avatar_url')
+        .select('id, display_name, username, avatar_url')
         .in('id', userIds)
-      for (const p of (profs ?? []) as { id: string; display_name: string | null; avatar_url: string | null }[]) {
-        profileMap.set(p.id, { name: p.display_name ?? 'Fã', avatar: p.avatar_url })
+      for (const p of (profs ?? []) as {
+        id: string
+        display_name: string | null
+        username: string | null
+        avatar_url: string | null
+      }[]) {
+        profileMap.set(p.id, {
+          name: p.display_name ?? p.username ?? 'Fã',
+          handle: p.username ? `@${p.username}` : null,
+          avatar: p.avatar_url,
+        })
       }
     }
 
@@ -87,6 +96,7 @@ export default async function ComunidadePage() {
       createdAt: r.created_at,
       postTitle: postMap.get(r.post_id) ?? 'Publicação',
       authorName: profileMap.get(r.user_id)?.name ?? 'Fã',
+      authorHandle: profileMap.get(r.user_id)?.handle ?? null,
       authorAvatar: profileMap.get(r.user_id)?.avatar ?? null,
     }))
   }
