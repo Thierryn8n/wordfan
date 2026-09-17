@@ -185,6 +185,7 @@ export function StudioEditor({
               artist={artist}
               avatarUrl={avatarUrl} bannerUrl={bannerUrl} logoUrl={logoUrl}
               onAvatarChange={setAvatarUrl} onBannerChange={setBannerUrl} onLogoChange={setLogoUrl}
+              mode="admin-local"
             />
           </div>
         )}

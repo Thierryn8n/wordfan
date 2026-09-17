@@ -107,6 +107,15 @@ async function requireManager(artistId?: string) {
   return { supabase, error: 'Sem permissão para esta ação.' }
 }
 
+export interface LegalInfoInput {
+  legalName: string
+  legalDocument: string
+  legalAddress: string
+  legalCity: string
+  legalState: string
+  legalZip: string
+}
+
 export async function saveArtistProfile({
   artistId,
   slug,
@@ -120,6 +129,8 @@ export async function saveArtistProfile({
   avatarUrl,
   bannerUrl,
   logoUrl,
+  theme,
+  legal,
 }: {
   artistId: string
   slug: string
@@ -138,6 +149,10 @@ export async function saveArtistProfile({
     discography: { title: string; year: string }[]
     awards: string[]
   }
+  /** Tema extraído das imagens (opcional). Persistido só se válido. */
+  theme?: ArtistTheme
+  /** Dados legais do artista (opcional, só no fluxo admin-local). */
+  legal?: LegalInfoInput
 }) {
   const { supabase, error: authError } = await requireManager(artistId)
   if (authError) return { error: authError }
@@ -167,21 +182,34 @@ export async function saveArtistProfile({
   const banner = bannerUrl.trim().slice(0, 500)
   const logo = logoUrl.trim().slice(0, 500)
 
-  const { error } = await supabase
-    .from('artists')
-    .update({
-      name: cleanName,
-      bio: bio.trim().slice(0, 600),
-      genre: genre.trim().slice(0, 60),
-      city: city.trim().slice(0, 60),
-      state: state.trim().slice(0, 2).toUpperCase(),
-      social_links: cleanSocials,
-      about: cleanAbout,
-      avatar_url: avatar || null,
-      banner_url: banner || null,
-      logo_url: logo || null,
-    })
-    .eq('id', artistId)
+  const patch: Record<string, unknown> = {
+    name: cleanName,
+    bio: bio.trim().slice(0, 600),
+    genre: genre.trim().slice(0, 60),
+    city: city.trim().slice(0, 60),
+    state: state.trim().slice(0, 2).toUpperCase(),
+    social_links: cleanSocials,
+    about: cleanAbout,
+    avatar_url: avatar || null,
+    banner_url: banner || null,
+    logo_url: logo || null,
+  }
+
+  if (theme) {
+    const cleanTheme = sanitizeTheme(theme)
+    if (cleanTheme) patch.theme = cleanTheme
+  }
+
+  if (legal) {
+    patch.legal_name = legal.legalName.trim().slice(0, 160) || null
+    patch.legal_document = legal.legalDocument.trim().slice(0, 32) || null
+    patch.legal_address = legal.legalAddress.trim().slice(0, 240) || null
+    patch.legal_city = legal.legalCity.trim().slice(0, 80) || null
+    patch.legal_state = legal.legalState.trim().slice(0, 2).toUpperCase() || null
+    patch.legal_zip = legal.legalZip.trim().slice(0, 12) || null
+  }
+
+  const { error } = await supabase.from('artists').update(patch).eq('id', artistId)
 
   if (error) {
     console.log('[v0] profile save error:', error.message)

@@ -73,7 +73,56 @@ export interface Artist {
   tool_plan: 'basic' | 'pro' | 'premium'
   about: ArtistAbout
   logo_url?: string | null
+  legal_name?: string | null
+  legal_document?: string | null
+  legal_address?: string | null
+  legal_city?: string | null
+  legal_state?: string | null
+  legal_zip?: string | null
   }
+
+export interface CompanySettings {
+  id: string
+  legal_name: string | null
+  trade_name: string | null
+  cnpj: string | null
+  address: string | null
+  city: string | null
+  state: string | null
+  zip: string | null
+  email: string | null
+  phone: string | null
+  logo_url: string | null
+  updated_at: string
+}
+
+export type ContractStatus = 'draft' | 'pending' | 'signed'
+
+/** Valor de um plano de fã-clube do artista, congelado no contrato. */
+export interface ContractPlanValue {
+  tier: string
+  name: string
+  price_cents: number
+}
+
+export interface Contract {
+  id: string
+  artist_id: string
+  status: ContractStatus
+  title: string
+  content_md: string | null
+  pdf_path: string | null
+  plan: 'basico' | 'pro' | 'premium'
+  commission_pct: number
+  plan_values: ContractPlanValue[]
+  company_snapshot: Record<string, unknown>
+  artist_snapshot: Record<string, unknown>
+  signer_name: string | null
+  signer_ip: string | null
+  signed_at: string | null
+  created_at: string
+  updated_at: string
+}
 
 export interface ArtistAbout {
   history?: string

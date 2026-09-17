@@ -3,6 +3,7 @@ import Link from 'next/link'
 import {
   ArrowUpRight,
   BadgeCheck,
+  Building2,
   CircleDollarSign,
   FileText,
   Mic2,
@@ -252,6 +253,7 @@ export default async function AdminPage() {
           <div className="mt-5 flex flex-col gap-2">
             {[
               { label: 'Cadastrar novo artista', href: '/admin/artists', icon: Mic2 },
+              { label: 'Dados da empresa (contratos)', href: '/admin/company', icon: Building2 },
               { label: 'Revisar assinaturas', href: '/admin/subscriptions', icon: WalletCards },
               { label: 'Gerenciar usuários', href: '/admin/users', icon: Users },
               { label: 'Abrir relatórios', href: '/admin/reports', icon: TrendingUp },

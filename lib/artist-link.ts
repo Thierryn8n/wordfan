@@ -36,3 +36,18 @@ export function decodeArtistToken(token: string): string | null {
     return null
   }
 }
+
+/**
+ * Token para o link de revisão/aceite de um contrato: `dominio/contrato/<token>`.
+ * Mesmo esquema AES-256-GCM determinístico do link do artista, com um prefixo
+ * de namespace ('c:') para não colidir com tokens de artista.
+ */
+export function encodeContractToken(contractId: string): string {
+  return encodeArtistToken(`c:${contractId}`)
+}
+
+export function decodeContractToken(token: string): string | null {
+  const raw = decodeArtistToken(token)
+  if (!raw || !raw.startsWith('c:')) return null
+  return raw.slice(2)
+}
