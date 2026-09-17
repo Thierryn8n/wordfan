@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { getArtists, getLiveNow, getUpcomingShows, getActiveAds } from '@/lib/data'
 import { resolveTheme } from '@/lib/artist-theme'
 import { AdBanner } from '@/components/wordfan/ad-banner'
+import { PremiumArtistsCarousel } from '@/components/wordfan/premium-artists-carousel'
 import {
   Bell,
   Search,
@@ -162,55 +163,18 @@ export default async function HomePage() {
           </section>
         )}
 
-        {/* Em destaque */}
-        <section aria-labelledby="destaque" className="mt-10">
-          <div className="flex items-center justify-between">
-            <h2 id="destaque" className="text-lg font-extrabold tracking-[0.2em]">
-              EM DESTAQUE
-            </h2>
-            <Link href="/search" className="text-xs font-extrabold tracking-[0.1em] text-brand">
-              VER TODOS
-            </Link>
-          </div>
-
-          <div className="scrollbar-none -mx-6 mt-5 flex gap-4 overflow-x-auto px-6">
-            {featured.map((a) => {
-              const t = resolveTheme(a.theme)
-              return (
-                <Link
-                  key={a.id}
-                  href={`/artist/${a.slug}`}
-                  className="elev-2 relative w-[290px] shrink-0 overflow-hidden rounded-[32px] border"
-                  style={{ borderColor: `color-mix(in srgb, ${t.primary} 40%, transparent)` }}
-                >
-                  <Image
-                    src={a.avatar_url || '/placeholder.svg?height=380&width=290'}
-                    alt={a.name}
-                    width={290}
-                    height={380}
-                    className="h-[380px] w-full object-cover"
-                  />
-                  <div
-                    className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent"
-                    aria-hidden="true"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 p-6">
-                    <p className="flex items-center gap-2 font-serif text-2xl font-extrabold tracking-tight">
-                      {a.name.toUpperCase()}
-                      <BadgeCheck className="size-5" style={{ color: t.primary }} aria-hidden="true" />
-                    </p>
-                    <p
-                      className="mt-1 text-xs font-extrabold tracking-[0.2em]"
-                      style={{ color: t.primary }}
-                    >
-                      {formatFans(a.followers_count)} FÃS
-                    </p>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        </section>
+        {/* Em destaque — Carrossel automático */}
+        <PremiumArtistsCarousel
+          artists={featured.map((a) => ({
+            id: a.id,
+            name: a.name,
+            slug: a.slug,
+            avatar_url: a.avatar_url,
+            theme: a.theme,
+            followers_count: a.followers_count,
+          }))}
+          autoScrollInterval={5000}
+        />
 
         {/* Próximos eventos */}
         {shows.length > 0 && (
