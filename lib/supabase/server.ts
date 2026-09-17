@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/env'
+import { getCookieOptions, getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/env'
 
 /**
  * Especially important if using Fluid compute: Don't put this client in a
@@ -14,8 +14,12 @@ export async function createClient() {
     getSupabaseUrl(),
     getSupabaseAnonKey(),
     {
-      // Secure cookies in production; not in dev, so localhost still works.
-      cookieOptions: { secure: process.env.NODE_ENV === 'production' },
+      // O preview do v0 roda em um iframe cross-origin sobre HTTPS. Cookies
+      // SameSite=Lax são bloqueados nesse contexto, o que derruba a sessão e
+      // causa loop de login. SameSite=None + Secure permite que o cookie seja
+      // aceito dentro do iframe. Em dev localhost (http), caímos para Lax sem
+      // secure para o cookie ainda funcionar.
+      cookieOptions: getCookieOptions(),
       cookies: {
         getAll() {
           return cookieStore.getAll()

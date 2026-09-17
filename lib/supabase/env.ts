@@ -45,6 +45,32 @@ export function getSupabaseAnonKey() {
 }
 
 /**
+ * Opções de cookie de sessão compartilhadas por todos os clients Supabase.
+ *
+ * O preview do v0 (e produção na Vercel) roda o app dentro de um iframe
+ * cross-origin sobre HTTPS. Navegadores bloqueiam cookies `SameSite=Lax`
+ * nesse contexto, então o cookie de sessão é gravado no login mas nunca é
+ * reenviado nas requisições seguintes — o que causa o loop de login
+ * (entra, vai pro destino, `getUser()` falha, volta pro login).
+ *
+ * `SameSite=None` + `Secure=true` faz o navegador aceitar o cookie dentro do
+ * iframe. `SameSite=None` EXIGE `Secure`, então só usamos essa combinação
+ * quando há HTTPS. Em dev localhost puro (http) caímos para `Lax` sem secure,
+ * senão o cookie não seria gravado.
+ */
+export function getCookieOptions() {
+  const isHttps =
+    process.env.NODE_ENV === 'production' ||
+    Boolean(process.env.VERCEL) ||
+    Boolean(process.env.V0_RUNTIME_URL)
+
+  if (isHttps) {
+    return { sameSite: 'none' as const, secure: true }
+  }
+  return { sameSite: 'lax' as const, secure: false }
+}
+
+/**
  * Indica se uma anon key pública real está disponível. Quando `false`, o client
  * do navegador (client.ts) não consegue operar e os clients SSR estão usando a
  * service role como fallback — adicione NEXT_PUBLIC_SUPABASE_ANON_KEY para
