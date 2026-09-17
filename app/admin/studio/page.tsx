@@ -18,9 +18,10 @@ export const metadata = { title: 'Studio — ADM WordFan' }
 export default async function StudioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ artist?: string }>
+  searchParams: Promise<{ artist?: string; tab?: string }>
 }) {
-  const { artist: selectedSlug } = await searchParams
+  const { artist: selectedSlug, tab } = await searchParams
+  const initialTab = tab === 'profile' || tab === 'content' ? tab : 'identity'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login?next=/admin/studio')
@@ -220,6 +221,7 @@ export default async function StudioPage({
         <StudioEditor
           key={selected.id}
           artist={selected}
+          initialTab={initialTab}
           contentSlot={
             <ContentManager
               artistId={selected.id}

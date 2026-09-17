@@ -129,10 +129,11 @@ function ChipGroup<T extends string>({
 /* ── Main ── */
 
 export function StudioEditor({
-  artist, contentSlot,
+  artist, contentSlot, initialTab = 'identity',
 }: {
   artist: Artist
   contentSlot?: React.ReactNode
+  initialTab?: Tab
 }) {
   const [theme,      setTheme]      = useState<ArtistTheme>(() => resolveTheme(artist.theme))
   const [commission, setCommission] = useState(String(Number(artist.commission_pct ?? 20)))
@@ -142,7 +143,7 @@ export function StudioEditor({
   const [logoUrl,    setLogoUrl]    = useState((artist as Artist & { logo_url?: string }).logo_url ?? '')
   const [status,     setStatus]     = useState<{ ok?: string; error?: string }>({})
   const [isPending,  startTransition] = useTransition()
-  const [tab,        setTab]        = useState<Tab>('identity')
+  const [tab,        setTab]        = useState<Tab>(initialTab)
 
   const vars = themeToCssVars(theme) as CSSProperties
 

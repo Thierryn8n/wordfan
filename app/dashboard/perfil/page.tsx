@@ -6,15 +6,10 @@ import type { ArtistAbout } from '@/lib/types'
 
 export const metadata = { title: 'Meu perfil — Painel do artista' }
 
-export default async function PerfilPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ artist?: string }>
-}) {
-  const { artist } = await searchParams.then((sp) => getDashboardArtist('/dashboard/perfil', sp.artist))
+export default async function PerfilPage() {
+  const { artist, supabase } = await getDashboardArtist('/dashboard/perfil')
   if (!artist) notFound()
 
-  const { supabase } = await getDashboardArtist('/dashboard/perfil')
   const {
     data: { user },
   } = await supabase.auth.getUser()

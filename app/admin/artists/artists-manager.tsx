@@ -407,7 +407,7 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
                 onClick={() => {
                   const slug = created.slug
                   setCreated(null)
-                  router.push(`/dashboard/perfil?artist=${slug}`)
+                  router.push(`/admin/studio?artist=${slug}&tab=profile`)
                 }}
                 className="gradient-brand flex items-center justify-center gap-2 rounded-2xl py-3.5 text-[10px] font-black tracking-[0.2em] text-white"
               >
