@@ -80,7 +80,8 @@ export interface ArtistAbout {
   influences?: string[]
   discography?: { title: string; year: string }[]
   awards?: string[]
-}
+  setup_pending?: boolean
+  }
 
 export interface Video {
   id: string
