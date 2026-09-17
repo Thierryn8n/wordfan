@@ -15,10 +15,15 @@ import {
   X,
   Loader2,
   AlertTriangle,
-  Mail,
   Copy,
   Check,
   ExternalLink,
+  EyeOff,
+  KeyRound,
+  PencilLine,
+  Send,
+  Link2,
+  UserCheck,
 } from 'lucide-react'
 import type { Artist } from '@/lib/types'
 import { resolveTheme } from '@/lib/artist-theme'
@@ -40,16 +45,14 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  // Formulário de criação
-  const [newName, setNewName] = useState('')
+  // Formulário de criação (apenas email + senha)
   const [newEmail, setNewEmail] = useState('')
-  const [newGenre, setNewGenre] = useState('')
-  const [newCity, setNewCity] = useState('')
-  const [newState, setNewState] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
-  // Resultado do convite
-  const [created, setCreated] = useState<{ slug: string; email: string; inviteLink: string | null } | null>(null)
-  const [copied, setCopied] = useState(false)
+  // Resultado da criação
+  const [created, setCreated] = useState<{ slug: string; email: string; password: string; profileUrl: string } | null>(null)
+  const [copied, setCopied] = useState<'link' | 'creds' | null>(null)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -65,34 +68,25 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
   function handleCreate() {
     setError(null)
     startTransition(async () => {
-      const res = await createArtist({
-        name: newName,
-        email: newEmail,
-        genre: newGenre,
-        city: newCity,
-        state: newState,
-      })
+      const res = await createArtist({ email: newEmail, password: newPassword })
       if (res.error) {
         setError(res.error)
         return
       }
       setShowCreate(false)
-      setCreated({ slug: res.slug!, email: res.email!, inviteLink: res.inviteLink ?? null })
-      setNewName('')
+      setCreated({ slug: res.slug!, email: res.email!, password: newPassword, profileUrl: res.profileUrl! })
       setNewEmail('')
-      setNewGenre('')
-      setNewCity('')
-      setNewState('')
+      setNewPassword('')
+      setShowPassword(false)
       router.refresh()
     })
   }
 
-  async function copyLink() {
-    if (!created?.inviteLink) return
+  async function copyText(text: string, which: 'link' | 'creds') {
     try {
-      await navigator.clipboard.writeText(created.inviteLink)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      await navigator.clipboard.writeText(text)
+      setCopied(which)
+      setTimeout(() => setCopied(null), 2000)
     } catch {
       setError('Não foi possível copiar. Selecione e copie manualmente.')
     }
@@ -260,18 +254,15 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
               </button>
             </div>
 
+            <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+              Informe apenas o <span className="font-bold text-foreground">email</span> e a{' '}
+              <span className="font-bold text-foreground">senha</span> de acesso. O restante do perfil é
+              preenchido na próxima etapa — por você ou pelo próprio artista.
+            </p>
+
             <div className="mt-5 flex flex-col gap-4">
               <label className="flex flex-col gap-1.5">
-                <span className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">NOME ARTÍSTICO *</span>
-                <input
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Ex.: Tati Girl"
-                  className="rounded-2xl border border-white/8 bg-background px-4 py-3 text-sm font-medium outline-none focus:border-primary"
-                />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">EMAIL DO ARTISTA *</span>
+                <span className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">EMAIL DE ACESSO *</span>
                 <input
                   type="email"
                   value={newEmail}
@@ -280,40 +271,31 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
                   autoComplete="off"
                   className="rounded-2xl border border-white/8 bg-background px-4 py-3 text-sm font-medium outline-none focus:border-primary"
                 />
-                <span className="text-[9px] font-bold text-muted-foreground">
-                  Enviaremos um convite para ele definir a própria senha e acessar o painel.
-                </span>
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">GÊNERO MUSICAL</span>
-                <input
-                  value={newGenre}
-                  onChange={(e) => setNewGenre(e.target.value)}
-                  placeholder="Ex.: Pop, Sertanejo, Funk..."
-                  className="rounded-2xl border border-white/8 bg-background px-4 py-3 text-sm font-medium outline-none focus:border-primary"
-                />
+                <span className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">SENHA DE ACESSO *</span>
+                <div className="flex items-stretch gap-2">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Mínimo 8 caracteres"
+                    autoComplete="new-password"
+                    className="min-w-0 flex-1 rounded-2xl border border-white/8 bg-background px-4 py-3 text-sm font-medium outline-none focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                    className="flex shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/5 px-4 text-muted-foreground transition-colors hover:text-white"
+                  >
+                    {showPassword ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+                  </button>
+                </div>
+                <span className="text-[9px] font-bold text-muted-foreground">
+                  Você repassa email e senha ao artista. Ele pode alterá-los depois, no próprio painel.
+                </span>
               </label>
-              <div className="grid grid-cols-[1fr_88px] gap-3">
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">CIDADE</span>
-                  <input
-                    value={newCity}
-                    onChange={(e) => setNewCity(e.target.value)}
-                    placeholder="Ex.: São Paulo"
-                    className="rounded-2xl border border-white/8 bg-background px-4 py-3 text-sm font-medium outline-none focus:border-primary"
-                  />
-                </label>
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">UF</span>
-                  <input
-                    value={newState}
-                    onChange={(e) => setNewState(e.target.value)}
-                    placeholder="SP"
-                    maxLength={2}
-                    className="rounded-2xl border border-white/8 bg-background px-4 py-3 text-sm font-medium uppercase outline-none focus:border-primary"
-                  />
-                </label>
-              </div>
 
               {error && (
                 <p role="alert" className="text-xs font-bold text-destructive">
@@ -324,11 +306,11 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
               <button
                 type="button"
                 onClick={handleCreate}
-                disabled={isPending || !newName.trim() || !newEmail.trim()}
+                disabled={isPending || !newEmail.trim() || newPassword.length < 8}
                 className="gradient-brand mt-1 flex items-center justify-center gap-2 rounded-2xl py-4 text-[10px] font-black tracking-[0.25em] text-white disabled:opacity-50"
               >
                 {isPending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Plus className="size-4" aria-hidden="true" />}
-                {isPending ? 'CRIANDO E CONVIDANDO...' : 'CRIAR E CONVIDAR ARTISTA'}
+                {isPending ? 'CRIANDO ACESSO...' : 'CRIAR ACESSO DO ARTISTA'}
               </button>
               <p className="text-center text-[9px] font-bold text-muted-foreground">
                 Os 4 planos padrão do fan club serão criados automaticamente.
@@ -338,76 +320,117 @@ export function ArtistsManager({ artists }: { artists: ArtistRow[] }) {
         </div>
       )}
 
-      {/* Modal: convite criado */}
+      {/* Modal: acesso criado — escolher preencher agora ou enviar link */}
       {created && (
         <div
           role="dialog"
           aria-modal="true"
-          aria-labelledby="invite-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+          aria-labelledby="created-title"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-6"
         >
           <div className="w-full max-w-md rounded-3xl border border-white/8 bg-card p-6">
             <div className="flex items-center gap-3">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15">
-                <Mail className="size-5 text-primary" aria-hidden="true" />
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15">
+                <UserCheck className="size-5 text-emerald-400" aria-hidden="true" />
               </span>
-              <h2 id="invite-title" className="font-serif text-lg font-black">
-                ARTISTA CRIADO
+              <h2 id="created-title" className="font-serif text-lg font-black">
+                ACESSO CRIADO
               </h2>
             </div>
 
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Enviamos um convite para <span className="font-bold text-foreground">{created.email}</span>. O
-              artista define a própria senha pelo link abaixo e passa a acessar o painel dele.
+              O acesso do artista está pronto. Agora escolha: preencher o perfil completo você mesmo, ou
+              enviar o link e as credenciais para o artista preencher.
             </p>
 
-            {created.inviteLink ? (
-              <div className="mt-4">
-                <span className="text-[9px] font-black tracking-[0.2em] text-muted-foreground">LINK DE CONVITE (VÁLIDO POR TEMPO LIMITADO)</span>
-                <div className="mt-2 flex items-stretch gap-2">
-                  <input
-                    readOnly
-                    value={created.inviteLink}
-                    onFocus={(e) => e.currentTarget.select()}
-                    aria-label="Link de convite"
-                    className="min-w-0 flex-1 rounded-2xl border border-white/8 bg-background px-3 py-3 text-xs font-medium outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={copyLink}
-                    aria-label="Copiar link"
-                    className="flex shrink-0 items-center justify-center rounded-2xl bg-primary/15 px-4 text-primary transition-colors hover:bg-primary/25"
-                  >
-                    {copied ? <Check className="size-4" aria-hidden="true" /> : <Copy className="size-4" aria-hidden="true" />}
-                  </button>
+            {/* Credenciais de acesso */}
+            <div className="mt-4 rounded-2xl border border-white/8 bg-background p-4">
+              <span className="flex items-center gap-2 text-[9px] font-black tracking-[0.2em] text-muted-foreground">
+                <KeyRound className="size-3.5" aria-hidden="true" />
+                CREDENCIAIS DE ACESSO
+              </span>
+              <dl className="mt-3 flex flex-col gap-1.5 text-xs font-bold">
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Email</dt>
+                  <dd className="truncate">{created.email}</dd>
                 </div>
-                <p className="mt-2 text-[9px] font-bold text-muted-foreground">
-                  Repasse este link ao artista caso o email não chegue.
-                </p>
-              </div>
-            ) : (
-              <p className="mt-4 rounded-2xl border border-white/8 bg-background px-4 py-3 text-xs font-bold text-muted-foreground">
-                O convite foi enviado por email. Peça ao artista para verificar a caixa de entrada e o spam.
-              </p>
-            )}
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Senha</dt>
+                  <dd className="font-numeric">{created.password}</dd>
+                </div>
+              </dl>
+              <button
+                type="button"
+                onClick={() =>
+                  copyText(`Email: ${created.email}\nSenha: ${created.password}\nAcesse: ${created.profileUrl}`, 'creds')
+                }
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/8 bg-white/5 py-2.5 text-[9px] font-black tracking-[0.16em] transition-colors hover:bg-white/10"
+              >
+                {copied === 'creds' ? <Check className="size-3.5" aria-hidden="true" /> : <Copy className="size-3.5" aria-hidden="true" />}
+                {copied === 'creds' ? 'COPIADO' : 'COPIAR CREDENCIAIS'}
+              </button>
+            </div>
 
-            <div className="mt-6 flex gap-3">
+            {/* Link permanente criptografado */}
+            <div className="mt-3">
+              <span className="flex items-center gap-2 text-[9px] font-black tracking-[0.2em] text-muted-foreground">
+                <Link2 className="size-3.5" aria-hidden="true" />
+                LINK PERMANENTE DO PERFIL
+              </span>
+              <div className="mt-2 flex items-stretch gap-2">
+                <input
+                  readOnly
+                  value={created.profileUrl}
+                  onFocus={(e) => e.currentTarget.select()}
+                  aria-label="Link permanente do perfil do artista"
+                  className="min-w-0 flex-1 rounded-2xl border border-white/8 bg-background px-3 py-3 text-xs font-medium outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => copyText(created.profileUrl, 'link')}
+                  aria-label="Copiar link do perfil"
+                  className="flex shrink-0 items-center justify-center rounded-2xl bg-primary/15 px-4 text-primary transition-colors hover:bg-primary/25"
+                >
+                  {copied === 'link' ? <Check className="size-4" aria-hidden="true" /> : <Copy className="size-4" aria-hidden="true" />}
+                </button>
+              </div>
+              <p className="mt-2 text-[9px] font-bold text-muted-foreground">
+                Este link é criptografado e permanente. Depois de logado, o artista abre o próprio perfil por
+                ele sempre que quiser.
+              </p>
+            </div>
+
+            {/* Ações: preencher agora / enviar link */}
+            <div className="mt-6 flex flex-col gap-3">
               <button
                 type="button"
                 onClick={() => {
                   const slug = created.slug
                   setCreated(null)
-                  router.push(`/admin/studio?artist=${slug}`)
+                  router.push(`/dashboard/perfil?artist=${slug}`)
                 }}
-                className="gradient-brand flex flex-1 items-center justify-center gap-2 rounded-2xl py-3.5 text-[10px] font-black tracking-[0.2em] text-white"
+                className="gradient-brand flex items-center justify-center gap-2 rounded-2xl py-3.5 text-[10px] font-black tracking-[0.2em] text-white"
               >
-                <ExternalLink className="size-4" aria-hidden="true" />
-                ABRIR NO STUDIO
+                <PencilLine className="size-4" aria-hidden="true" />
+                PREENCHER PERFIL AGORA
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  copyText(
+                    `Seu acesso ao WordFan:\nEmail: ${created.email}\nSenha: ${created.password}\n\nEntre e preencha seu perfil por aqui: ${created.profileUrl}`,
+                    'creds',
+                  )
+                }
+                className="flex items-center justify-center gap-2 rounded-2xl border border-white/8 bg-white/5 py-3.5 text-[10px] font-black tracking-[0.2em] transition-colors hover:bg-white/10"
+              >
+                <Send className="size-4" aria-hidden="true" />
+                {copied === 'creds' ? 'MENSAGEM COPIADA' : 'ENVIAR LINK PARA O ARTISTA'}
               </button>
               <button
                 type="button"
                 onClick={() => setCreated(null)}
-                className="rounded-2xl border border-white/8 bg-white/5 px-5 py-3.5 text-[10px] font-black tracking-[0.2em]"
+                className="text-center text-[10px] font-black tracking-[0.2em] text-muted-foreground transition-colors hover:text-white"
               >
                 FECHAR
               </button>

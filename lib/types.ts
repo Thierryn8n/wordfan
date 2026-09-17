@@ -72,7 +72,8 @@ export interface Artist {
   commission_pct: number
   tool_plan: 'basic' | 'pro' | 'premium'
   about: ArtistAbout
-}
+  logo_url?: string | null
+  }
 
 export interface ArtistAbout {
   history?: string

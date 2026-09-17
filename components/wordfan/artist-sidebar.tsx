@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   LogOut,
   MessageSquare,
+  UserRound,
   Wallet,
 } from 'lucide-react'
 import { Logo } from '@/components/wordfan/logo'
@@ -38,6 +39,7 @@ const NAV_GROUPS = [
     title: 'Gestão',
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Meu perfil', href: '/dashboard/perfil', icon: UserRound },
       { label: 'Conteúdos', href: '/dashboard/estudio', icon: Clapperboard },
       { label: 'Analytics', href: '/dashboard/insights', icon: BarChart3 },
     ],

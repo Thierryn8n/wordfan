@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import {
   ArrowUpRight,
   CalendarDays,
@@ -41,8 +41,13 @@ const TIER_COLORS: Record<Tier, string> = {
 }
 
 export default async function OverviewPage() {
-  const { artist, supabase } = await getDashboardArtist('/dashboard')
+  const { artist, supabase, role } = await getDashboardArtist('/dashboard')
   if (!artist) notFound()
+
+  // Primeiro acesso do artista: manda completar o perfil antes de ver o painel.
+  if (role === 'artist' && (artist.about as { setup_pending?: boolean } | null)?.setup_pending) {
+    redirect('/dashboard/perfil')
+  }
 
   const [
     { data: subscriptionsData },

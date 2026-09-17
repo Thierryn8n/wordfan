@@ -1,27 +1,48 @@
+import { notFound } from 'next/navigation'
+import { Sparkles } from 'lucide-react'
 import { getDashboardArtist } from '@/lib/dashboard'
-import { DashboardHeader } from '@/components/wordfan/dashboard-header'
-import { ProfileEditor } from '@/components/wordfan/profile-editor'
+import { ArtistProfilePanel } from '@/components/wordfan/artist-profile-panel'
+import type { ArtistAbout } from '@/lib/types'
 
-export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Meu perfil — Painel do artista' }
 
-export default async function PerfilPage() {
-  const { artist } = await getDashboardArtist('/dashboard/perfil')
+export default async function PerfilPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ artist?: string }>
+}) {
+  const { artist } = await searchParams.then((sp) => getDashboardArtist('/dashboard/perfil', sp.artist))
+  if (!artist) notFound()
 
-  if (!artist) {
-    return (
-      <div className="flex flex-col gap-6">
-        <DashboardHeader eyebrow="MEU PERFIL" title="Perfil" />
-        <p className="text-sm font-bold text-[var(--artist-muted)]">
-          Nenhum perfil de artista vinculado à sua conta.
-        </p>
-      </div>
-    )
-  }
+  const { supabase } = await getDashboardArtist('/dashboard/perfil')
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const pending = Boolean((artist.about as ArtistAbout | null)?.setup_pending)
+  // Só o próprio artista dono altera as credenciais de acesso aqui.
+  const showCredentials = user?.id === artist.owner_id
 
   return (
-    <div className="flex flex-col gap-6">
-      <DashboardHeader eyebrow="MEU PERFIL" title="Informações do Perfil" />
-      <ProfileEditor artist={artist} />
+    <div className="mx-auto w-full max-w-3xl py-6">
+      <header className="mb-6">
+        <h1 className="font-serif text-2xl font-black tracking-tight">Meu perfil</h1>
+        <p className="mt-1.5 text-sm font-medium text-muted-foreground">
+          Preencha todos os dados do seu perfil. Eles alimentam sua página pública e o fan club.
+        </p>
+        {pending && (
+          <p className="mt-4 flex items-center gap-2 rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3 text-xs font-bold text-primary">
+            <Sparkles className="size-4 shrink-0" aria-hidden="true" />
+            Bem-vindo! Complete seu perfil abaixo para publicar sua página e liberar todos os recursos.
+          </p>
+        )}
+      </header>
+
+      <ArtistProfilePanel
+        artist={artist}
+        currentEmail={user?.email ?? ''}
+        showCredentials={showCredentials}
+      />
     </div>
   )
 }

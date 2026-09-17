@@ -1,8 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient, isServiceRoleConfigured } from '@/lib/supabase/admin'
+import { encodeArtistToken } from '@/lib/artist-link'
 
 const SERVICE_KEY_ERROR = 'Configure a variável SUPABASE_SERVICE_ROLE_KEY no projeto para usar este recurso.'
 
@@ -19,48 +21,6 @@ async function requireAdmin() {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-/**
- * Cria/convida o usuário do artista via service-role e retorna o id + link de
- * convite. O link permite ao artista definir a própria senha em /auth/set-password.
- * Se o email já existir, gera um link de recuperação em vez de falhar.
- */
-async function inviteArtistUser(email: string, displayName: string) {
-  const admin = createServiceClient()
-  const base = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL
-  const redirectTo = base
-    ? `${base}${base.includes('?') ? '&' : '?'}next=${encodeURIComponent('/auth/set-password')}`
-    : undefined
-
-  const metadata = { role: 'artist', display_name: displayName, must_set_password: true }
-
-  const { data, error } = await admin.auth.admin.generateLink({
-    type: 'invite',
-    email,
-    options: { data: metadata, redirectTo },
-  })
-
-  if (!error && data?.user) {
-    return { userId: data.user.id, link: data.properties?.action_link ?? null, error: null as string | null }
-  }
-
-  // Email já cadastrado: buscar usuário e gerar link de recuperação
-  const msg = (error?.message ?? '').toLowerCase()
-  if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) {
-    const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 })
-    const existing = list?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase())
-    if (!existing) return { userId: null, link: null, error: 'Email já cadastrado, mas não localizado.' }
-    const { data: rec } = await admin.auth.admin.generateLink({
-      type: 'recovery',
-      email,
-      options: { redirectTo },
-    })
-    return { userId: existing.id, link: rec?.properties?.action_link ?? null, error: null }
-  }
-
-  console.log('[v0] invite error:', error?.message)
-  return { userId: null, link: null, error: 'Não foi possível convidar o artista.' }
-}
-
 function slugify(name: string) {
   return name
     .normalize('NFD')
@@ -72,34 +32,59 @@ function slugify(name: string) {
     .slice(0, 60)
 }
 
-export async function createArtist({
-  name,
-  email,
-  genre,
-  city,
-  state,
-}: {
-  name: string
-  email: string
-  genre: string
-  city: string
-  state: string
-}) {
-  const { supabase, error: authError } = await requireAdmin()
+async function siteOrigin() {
+  const hdrs = await headers()
+  const proto = hdrs.get('x-forwarded-proto') ?? 'https'
+  const host = hdrs.get('host') ?? ''
+  return `${proto}://${host}`
+}
+
+/**
+ * Cria o ACESSO do artista: o admin informa apenas email e senha. O usuário é
+ * criado já com a senha (login imediato) e com um artista provisório vinculado.
+ * O perfil completo é preenchido depois — pelo próprio admin ou pelo artista,
+ * via o link retornado. Retorna também o link permanente criptografado do
+ * perfil (`/a/<token>`).
+ */
+export async function createArtist({ email, password }: { email: string; password: string }) {
+  const { error: authError } = await requireAdmin()
   if (authError) return { error: authError }
   if (!isServiceRoleConfigured()) return { error: SERVICE_KEY_ERROR }
 
-  const cleanName = name.trim()
-  if (!cleanName || cleanName.length > 80) return { error: 'Nome inválido (máx. 80 caracteres).' }
-
   const cleanEmail = email.trim().toLowerCase()
   if (!EMAIL_RE.test(cleanEmail)) return { error: 'Informe um email válido para o artista acessar o painel.' }
+  if (password.length < 8) return { error: 'A senha deve ter pelo menos 8 caracteres.' }
 
-  const baseSlug = slugify(cleanName)
-  if (!baseSlug) return { error: 'Nome inválido para gerar o link.' }
+  const admin = createServiceClient()
 
-  // Garantir slug único
-  const { data: existing } = await supabase.from('artists').select('slug').like('slug', `${baseSlug}%`)
+  // 1) Cria o usuário do artista já com a senha (email confirmado = login direto)
+  const { data: createdUser, error: createUserError } = await admin.auth.admin.createUser({
+    email: cleanEmail,
+    password,
+    email_confirm: true,
+    user_metadata: { role: 'artist' },
+  })
+
+  if (createUserError || !createdUser?.user) {
+    const msg = (createUserError?.message ?? '').toLowerCase()
+    if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) {
+      return { error: 'Já existe uma conta com esse email. Use outro email para o artista.' }
+    }
+    console.log('[v0] create artist user error:', createUserError?.message)
+    return { error: 'Não foi possível criar o acesso do artista.' }
+  }
+
+  const userId = createdUser.user.id
+
+  // 2) Define o role 'artist' no perfil (service-role, ignora RLS)
+  const { error: profileError } = await admin
+    .from('profiles')
+    .upsert({ id: userId, role: 'artist' }, { onConflict: 'id' })
+  if (profileError) console.log('[v0] set artist role error:', profileError.message)
+
+  // 3) Slug provisório único a partir do email (o artista ajusta depois)
+  const baseSlug = slugify(cleanEmail.split('@')[0]) || 'artista'
+  const { data: existing } = await admin.from('artists').select('slug').like('slug', `${baseSlug}%`)
   const taken = new Set((existing ?? []).map((r) => r.slug))
   let slug = baseSlug
   let i = 2
@@ -108,27 +93,15 @@ export async function createArtist({
     i++
   }
 
-  // 1) Cria/convida o usuário do artista e obtém o link de definição de senha
-  const invite = await inviteArtistUser(cleanEmail, cleanName)
-  if (invite.error || !invite.userId) return { error: invite.error ?? 'Falha ao convidar o artista.' }
+  const provisionalName = cleanEmail.split('@')[0].replace(/[._-]+/g, ' ').trim().slice(0, 80) || 'Novo artista'
 
-  // 2) Define o role 'artist' no perfil (service-role, ignora RLS)
-  const admin = createServiceClient()
-  const { error: profileError } = await admin
-    .from('profiles')
-    .upsert({ id: invite.userId, role: 'artist', display_name: cleanName }, { onConflict: 'id' })
-  if (profileError) console.log('[v0] set artist role error:', profileError.message)
-
-  // 3) Cria o artista já vinculado ao dono (owner_id)
-  const { data: artist, error } = await supabase
+  // 4) Cria o artista provisório, marcado como pendente de preenchimento
+  const { data: artist, error } = await admin
     .from('artists')
     .insert({
-      name: cleanName,
+      name: provisionalName,
       slug,
-      owner_id: invite.userId,
-      genre: genre.trim().slice(0, 60) || null,
-      city: city.trim().slice(0, 60) || null,
-      state: state.trim().slice(0, 2).toUpperCase() || null,
+      owner_id: userId,
       bio: null,
       followers_count: 0,
       is_featured: false,
@@ -137,7 +110,7 @@ export async function createArtist({
       commission_pct: 20,
       tool_plan: 'basic',
       theme: {},
-      about: {},
+      about: { setup_pending: true },
     })
     .select('id, slug')
     .single()
@@ -147,19 +120,23 @@ export async function createArtist({
     return { error: 'Não foi possível criar o artista.' }
   }
 
-  // 4) Criar os 4 planos padrão do fan club
-  const { error: plansError } = await supabase.from('plans').insert([
+  // 5) Criar os 4 planos padrão do fan club
+  const { error: plansError } = await admin.from('plans').insert([
     { artist_id: artist.id, tier: 'bronze', name: 'Bronze', price_cents: 990, benefits: ['Feed exclusivo', 'Badge de fã'] },
-    { artist_id: artist.id, tier: 'silver', name: 'Prata', price_cents: 1990, benefits: ['Tudo do Bronze', 'Lives exclusivas'] },
-    { artist_id: artist.id, tier: 'gold', name: 'Ouro', price_cents: 3990, benefits: ['Tudo do Prata', 'Pré-venda', 'Sorteios'] },
-    { artist_id: artist.id, tier: 'platinum', name: 'Platina', price_cents: 7990, benefits: ['Tudo do Ouro', 'Encontro virtual', 'Kit exclusivo'] },
+    { artist_id: artist.id, tier: 'silver', name: 'Prata', price_cents: 1990, benefits: ['Lives exclusivas'] },
+    { artist_id: artist.id, tier: 'gold', name: 'Ouro', price_cents: 3990, benefits: ['Pré-venda', 'Sorteios'] },
+    { artist_id: artist.id, tier: 'platinum', name: 'Platina', price_cents: 7990, benefits: ['Encontro virtual', 'Kit exclusivo'] },
   ])
   if (plansError) console.log('[v0] create plans error:', plansError.message)
+
+  const origin = await siteOrigin()
+  const token = encodeArtistToken(artist.id)
+  const profileUrl = `${origin}/a/${token}`
 
   revalidatePath('/admin/artists')
   revalidatePath('/home')
   revalidatePath('/search')
-  return { success: true, slug: artist.slug, inviteLink: invite.link, email: cleanEmail }
+  return { success: true, slug: artist.slug, email: cleanEmail, profileUrl }
 }
 
 export async function deleteArtist({ artistId }: { artistId: string }) {
