@@ -167,6 +167,7 @@ export function AgendaClient({ shows }: AgendaClientProps) {
   const [routeLoading, setRouteLoading] = useState(false)
   const [routeError, setRouteError] = useState<string | null>(null)
   const [analysis, setAnalysis] = useState<string | null>(null)
+  const [reasoning, setReasoning] = useState<string>('')
   const [analysisModel, setAnalysisModel] = useState<string | null>(null)
   const [analysisLoading, setAnalysisLoading] = useState(false)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
@@ -219,6 +220,7 @@ export function AgendaClient({ shows }: AgendaClientProps) {
     setAnalysisLoading(true)
     setAnalysisError(null)
     setAnalysis(null)
+    setReasoning('')
     try {
       const res = await fetch('/api/agenda/analyze', {
         method: 'POST',
@@ -235,13 +237,41 @@ export function AgendaClient({ shows }: AgendaClientProps) {
           steps: route.steps,
         }),
       })
-      const data = await res.json()
-      if (!res.ok) {
-        setAnalysisError(data.error ?? 'A análise falhou.')
+      if (!res.ok || !res.body) {
+        let msg = 'A análise falhou.'
+        try {
+          const data = await res.json()
+          msg = data.error ?? msg
+        } catch {}
+        setAnalysisError(msg)
         return
       }
-      setAnalysis(data.analysis as string)
-      setAnalysisModel(data.model as string)
+
+      setAnalysisModel(res.headers.get('X-Model'))
+
+      const CONTENT_MARKER = '\u0000__RESPOSTA__\u0000'
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let acc = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        acc += decoder.decode(value, { stream: true })
+        const markerAt = acc.indexOf(CONTENT_MARKER)
+        if (markerAt === -1) {
+          // Ainda na fase de raciocínio.
+          setReasoning(acc)
+        } else {
+          // Virou para a resposta final.
+          setReasoning(acc.slice(0, markerAt))
+          setAnalysis(acc.slice(markerAt + CONTENT_MARKER.length))
+        }
+      }
+      const finalMarkerAt = acc.indexOf(CONTENT_MARKER)
+      const finalAnswer = finalMarkerAt === -1 ? '' : acc.slice(finalMarkerAt + CONTENT_MARKER.length)
+      if (!finalAnswer.trim()) {
+        setAnalysisError('A IA não retornou uma resposta final. Tente novamente.')
+      }
     } catch {
       setAnalysisError('Falha de conexão com a IA.')
     } finally {
@@ -461,6 +491,20 @@ li{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #eee;font-size:13
 
             {analysisError && (
               <p className="rounded-xl bg-red-500/10 px-3 py-2 text-[11px] font-bold text-red-400">{analysisError}</p>
+            )}
+
+            {analysisLoading && !analysis && (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin text-[var(--artist-primary)]" aria-hidden="true" />
+                  <p className="text-[11px] font-black uppercase tracking-[0.12em] text-white/50">
+                    Analisando a rota...
+                  </p>
+                </div>
+                <p className="max-h-24 overflow-hidden text-[11px] leading-relaxed text-white/40">
+                  {reasoning ? reasoning.slice(-320) : 'Consultando condições da estrada, horários e paradas.'}
+                </p>
+              </div>
             )}
 
             {analysis && (

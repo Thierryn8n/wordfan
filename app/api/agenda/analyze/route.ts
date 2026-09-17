@@ -8,14 +8,17 @@ export const maxDuration = 60
  * (endpoint OpenAI-compatível em integrate.api.nvidia.com).
  *
  * O usuário pediu explicitamente a IA da NVIDIA — por isso chamamos direto,
- * fora do AI Gateway.
+ * fora do AI Gateway. A resposta é transmitida (streaming) para o texto
+ * aparecer em tempo real na tela.
  */
 
 const MODELS = [
   'nvidia/nemotron-3-super-120b-a12b',
   'nvidia/nemotron-3-ultra-550b-a55b',
-  'nvidia/nemotron-nano-3-30b-a3b',
 ]
+
+// Separa, no stream de texto, a fase de raciocínio da resposta final.
+const CONTENT_MARKER = '\u0000__RESPOSTA__\u0000'
 
 interface AnalyzeBody {
   origin?: string
@@ -84,6 +87,9 @@ export async function POST(req: Request) {
     stepsText || '(sem detalhamento de etapas)',
   ].join('\n')
 
+  // Tenta cada modelo até um começar a transmitir com sucesso.
+  let upstream: Response | null = null
+  let usedModel = ''
   let lastErr = 'Falha ao chamar a IA da NVIDIA.'
 
   for (const model of MODELS) {
@@ -103,29 +109,89 @@ export async function POST(req: Request) {
           temperature: 0.4,
           top_p: 0.9,
           max_tokens: 1400,
-          stream: false,
+          stream: true,
         }),
         cache: 'no-store',
       })
 
-      if (!res.ok) {
+      if (!res.ok || !res.body) {
         lastErr = `NVIDIA (${model}): ${res.status}`
         continue
       }
-
-      const data = await res.json()
-      const content: string = data?.choices?.[0]?.message?.content ?? ''
-      if (!content.trim()) {
-        lastErr = 'A IA retornou uma resposta vazia.'
-        continue
-      }
-      // Remove blocos de "raciocínio" de modelos reasoning, se houver.
-      const clean = content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
-      return NextResponse.json({ analysis: clean, model })
+      upstream = res
+      usedModel = model
+      break
     } catch {
       lastErr = 'Falha de conexão com a NVIDIA.'
     }
   }
 
-  return NextResponse.json({ error: lastErr }, { status: 502 })
+  if (!upstream || !upstream.body) {
+    return NextResponse.json({ error: lastErr }, { status: 502 })
+  }
+
+  // Converte o SSE (formato OpenAI) da NVIDIA num stream de texto puro,
+  // removendo eventuais blocos <think> de modelos de raciocínio.
+  const encoder = new TextEncoder()
+  const decoder = new TextDecoder()
+  const reader = upstream.body.getReader()
+
+  let buffer = ''
+  let contentStarted = false
+
+  const stream = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      const { done, value } = await reader.read()
+      if (done) {
+        controller.close()
+        return
+      }
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed.startsWith('data:')) continue
+        const payload = trimmed.slice(5).trim()
+        if (payload === '[DONE]') {
+          controller.close()
+          return
+        }
+        try {
+          const json = JSON.parse(payload)
+          const delta = json?.choices?.[0]?.delta ?? {}
+          const reasoning: string = delta.reasoning_content ?? ''
+          const content: string = (delta.content ?? '').replace(/<\/?think>/gi, '')
+
+          // Fase de raciocínio: transmite ao vivo para dar feedback imediato.
+          if (reasoning && !contentStarted) {
+            controller.enqueue(encoder.encode(reasoning))
+          }
+          // Primeira vez que chega a resposta final: marca a virada de fase.
+          if (content) {
+            if (!contentStarted) {
+              contentStarted = true
+              controller.enqueue(encoder.encode(CONTENT_MARKER))
+            }
+            controller.enqueue(encoder.encode(content))
+          }
+        } catch {
+          // ignora linhas parciais/inesperadas
+        }
+      }
+    },
+    cancel() {
+      reader.cancel().catch(() => {})
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Model': usedModel,
+    },
+  })
 }
