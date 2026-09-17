@@ -4,17 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowRight } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { signUpAction } from '@/app/auth/actions'
 import { Logo } from '@/components/wordfan/logo'
-
-function signUpErrorMessage(error: unknown): string {
-  const { code, status } = (error ?? {}) as { code?: string; status?: number }
-  if (code === 'weak_password')             return 'Senha muito fraca. Use pelo menos 6 caracteres.'
-  if (code === 'email_address_invalid')     return 'Endereço de e-mail inválido. Use um e-mail real.'
-  if (code === 'over_request_rate_limit' || status === 429) return 'Muitas tentativas. Aguarde um momento e tente de novo.'
-  if (code === 'user_already_exists')       return 'Não foi possível criar a conta com esses dados.'
-  return 'Algo deu errado. Tente novamente.'
-}
 
 export function SignUpForm({
   logoUrl,
@@ -32,27 +23,21 @@ export function SignUpForm({
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault()
-    const supabase = createClient()
     setIsLoading(true)
     setError(null)
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo:
-            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ??
-            `${window.location.origin}/auth/callback`,
-          data: { display_name: displayName },
-        },
-      })
-      if (error) throw error
-      router.push('/auth/sign-up-success')
-    } catch (err: unknown) {
-      setError(signUpErrorMessage(err))
-    } finally {
+
+    const formData = new FormData()
+    formData.set('displayName', displayName)
+    formData.set('email', email)
+    formData.set('password', password)
+
+    const result = await signUpAction(null, formData)
+    if (result.error) {
+      setError(result.error)
       setIsLoading(false)
+      return
     }
+    router.push(result.dest ?? '/auth/sign-up-success')
   }
 
   const inputClass =
