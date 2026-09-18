@@ -11,7 +11,7 @@ import { formatPrice } from '@/lib/types'
 
 export const maxDuration = 60
 
-const CONTRACT_MODEL = 'openai/gpt-4.1'
+const CONTRACT_MODEL = 'anthropic/claude-sonnet-4.5'
 
 interface Body {
   artistId?: string
