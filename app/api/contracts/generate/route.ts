@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import React from 'react'
+import { generateText } from 'ai'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { assertAdmin } from '@/lib/admin-guard'
 import { createServiceClient } from '@/lib/supabase/admin'
@@ -10,8 +11,7 @@ import { formatPrice } from '@/lib/types'
 
 export const maxDuration = 60
 
-const NVIDIA_URL = 'https://integrate.api.nvidia.com/v1/chat/completions'
-const NVIDIA_MODEL = 'meta/llama-3.3-70b-instruct'
+const CONTRACT_MODEL = 'openai/gpt-4.1'
 
 interface Body {
   artistId?: string
@@ -39,9 +39,6 @@ export async function POST(req: Request) {
   if (!Number.isFinite(commissionPct) || commissionPct < 0 || commissionPct > 90) {
     return NextResponse.json({ error: 'Comissão inválida (0 a 90%).' }, { status: 400 })
   }
-
-  const apiKey = process.env.NVIDIA_API_KEY
-  if (!apiKey) return NextResponse.json({ error: 'IA indisponível no momento.' }, { status: 503 })
 
   const svc = createServiceClient()
 
@@ -126,31 +123,17 @@ Gere o contrato completo agora.`
 
   let contentMd = ''
   try {
-    const aiRes = await fetch(NVIDIA_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: NVIDIA_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.3,
-        top_p: 0.9,
-        max_tokens: 4096,
-        stream: false,
-      }),
+    const { text } = await generateText({
+      model: CONTRACT_MODEL,
+      prompt,
+      temperature: 0.3,
+      topP: 0.9,
+      maxOutputTokens: 4096,
     })
-    if (!aiRes.ok) {
-      const detail = await aiRes.text()
-      console.log('[v0] nvidia error:', aiRes.status, detail.slice(0, 300))
-      return NextResponse.json({ error: 'Falha ao gerar o contrato pela IA.' }, { status: 502 })
-    }
-    const json = await aiRes.json()
-    contentMd = json?.choices?.[0]?.message?.content?.trim() ?? ''
+    contentMd = text.trim()
   } catch (e) {
-    console.log('[v0] nvidia fetch failed:', (e as Error).message)
-    return NextResponse.json({ error: 'Falha de conexão com a IA.' }, { status: 502 })
+    console.log('[v0] contract ai generation failed:', (e as Error).message)
+    return NextResponse.json({ error: 'Falha ao gerar o contrato pela IA.' }, { status: 502 })
   }
 
   if (!contentMd) return NextResponse.json({ error: 'A IA não retornou conteúdo.' }, { status: 502 })
