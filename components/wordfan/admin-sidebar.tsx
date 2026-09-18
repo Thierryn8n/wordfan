@@ -48,7 +48,10 @@ const NAV_GROUPS = [
   },
   {
     title: 'Sistema',
-    items: [{ label: 'Configurações', icon: Settings2, href: '/admin/settings' }],
+    items: [
+      { label: 'Empresa', icon: Building2, href: '/admin/company' },
+      { label: 'Configurações', icon: Settings2, href: '/admin/settings' },
+    ],
   },
 ] as const
 
