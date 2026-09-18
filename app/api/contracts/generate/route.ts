@@ -54,7 +54,7 @@ export async function POST(req: Request) {
   if (!artist) return NextResponse.json({ error: 'Artista não encontrado.' }, { status: 404 })
   if (!company?.cnpj || !company?.legal_name) {
     return NextResponse.json(
-      { error: 'Preencha os dados da empresa (razão social e CNPJ) antes de gerar o contrato.' },
+      { error: 'Configure os dados da SUA empresa/plataforma (razão social e CNPJ) em Admin → Empresa antes de gerar o contrato. Estes são os dados da CONTRATANTE, não do artista.' },
       { status: 412 },
     )
   }
