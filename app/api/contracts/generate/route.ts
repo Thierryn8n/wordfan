@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import React from 'react'
-import { generateText } from 'ai'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { assertAdmin } from '@/lib/admin-guard'
 import { createServiceClient } from '@/lib/supabase/admin'
@@ -9,9 +8,18 @@ import { COMPANY_PLANS, benefitsForPlan, isCompanyPlan, type CompanyPlan } from 
 import { ContractDocument } from '@/components/contracts/contract-pdf'
 import { formatPrice } from '@/lib/types'
 
+export const runtime = 'nodejs'
 export const maxDuration = 60
 
-const CONTRACT_MODEL = 'anthropic/claude-sonnet-4.5'
+/**
+ * Geração de contrato usando a API gratuita da NVIDIA
+ * (endpoint OpenAI-compatível em integrate.api.nvidia.com).
+ */
+
+const CONTRACT_MODELS = [
+  'nvidia/nemotron-3-super-120b-a12b',
+  'nvidia/nemotron-3-ultra-550b-a55b',
+]
 
 interface Body {
   artistId?: string
@@ -123,14 +131,54 @@ Gere o contrato completo agora.`
 
   let contentMd = ''
   try {
-    const { text } = await generateText({
-      model: CONTRACT_MODEL,
-      prompt,
-      temperature: 0.3,
-      topP: 0.9,
-      maxOutputTokens: 4096,
-    })
-    contentMd = text.trim()
+    const key = process.env.NVIDIA_API_KEY
+    if (!key) {
+      return NextResponse.json({ error: 'NVIDIA_API_KEY não configurada.' }, { status: 500 })
+    }
+
+    // Tenta cada modelo até um funcionar
+    let usedModel = ''
+    let lastErr = 'Falha ao chamar a IA da NVIDIA.'
+
+    for (const model of CONTRACT_MODELS) {
+      try {
+        const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${key}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: 'system', content: 'Você é um advogado especialista em direito contratual brasileiro. Gere contratos formais e juridicamente sólidos em português do Brasil.' },
+              { role: 'user', content: prompt },
+            ],
+            temperature: 0.3,
+            top_p: 0.9,
+            max_tokens: 4096,
+          }),
+          cache: 'no-store',
+        })
+
+        if (!res.ok) {
+          lastErr = `NVIDIA (${model}): ${res.status}`
+          continue
+        }
+
+        const data = await res.json()
+        contentMd = data.choices?.[0]?.message?.content?.trim() || ''
+        usedModel = model
+        break
+      } catch (e) {
+        lastErr = `Falha de conexão com NVIDIA (${model}): ${(e as Error).message}`
+      }
+    }
+
+    if (!contentMd) {
+      console.log('[v0] contract ai generation failed:', lastErr)
+      return NextResponse.json({ error: 'Falha ao gerar o contrato pela IA.' }, { status: 502 })
+    }
   } catch (e) {
     console.log('[v0] contract ai generation failed:', (e as Error).message)
     return NextResponse.json({ error: 'Falha ao gerar o contrato pela IA.' }, { status: 502 })
